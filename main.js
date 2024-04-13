@@ -126,14 +126,14 @@ planets.forEach(planet => {
 
 function addSpaceDust() {
   const particlesGeometry = new THREE.BufferGeometry();
-  const count = 10000; // Number of particles
-  const positions = new Float32Array(count * 3); // Each particle has x, y, and z coordinates
+  const count = 10000;
+  const positions = new Float32Array(count * 3);
 
   for (let i = 0; i < count * 3; i++) {
-      positions[i] = THREE.MathUtils.randFloatSpread(2000); // Fill the positions array
+      positions[i] = THREE.MathUtils.randFloatSpread(2000);
   }
 
-  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)); // Set the position attribute of the geometry
+  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
   const particlesMaterial = new THREE.PointsMaterial({
       color: 0xaaaaaa,
@@ -163,10 +163,10 @@ function addStarField() {
   });
 
   const starPositions = [];
-  const starCount = 10000; // Increase the number for more density
+  const starCount = 10000;
 
   for (let i = 0; i < starCount; i++) {
-      const x = THREE.MathUtils.randFloatSpread(2000); // Spread them wider to cover the whole scene
+      const x = THREE.MathUtils.randFloatSpread(2000);
       const y = THREE.MathUtils.randFloatSpread(2000);
       const z = THREE.MathUtils.randFloatSpread(2000);
       starPositions.push(x, y, z);
@@ -181,8 +181,8 @@ addStarField();
 
 function addDistantPlanet() {
   const textureLoader = new THREE.TextureLoader();
-  const planetTexture = textureLoader.load('images/eris.jpg'); // Ensure you have a suitable texture
-  const planetGeometry = new THREE.SphereGeometry(10, 20, 20); // Large size for the planet
+  const planetTexture = textureLoader.load('images/eris.jpg');
+  const planetGeometry = new THREE.SphereGeometry(10, 20, 20);
   const planetMaterial = new THREE.MeshStandardMaterial({
       map: planetTexture,
       roughness: 0.7,
@@ -190,13 +190,12 @@ function addDistantPlanet() {
   });
 
   const distantPlanet = new THREE.Mesh(planetGeometry, planetMaterial);
-  distantPlanet.position.set(600, 30, -600); // Position it far from the center
+  distantPlanet.position.set(600, 30, -600);
   scene.add(distantPlanet);
 
-  // Optional: Add rotation to the planet
   function animateDistantPlanet() {
       requestAnimationFrame(animateDistantPlanet);
-      distantPlanet.rotation.y += 0.001; // Slow rotation for realism
+      distantPlanet.rotation.y += 0.001;
       renderer.render(scene, camera);
   }
   animateDistantPlanet();
@@ -205,7 +204,6 @@ addDistantPlanet();
 
 function MoveCamera() {
   const t = document.body.getBoundingClientRect().top;
-  // Map scroll position to camera z position
   camera.position.z = Math.max(0, Math.min(300, 50 - 0.1 * t));
   camera.position.x = t * -0.0002;
   camera.rotation.y = t * -0.0002;
@@ -220,9 +218,9 @@ function animate() {
     planet.position.x = Math.cos(time) * data.distance;
     planet.position.z = Math.sin(time) * data.distance;
     planet.rotation.y += 0.01;
-    if (clouds) clouds.rotation.y += 0.005;  // Clouds rotate slightly faster
+    if (clouds) clouds.rotation.y += 0.005;  // Clouds
     if (moon) {
-      moon.position.x = Math.cos(time * 10) * data.moonDistance;  // Moon's own orbit
+      moon.position.x = Math.cos(time * 10) * data.moonDistance;
       moon.position.z = Math.sin(time * 10) * data.moonDistance;
     }
   });
