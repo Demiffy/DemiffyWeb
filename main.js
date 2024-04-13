@@ -40,7 +40,7 @@ scene.add(ambientLight, hemisphereLight);
 //scene.add(gridHelper);
 
 // Background texture
-//const spaceTexture = new TextureLoader().load('images/space.jpg');
+//const spaceTexture = new TextureLoader().load('space.jpg');
 //scene.background = spaceTexture;
 
 // Stars
@@ -55,7 +55,7 @@ function addStar() {
 Array(200).fill().forEach(addStar);
 
 // Sun
-const sunTexture = new TextureLoader().load('images/sun.jpg');
+const sunTexture = new TextureLoader().load('sun.jpg');
 const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
 const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
@@ -63,14 +63,14 @@ scene.add(sun);
 
 // Planets with orbits
 const planetData = [
-  { name: "Mercury", texture: "images/mercury.jpg", size: 1, distance: 10, speed: 0.04 },
-  { name: "Venus", texture: "images/venus.jpg", atmosphere: "images/venusatmosphere.jpg", size: 1.5, distance: 15, speed: 0.03 },
-  { name: "Earth", texture: "images/earth.jpg", normal: "images/earthnormal.jpg", specular: "images/earthspecular.jpg", clouds: "images/earthclouds.jpg", moon: "images/moon.jpg", size: 2, distance: 20, speed: 0.01, moonDistance: 3, moonSpeed: 0.01 },
-  { name: "Mars", texture: "images/mars.jpg", size: 1.2, distance: 25, speed: 0.015 },
-  { name: "Jupiter", texture: "images/jupiter.jpg", size: 4, distance: 35, speed: 0.012 },
-  { name: "Saturn", texture: "images/saturn.jpg", ringTexture: "images/saturnRN.jpg", ringSize: [7, 9, 64], size: 3.5, distance: 45, speed: 0.01 },
-  { name: "Uranus", texture: "images/uranus.jpg", size: 2.5, distance: 55, speed: 0.008 },
-  { name: "Neptune", texture: "images/neptune.jpg", size: 2.5, distance: 65, speed: 0.006 }
+  { name: "Mercury", texture: "mercury.jpg", size: 1, distance: 10, speed: 0.04 },
+  { name: "Venus", texture: "venus.jpg", atmosphere: "venusatmosphere.jpg", size: 1.5, distance: 15, speed: 0.03 },
+  { name: "Earth", texture: "earth.jpg", normal: "earthnormal.jpg", specular: "earthspecular.jpg", clouds: "earthclouds.jpg", moon: "moon.jpg", size: 2, distance: 20, speed: 0.01, moonDistance: 3, moonSpeed: 0.01 },
+  { name: "Mars", texture: "mars.jpg", size: 1.2, distance: 25, speed: 0.015 },
+  { name: "Jupiter", texture: "jupiter.jpg", size: 4, distance: 35, speed: 0.012 },
+  { name: "Saturn", texture: "saturn.jpg", ringTexture: "saturnRN.jpg", ringSize: [7, 9, 64], size: 3.5, distance: 45, speed: 0.01 },
+  { name: "Uranus", texture: "uranus.jpg", size: 2.5, distance: 55, speed: 0.008 },
+  { name: "Neptune", texture: "neptune.jpg", size: 2.5, distance: 65, speed: 0.006 }
 ];
 
 const planets = planetData.map(data => {
@@ -181,7 +181,7 @@ addStarField();
 
 function addDistantPlanet() {
   const textureLoader = new THREE.TextureLoader();
-  const planetTexture = textureLoader.load('images/eris.jpg');
+  const planetTexture = textureLoader.load('eris.jpg');
   const planetGeometry = new THREE.SphereGeometry(10, 20, 20);
   const planetMaterial = new THREE.MeshStandardMaterial({
       map: planetTexture,
