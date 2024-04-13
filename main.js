@@ -7,6 +7,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
+
 // Scene setup
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -16,6 +17,8 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 camera.position.setZ(50);
 camera.position.setY(10);
 camera.rotation.x = -0.2;
@@ -30,10 +33,17 @@ bloomPass.strength = 1.5;
 bloomPass.radius = 0.55;
 composer.addPass(bloomPass);
 
-// Lighting
-const ambientLight = new THREE.AmbientLight(0x404040);
-const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
-scene.add(ambientLight, hemisphereLight);
+const sunLight = new THREE.PointLight(0xffffff, 1.5, 500);
+sunLight.position.set(0, 0, 0);
+sunLight.power = 5000;
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 512; 
+sunLight.shadow.mapSize.height = 512;
+scene.add(sunLight);
+
+
+const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+scene.add(ambientLight);
 
 // Helpers
 //const gridHelper = new THREE.GridHelper(200, 50);
@@ -42,6 +52,8 @@ scene.add(ambientLight, hemisphereLight);
 // Background texture
 //const spaceTexture = new TextureLoader().load('space.jpg');
 //scene.background = spaceTexture;
+
+
 
 // Stars
 function addStar() {
@@ -57,7 +69,11 @@ Array(200).fill().forEach(addStar);
 // Sun
 const sunTexture = new TextureLoader().load('sun.jpg');
 const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
-const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
+const sunMaterial = new THREE.MeshBasicMaterial({
+  map: sunTexture,
+  emissive: 0xffffff,
+  emissiveIntensity: 0.5
+});
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 scene.add(sun);
 
@@ -77,6 +93,11 @@ const planets = planetData.map(data => {
   const texture = new TextureLoader().load(data.texture);
   const geometry = new THREE.SphereGeometry(data.size, 32, 32);
   const material = new THREE.MeshPhongMaterial({ map: texture });
+  material.side = THREE.DoubleSide;
+
+  const planet = new THREE.Mesh(geometry, material);
+  planet.castShadow = true;
+  planet.receiveShadow = true;
 
   // Specific enhancements for Earth
   if (data.name === "Earth") {
@@ -152,7 +173,6 @@ function addSpaceDust() {
   animateDust();
 }
 addSpaceDust();
-
 
 function addStarField() {
   const starsGeometry = new THREE.BufferGeometry();
@@ -234,3 +254,22 @@ window.addEventListener('load', function() {
 
 
 
+document.addEventListener('DOMContentLoaded', function () {
+  var modal = document.getElementById("imageModal");
+  var modalImg = document.getElementById("img01");
+  var captionText = document.getElementById("caption");
+  var images = document.querySelectorAll('.project-image img');
+
+  images.forEach(img => {
+      img.onclick = function(){
+          modal.style.display = "block";
+          modalImg.src = this.src;
+          captionText.innerHTML = this.alt;
+      }
+  });
+
+  var span = document.getElementsByClassName("close")[0];
+  span.onclick = function() { 
+      modal.style.display = "none";
+  }
+});
