@@ -5,13 +5,18 @@
     <link rel="icon" type="image/svg+xml" href="DMLogoP.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-
+    <style>
+      html {
+        display: none;
+      }
+    </style>
     <title>Demi - Universe</title>
   </head>
   <body>
-    <div id="loadingScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; align-items: center; justify-content: center; z-index: 100;">
-      Creating the Universe...
+    <div id="loadingScreen">
+      <span id="loadingText">Creating the Universe...</span>
     </div>
+       
     
     <canvas id="bg"></canvas>
     

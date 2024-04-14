@@ -248,9 +248,14 @@ function animate() {
 }
 
 window.addEventListener('load', function() {
-  document.getElementById('loadingScreen').style.display = 'none';
+  var loadingScreen = document.getElementById('loadingScreen');
+  loadingScreen.style.opacity = '0';
+  loadingScreen.addEventListener('transitionend', function() {
+    loadingScreen.style.display = 'none';
+  });
   animate();
 });
+
 
 
 
