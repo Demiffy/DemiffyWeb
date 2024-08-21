@@ -2,105 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="DMLogoP.png" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-    <style>
-      html {
-        display: none;
-      }
-    </style>
-    <title>Demi - Universe</title>
+    <title>Vite + React + TS</title>
   </head>
   <body>
-    <div id="loadingScreen">
-      <span id="loadingText">Creating the Universe...</span>
-    </div>
-       
-    
-    <canvas id="bg"></canvas>
-    
-    <main>
-      <header>
-          <h1>Welcome to Demi's Universe</h1>
-          <p>Explore my digital cosmos, where programming languages and technology orbit around ideas and creativity.</p>
-      </header>
-      
-      <div class="content-container">
-        <section id="about-me" class="section-left">
-            <div class="about-container">
-                <div class="profile-pic">
-                    <img src="pfp.jpg" alt="Tomáš Velner">
-                </div>
-                <div class="about-text">
-                    <h2>About Me</h2>
-                    <p>Hi, I'm Tomáš Velner, an 18-year-old programmer from the Czech Republic, currently studying at Kyberna High School. Primarily, I focus on backend development, but I also dabble in frontend work. As a young developer, I'm still actively learning and expanding my skill set in both areas.</p>
-                    <div class="language-icons">
-                      <span class="icon-and-text"><i class="fas fa-code"></i> C#</span>
-                      <span class="icon-and-text"><i class="fab fa-html5"></i> HTML</span>
-                      <span class="icon-and-text"><i class="fab fa-css3-alt"></i> CSS</span>
-                      <span class="icon-and-text"><i class="fab fa-js-square"></i> JavaScript</span>
-                      <span class="icon-and-text"><i class="fab fa-bootstrap"></i> Bootstrap</span>
-                  </div>
-                  
-                </div>
-            </div>
-        </section>
-        <div class="right-image">
-            <img src="lay.png" alt="Cutie">
-        </div>
-    </div>
-          
-        <section class="section-right">
-          <h2>My Projects</h2>
-          <div class="projects-container">
-              <div class="project-item">
-                  <div class="project-image">
-                      <img src="KSB.png" alt="KSB - Extension for Kyberna Information System">
-                  </div>
-                  <div class="project-text">
-                    <h3>KSB Extension</h3>
-                    <p>This extension enhances the functionality of Kyberna's Information System, improving usability and data accessibility for students and faculty.</p>
-                    <p>Check out the project on <a href="https://github.com/Demiffy/KybernaIS-MB" target="_blank" class="github-link">GitHub</a>. Also available on the <a href="https://chrome.google.com/webstore/detail/kybernais-made-better/plehhebncnogcplmmgnliaipgbmoohdf?hl=cs&authuser=0" target="_blank" class="chrome-store-link">Chrome Web Store</a>.</p>
-                </div>
-              </div>
-              <!-- Repeat TBA -->
-              <div class="project-item">
-                  <div class="project-image">
-                      <img src="SBIS.png" alt="SBIS - Server operated Student Information System">
-                  </div>
-                  <div class="project-text">
-                    <h3>SBIS: Modernized Student Info System</h3>
-                    <p>This server-based system reinvents how student data is handled, featuring enhanced security with complex encryption and a modern UI/UX. Due to sensitive information, the codebase is not publicly hosted, but feel free to <a href="mailto:demiffyk@gmail.com">contact me</a> for details.</p>
-                </div>
-              </div>
-          </div>
-      </section>
-      
-      </div>
-
-      <footer>
-        <div class="footer-container">
-            <div class="footer-column">
-                <h5>Demiffy</h5>
-                <a href="https://t.me/demiffy" class="social-icon"><i class="fab fa-telegram"></i></a>
-                <a href="https://github.com/Demiffy" class="social-icon"><i class="fab fa-github"></i></a>
-                <a href="https://www.linkedin.com/in/tom%C3%A1%C5%A1-velner-8017a8283/" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
-            </div>
-        </div>
-
-        <a href="https://demiffy.vercel.app/" target="_blank" class="footer-logo">
-            <img src="DMLogo.png" alt="SBIS Logo">
-        </a>
-    </footer>
-    </main>
-
-    <div id="imageModal" class="modal">
-      <span class="close">&times;</span>
-      <img class="modal-content" id="img01">
-      <div id="caption"></div>
-  </div>
-  
-    <script type="module" src="/main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
