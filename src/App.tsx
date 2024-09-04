@@ -5,6 +5,7 @@ import { Card, CardContent } from "./components/ui/card"
 import { Badge } from "./components/ui/badge"
 import { Input } from "./components/ui/input"
 import { Textarea } from "./components/ui/textarea"
+import MilestoneTimeline from "./components/ui/MilestoneTimeline";
 import "./App.css"
 
 interface Project {
@@ -12,6 +13,30 @@ interface Project {
   description: string;
   image: string;
 }
+
+
+const milestones = [
+  {
+    date: "2024",
+    title: "Start at Brno UNOB",
+    description: "Beginning studies at the University of Defence with a focus on aviation and military technology."
+  },
+  {
+    date: "Present",
+    title: "Česká armáda Involvement",
+    description: "Active involvement in the Czech Army, honing both technical and aviation skills."
+  },
+  {
+    date: "2023",
+    title: "Key IT Projects",
+    description: "Completed various IT projects, focusing on systems that align with aviation technology and military needs."
+  },
+  {
+    date: "2022",
+    title: "Flight Experience",
+    description: "Completed first solo flight, logged hours toward a private pilot's license."
+  },
+];
 
 const RadarAnimation = ({ skills }: { skills: string[] }) => {
   const radarLine = useAnimation();
@@ -220,6 +245,11 @@ export default function App() {
           <div className="container">
             <h2 className="text-3xl font-bold mb-10 text-center">Mission Logs</h2>
             <MissionBriefing projects={projects} />
+          </div>
+        </section>
+        <section id="milestones" className="py-20 bg-slate-800">
+          <div className="container">
+            <MilestoneTimeline milestones={milestones} />
           </div>
         </section>
         <section id="contact" className="py-20 bg-slate-800">
