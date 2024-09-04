@@ -6,6 +6,7 @@ import { Badge } from "./components/ui/badge"
 import { Input } from "./components/ui/input"
 import { Textarea } from "./components/ui/textarea"
 import MilestoneTimeline from "./components/ui/MilestoneTimeline";
+import FlightSimulatorDashboard from './components/ui/FlightSimulatorDashboard';
 import "./App.css"
 
 interface Project {
@@ -252,6 +253,12 @@ export default function App() {
             <MilestoneTimeline milestones={milestones} />
           </div>
         </section>
+        <section id="flight-simulator" className="py-20 bg-slate-800">
+        <h2 className="text-3xl font-bold mb-10 text-center text-sky-400">
+          Flight Simulator Dashboard
+        </h2>
+        <FlightSimulatorDashboard />
+      </section>
         <section id="contact" className="py-20 bg-slate-800">
           <div className="container max-w-md mx-auto">
             <h2 className="text-3xl font-bold mb-10 text-center">Establish Comms</h2>
