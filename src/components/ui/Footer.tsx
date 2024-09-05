@@ -12,6 +12,15 @@ const Footer = () => {
             <p className="mt-1 text-xs text-gray-400">Fly safe, code strong.</p>
           </div>
 
+          {/* Logo */}
+          <div className="my-4">
+            <img
+              src="/DMLogoGif.gif"
+              alt="Demiffy"
+              className="h-20 w-20 mx-auto"
+            />
+          </div>
+
           {/* Social Media */}
           <div className="flex space-x-4">
             <a href="https://github.com/Demiffy" className="text-sky-400 hover:text-white transition-colors">

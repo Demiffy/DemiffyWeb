@@ -42,7 +42,7 @@ const RadarAnimation = ({ skills }: { skills: Skill[] }) => {
       />
       {skills.map((skill, index) => (
         <motion.div
-          key={skill.name} // Changed from `key={skill}` to `key={skill.name}`
+          key={skill.name}
           className="absolute"
           initial={{ opacity: 0 }}
           animate={{
@@ -61,7 +61,7 @@ const RadarAnimation = ({ skills }: { skills: Skill[] }) => {
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <Badge className="bg-sky-700 text-white">{skill.name}</Badge> {/* Use skill.name */}
+          <Badge className="bg-sky-700 text-white">{skill.name}</Badge>
         </motion.div>
       ))}
     </div>

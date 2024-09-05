@@ -1,4 +1,4 @@
-// src/Home.tsx
+// Home.tsx
 import MainIntro from './components/ui/MainIntro';
 import RadarAnimation from './components/ui/RadarAnimation';
 import SkillsOverview from './components/ui/SkillsOverview';
@@ -8,30 +8,32 @@ import ContactForm from './components/ui/ContactForm';
 import Footer from './components/ui/Footer';
 
 const Home = () => {
-  const skills = [
-    { name: 'React', level: 90, focus: 'Frontend Development' },
-    { name: 'Node.js', level: 75, focus: 'Backend API & Services' },
-    { name: 'TypeScript', level: 85, focus: 'Typed JavaScript & Code Quality' },
-    { name: 'AWS', level: 70, focus: 'Cloud Infrastructure & Deployment' },
-    { name: 'Python', level: 95, focus: 'Automation & Data Science' },
-  ];
+const skills = [
+    { name: 'HTML & CSS', level: 80, focus: 'Web Page Structure & Styling' },
+    { name: 'JavaScript', level: 60, focus: 'Frontend Scripting & Web Interactivity' },
+    { name: 'React', level: 50, focus: 'Frontend Framework & UI Development' },
+    { name: 'Node.js', level: 40, focus: 'Backend Development & APIs' },
+    { name: 'C#', level: 45, focus: 'Object-Oriented Programming & Application Development' },
+    { name: 'Python', level: 20, focus: 'Scripting, Automation & General-Purpose Programming' },
+    { name: 'Unity', level: 45, focus: 'Game Development & Interactive Simulations' },
+    ];      
+
 
   const projects = [
-    { title: "KybernaIS Made Better / UI-UX KybernaIS Redo", description: "A mission to create the most responsive UI known to mankind.", image: "/img.png" },
-    { title: "Cloud Storage (Private)", description: "Covert operation to optimize database queries and API responses.", image: "/img2.png" },
-    { title: "War Thunder Tree Analyzer", description: "Engaging multiple technologies in an all-out development brawl.", image: "/img3.gif" },
+    { title: "KybernaIS Made Better / UI-UX KybernaIS Redo", description: "Stuff stuff stuff, Placeholder", image: "/ksmb.png" },
+    { title: "Cloud Storage (Private)", description: "Stuff stuff stuff, Placeholder", image: "/clouds.png" },
+    { title: "War Thunder Tree Analyzer", description: "Stuff stuff stuff, Placeholder", image: "/wtanalyze.gif" },
   ];
 
   const milestones = [
-    { date: "2024", title: "Start at Brno UNOB", description: "Beginning studies at the University of Defence with a focus on aviation and military technology.", image: "/hero.png" },
-    { date: "Present", title: "Česká armáda Involvement", description: "Active involvement in the Czech Army, honing both technical and aviation skills." },
-    { date: "2023", title: "Key IT Projects", description: "Completed various IT projects, focusing on systems that align with aviation technology and military needs.", image: "/img3.gif" },
-    { date: "2022", title: "Flight Experience", description: "Completed first solo flight, logged hours toward a private pilot's license." },
-    { date: "2021", title: "High School Graduation", description: "Graduated from high school with a focus on mathematics and physics." },
+    { date: "2027", title: "Start at Brno UNOB", description: "Beginning studies at the University of Defence with a focus on aviation and military technology.", image: "/UNOBLogo.png" },
+    { date: "Present", title: "Studying IT - Programming", description: "Currently honing my programming skills with a focus on software development, algorithms, and IT systems", image: "/Code.png" },
+    { date: "2023", title: "Started High School", description: "Started high school with a specialization in information technology, laying the foundation for my journey into the world of programming and software development", image: "/KybLogo.png" },
+    { date: "2022", title: "Finished Middle School", description: "Completed middle school, where my interest in computers and technology began to take shape, inspiring my future career path", image: "/MHLogo.png" },
   ];
 
   return (
-    <div>
+    <div className="min-h-screen bg-slate-900 text-white">
       <MainIntro />
       <section id="skills" className="py-20">
         <h2 className="text-3xl font-bold text-center text-sky-400 mb-8">Skills Overview</h2>

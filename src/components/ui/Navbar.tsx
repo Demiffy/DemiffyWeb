@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link as ScrollLink } from 'react-scroll';
-import { Link as RouterLink } from 'react-router-dom'; // Import RouterLink
+import { Link as RouterLink } from 'react-router-dom';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,22 +13,23 @@ const Navbar = () => {
     <header className="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-lg border-b border-sky-500/20 shadow-lg">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         {/* Demiffy */}
+        <RouterLink to="/">
         <div className="flex items-center space-x-2">
           <span className="text-3xl font-bold text-sky-400 tracking-wide uppercase">Demiffy</span>
         </div>
+        </RouterLink>
 
         {/* Desktop Links */}
         <nav className="hidden md:flex space-x-8">
-          {/* RouterLink for About (redirects to /about) */}
           <RouterLink
-            to="/about" // Redirects to /about page
+            to="/about"
             className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
           >
             About
             <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
           </RouterLink>
 
-          {/* ScrollLink for internal sections */}
+          {/* ScrollLink */}
           <ScrollLink
             to="skills"
             smooth={true}
