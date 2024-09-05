@@ -166,3 +166,52 @@ button:focus-visible {
     box-shadow: 0 0 60px rgba(0, 170, 255, 0.8);
   }
 }
+
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle, #1b263b, #141e30);
+}
+
+.profile-container {
+  background: radial-gradient(circle at center, #1b263b, #141e30);
+  padding: 1rem;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 10px 30px rgba(0, 170, 255, 0.2);
+}
+
+img {
+  transition: transform 0.3s ease;
+}
+
+img:hover {
+  transform: scale(1.05);
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+p {
+  color: #94a3b8;
+  font-size: 1.2rem;
+}
+
+button {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #2563eb;
+}
