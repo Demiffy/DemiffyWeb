@@ -190,13 +190,30 @@ const JetFlightPath = () => {
   );
 };
 
+
 export default function App() {
+  const [arrowVisible, setArrowVisible] = useState(true);
   const skills = ['React', 'Node.js', 'TypeScript', 'AWS', 'Python'];
   const projects = [
     { title: "Operation Frontend Assault", description: "A mission to create the most responsive UI known to mankind.", image: "/img.png" },
     { title: "Backend Stealth Mission", description: "Covert operation to optimize database queries and API responses.", image: "/img2.png" },
     { title: "Full Stack Dogfight", description: "Engaging multiple technologies in an all-out development brawl.", image: "/img3.gif" },
   ];
+
+  // Scroll event handler
+  const handleScroll = () => {
+    if (window.scrollY > 100) {
+      setArrowVisible(false);
+    } else {
+      setArrowVisible(true);
+    }
+  };
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-900 text-white">
@@ -227,6 +244,12 @@ export default function App() {
           <h1 className="text-5xl font-bold mb-4">Demiffy!</h1>
           <p className="text-xl text-sky-300 mb-8">EVERYTHING IS A PLACEHOLDER FOR NOW! - Small description here</p>
           <Button className="bg-sky-600 hover:bg-sky-700 text-white">Scramble to Projects</Button>
+          <div
+            className={`scroll-indicator ${!arrowVisible ? 'hidden' : ''}`}
+            onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            <span className="arrow">↓</span>
+          </div>
         </section>
 
         <section id="skills" className="py-20 bg-slate-800">

@@ -215,3 +215,39 @@ button {
 button:hover {
   background-color: #2563eb;
 }
+
+/* Scroll Indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  animation: bounce 2s infinite;
+}
+
+.scroll-indicator.hidden {
+  opacity: 0;
+}
+
+.scroll-indicator .arrow {
+  font-size: 2rem;
+  color: #0af;
+  text-shadow: 0 0 10px rgba(0, 170, 255, 0.5);
+  transition: transform 0.3s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(10px);
+  }
+  60% {
+    transform: translateY(5px);
+  }
+}
