@@ -19,11 +19,41 @@ const skills = [
     ];      
 
 
-  const projects = [
-    { title: "KybernaIS Made Better / UI-UX KybernaIS Redo", description: "Stuff stuff stuff, Placeholder", image: "/ksmb.png" },
-    { title: "Cloud Storage (Private)", description: "Stuff stuff stuff, Placeholder", image: "/clouds.png" },
-    { title: "War Thunder Tree Analyzer", description: "Stuff stuff stuff, Placeholder", image: "/wtanalyze.gif" },
-  ];
+    const projects = [
+      {
+        title: "KybernaIS Made Better / UI-UX KybernaIS Redo",
+        description: "A UI/UX redesign of KybernaIS to enhance user experience and optimize workflow.",
+        image: "/ksmb.png",
+        details: "This project focuses on redesigning the UI/UX of KybernaIS to improve its usability and performance. The new design brings a fresh, modern interface with intuitive navigation for users in the educational sector.",
+        additionalImages: ["placeholder.png", "/placeholder.png"],
+        buttons: [
+          { label: "View UI Demo", onClick: () => window.open('https://example.com', '_blank') },
+          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy', '_blank') }
+        ]
+      },
+      {
+        title: "Cloud Storage (Private)",
+        description: "A private cloud storage system designed to store files securely and efficiently.",
+        image: "/clouds.png",
+        details: "This project involves creating a cloud storage platform with a focus on privacy and security. Users can upload, manage, and retrieve files with enhanced encryption to ensure data protection.",
+        additionalImages: ["/placeholder.png", "/placeholder.png"],
+        buttons: [
+          { label: "Live Demo", onClick: () => window.open('https://example.com/cloud-demo', '_blank') }
+        ]
+      },
+      {
+        title: "War Thunder Tree Analyzer",
+        description: "An analytical tool to explore and visualize vehicle trees in War Thunder.",
+        image: "/wtanalyze.gif",
+        details: "This project provides users with a tool to analyze War Thunder's vehicle trees. The tool helps players optimize their strategy by visualizing vehicle progression and performance.",
+        additionalImages: ["placeholder.png", "placeholder.png", "placeholder.png", "placeholder.png", "placeholder.png", "placeholder.png", "placeholder.png"],
+        buttons: [
+          { label: "Try the Analyzer", onClick: () => window.open('https://example.com/wt-analyzer', '_blank') },
+          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/wt-analyzer', '_blank') }
+        ]
+      }
+    ];
+    
 
   const milestones = [
     { date: "2027", title: "Start at Brno UNOB", description: "Beginning studies at the University of Defence with a focus on aviation and military technology.", image: "/UNOBLogo.png" },
