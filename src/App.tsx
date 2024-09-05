@@ -17,26 +17,10 @@ interface Project {
 
 
 const milestones = [
-  {
-    date: "2024",
-    title: "Start at Brno UNOB",
-    description: "Beginning studies at the University of Defence with a focus on aviation and military technology."
-  },
-  {
-    date: "Present",
-    title: "Česká armáda Involvement",
-    description: "Active involvement in the Czech Army, honing both technical and aviation skills."
-  },
-  {
-    date: "2023",
-    title: "Key IT Projects",
-    description: "Completed various IT projects, focusing on systems that align with aviation technology and military needs."
-  },
-  {
-    date: "2022",
-    title: "Flight Experience",
-    description: "Completed first solo flight, logged hours toward a private pilot's license."
-  },
+  { date: "2024", title: "Start at Brno UNOB", description: "Beginning studies at the University of Defence with a focus on aviation and military technology." },
+  { date: "Present", title: "Česká armáda Involvement", description: "Active involvement in the Czech Army, honing both technical and aviation skills." },
+  { date: "2023", title: "Key IT Projects", description: "Completed various IT projects, focusing on systems that align with aviation technology and military needs." },
+  { date: "2022", title: "Flight Experience", description: "Completed first solo flight, logged hours toward a private pilot's license." },
 ];
 
 const RadarAnimation = ({ skills }: { skills: string[] }) => {
@@ -231,47 +215,54 @@ export default function App() {
         </div>
       </header>
       <main className="flex-1">
-  <section id="hero" className="min-h-screen flex flex-col justify-center items-center">
-    <div className="profile-container bg-slate-800 p-6 rounded-full shadow-lg mb-6">
-      <img
-        src="/hero.png"
-        alt="Profile"
-        className="w-40 h-40 object-cover rounded-full border-4 border-sky-500"
-      />
-    </div>
-    <h1 className="text-5xl font-bold mb-4">Demiffy!</h1>
-    <p className="text-xl text-sky-300 mb-8">EVERYTHING IS A PLACEHOLDER FOR NOW! - Small description here</p>
-    <Button className="bg-sky-600 hover:bg-sky-700 text-white">Scramble to Projects</Button>
-  </section>
+
+        <section id="hero" className="min-h-screen flex flex-col justify-center items-center">
+          <div className="profile-container bg-slate-800 p-6 rounded-full shadow-lg mb-6">
+            <img
+              src="/hero.png"
+              alt="Profile"
+              className="w-40 h-40 object-cover rounded-full border-4 border-sky-500"
+            />
+          </div>
+          <h1 className="text-5xl font-bold mb-4">Demiffy!</h1>
+          <p className="text-xl text-sky-300 mb-8">EVERYTHING IS A PLACEHOLDER FOR NOW! - Small description here</p>
+          <Button className="bg-sky-600 hover:bg-sky-700 text-white">Scramble to Projects</Button>
+        </section>
+
         <section id="skills" className="py-20 bg-slate-800">
           <div className="container">
             <h2 className="text-3xl font-bold mb-10 text-center">Combat Arsenal</h2>
             <RadarAnimation skills={skills} />
           </div>
         </section>
+
         <section id="projects" className="py-20">
           <div className="container">
             <h2 className="text-3xl font-bold mb-10 text-center">Mission Logs</h2>
             <MissionBriefing projects={projects} />
           </div>
         </section>
+
         <section id="milestones" className="py-20 bg-slate-800">
           <div className="container">
             <MilestoneTimeline milestones={milestones} />
           </div>
         </section>
+
         <section id="flight-simulator" className="py-20 bg-slate-800">
         <h2 className="text-3xl font-bold mb-10 text-center text-sky-400">
           Flight Simulator Dashboard
         </h2>
         <FlightSimulatorDashboard />
       </section>
+
         <section id="contact" className="py-20 bg-slate-800">
           <div className="container max-w-md mx-auto">
             <h2 className="text-3xl font-bold mb-10 text-center">Establish Comms</h2>
             <CockpitContactForm />
           </div>
         </section>
+        
       </main>
       <footer className="bg-slate-900 border-t border-sky-500/20 py-6">
         <div className="container text-center text-sky-400">
