@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion, useAnimation, useMotionValue } from "framer-motion"
+import { useState, useEffect } from 'react'
+import { motion, useAnimation } from "framer-motion"
 import { Button } from "./components/ui/button"
-import { Card, CardContent } from "./components/ui/card"
 import { Badge } from "./components/ui/badge"
-import { Input } from "./components/ui/input"
-import { Textarea } from "./components/ui/textarea"
+import Navbar from "./components/ui/Navbar"
+import Footer from './components/ui/Footer'
+import MainIntro from './components/ui/MainIntro'
 import MilestoneTimeline from "./components/ui/MilestoneTimeline";
 import FlightSimulatorDashboard from './components/ui/FlightSimulatorDashboard';
+import SkillsOverview from './components/ui/SkillsOverview';
+import ContactForm from './components/ui/ContactForm';
 import "./App.css"
 
 interface Project {
@@ -123,81 +125,110 @@ const MissionBriefing = ({ projects }: { projects: Project[] }) => {
   );
 };
 
-const CockpitContactForm = () => {
-  return (
-    <Card className="bg-slate-800 border-sky-500 overflow-hidden">
-      <CardContent className="p-0">
-        <div className="bg-slate-900 p-4 flex justify-between items-center">
-          <h3 className="text-sky-400 font-bold">Communication Console</h3>
-          <div className="flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-          </div>
-        </div>
-        <form className="p-4 space-y-4">
-          <div>
-            <label htmlFor="callsign" className="text-sky-400 block mb-1">Callsign (Name)</label>
-            <Input id="callsign" className="bg-slate-700 border-sky-500 text-white" />
-          </div>
-          <div>
-            <label htmlFor="mission" className="text-sky-400 block mb-1">Mission Objective (Subject)</label>
-            <Input id="mission" className="bg-slate-700 border-sky-500 text-white" />
-          </div>
-          <div>
-            <label htmlFor="transmission" className="text-sky-400 block mb-1">Transmission (Message)</label>
-            <Textarea id="transmission" className="bg-slate-700 border-sky-500 text-white" rows={4} />
-          </div>
-          <Button className="w-full bg-sky-600 hover:bg-sky-700">Send Transmission</Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-};
-
-const JetFlightPath = () => {
-  const pathRef = useRef<SVGPathElement | null>(null);
-  const jet = useMotionValue(0);
-
-  useEffect(() => {
-    if (pathRef.current) {
-      const pathLength = pathRef.current.getTotalLength();
-
-      const animate = () => {
-        const phase = (Date.now() / 2000) % 1;
-        const x = phase * pathLength;
-        jet.set(x);
-        requestAnimationFrame(animate);
-      };
-
-      animate();
-    }
-  }, [jet]);
-
-  return (
-    <svg className="absolute inset-0 w-full h-full" style={{ zIndex: -1 }}>
-      <path
-        ref={pathRef}
-        d="M0,100 Q250,200 500,100 T1000,100"
-        fill="none"
-        stroke="rgba(96, 165, 250, 0.2)"
-        strokeWidth="2"
-      />
-      <motion.g style={{ offsetDistance: jet }}>
-        <path d="M-5,0 L5,5 L0,0 L5,-5 Z" fill="#60A5FA" />
-      </motion.g>
-    </svg>
-  );
-};
-
-
 export default function App() {
   const [arrowVisible, setArrowVisible] = useState(true);
-  const skills = ['React', 'Node.js', 'TypeScript', 'AWS', 'Python'];
+  const skills = [
+    { name: 'React', level: 90, focus: 'Frontend Development' },
+    { name: 'Node.js', level: 75, focus: 'Backend API & Services' },
+    { name: 'TypeScript', level: 85, focus: 'Typed JavaScript & Code Quality' },
+    { name: 'AWS', level: 70, focus: 'Cloud Infrastructure & Deployment' },
+    { name: 'Python', level: 95, focus: 'Automation & Data Science' },
+  ];
+  const radarskills = [ 'React', 'Node.js', 'TypeScript', 'AWS', 'Python' ];
   const projects = [
     { title: "Operation Frontend Assault", description: "A mission to create the most responsive UI known to mankind.", image: "/img.png" },
     { title: "Backend Stealth Mission", description: "Covert operation to optimize database queries and API responses.", image: "/img2.png" },
     { title: "Full Stack Dogfight", description: "Engaging multiple technologies in an all-out development brawl.", image: "/img3.gif" },
+  ];
+  const jetNames = [
+    "F-22 Raptor",
+    "MiG-29 Fulcrum",
+    "F-35 Lightning II",
+    "Eurofighter Typhoon",
+    "Su-57 Felon",
+    "Dassault Rafale",
+    "JAS 39 Gripen",
+    "F-16 Falcon",
+    "F-15 Eagle",
+    "F-14 Tomcat",
+    "Su-27 Flanker",
+    "MiG-31 Foxhound",
+    "F-117 Nighthawk",
+    "F-4 Phantom II",
+    "MiG-21 Fishbed",
+    "F-104 Starfighter",
+    "Su-25 Frogfoot",
+    "Mirage 2000",
+    "Harrier Jump Jet",
+    "J-20 Mighty Dragon",
+    "F-2 Viper Zero",
+    "J-10 Firebird",
+    "T-50 Golden Eagle",
+    "Su-35 Flanker-E",
+    "MiG-23 Flogger",
+    "F-111 Aardvark",
+    "MiG-19 Farmer",
+    "Su-24 Fencer",
+    "Kfir",
+    "HAL Tejas",
+    "F-5 Tiger II",
+    "Su-30 Flanker-C",
+    "MiG-25 Foxbat",
+    "F-8 Crusader",
+    "Tornado ADV",
+    "Saab 105",
+    "Su-34 Fullback",
+    "Yak-38 Forger",
+    "Lavi",
+    "J-8 Finback",
+    "T-38 Talon",
+    "A-7 Corsair II",
+    "Su-15 Flagon",
+    "Mirage F1",
+    "Gnat",
+    "Su-17 Fitter",
+    "MiG-15 Fagot",
+    "F-20 Tigershark",
+    "J-7 Airguard",
+    "F-102 Delta Dagger",
+    "F-106 Delta Dart",
+    "Su-47 Berkut",
+    "Yak-141 Freestyle",
+    "Dassault Etendard",
+    "Saab Draken",
+    "Saab Viggen",
+    "MiG-27",
+    "Super Étendard",
+    "F-84 Thunderjet",
+    "F-105 Thunderchief",
+    "F-100 Super Sabre",
+    "IAR 93",
+    "AIDC F-CK-1 Ching-Kuo",
+    "Shenyang J-6",
+    "IAR 99",
+    "FMA IA 58 Pucará",
+    "Nanchang Q-5",
+    "F-86 Sabre",
+    "MiG-17 Fresco",
+    "Aermacchi MB-326",
+    "BAC Strikemaster",
+    "A-4 Skyhawk",
+    "T-33 Shooting Star",
+    "L-39 Albatros",
+    "Hawker Hunter",
+    "Gulfstream G550 CAEW",
+    "Beriev A-50",
+    "Northrop YF-23",
+    "Mikoyan Project 1.44",
+    "Lockheed XF-90",
+    "Vought XF8U-3 Crusader III",
+    "Northrop F-89 Scorpion",
+    "Fairey Delta 2",
+    "Hawker P.1127",
+    "Mikoyan-Gurevich MiG-110",
+    "Mitsubishi F-1",
+    "Chengdu J-9",
+    "Shenyang J-31"
   ];
 
   // Scroll event handler
@@ -215,49 +246,37 @@ export default function App() {
     };
   }, []);
 
+
+  useEffect(() => {
+    const getRandomJetName = () => {
+      const randomIndex = Math.floor(Math.random() * jetNames.length);
+      return jetNames[randomIndex];
+    };
+    const titleInterval = setInterval(() => {
+      const randomJet = getRandomJetName();
+      document.title = `Demiffy - ${randomJet}`;
+    }, 3000);
+
+    return () => clearInterval(titleInterval);
+  }, []);
+
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-900 text-white">
-      <JetFlightPath />
-      <header className="sticky top-0 z-40 w-full border-b border-sky-500/20 bg-slate-900/90 backdrop-blur">
-        <div className="container h-14 flex items-center">
-          <a className="flex items-center space-x-2" href="#">
-            <span className="font-bold">Demiffy</span>
-          </a>
-          <nav className="ml-auto flex items-center space-x-4 text-sm font-medium">
-            <a className="text-sky-400 hover:text-sky-300" href="#about">Flight Log</a>
-            <a className="text-sky-400 hover:text-sky-300" href="#skills">Arsenal</a>
-            <a className="text-sky-400 hover:text-sky-300" href="#projects">Missions</a>
-            <a className="text-sky-400 hover:text-sky-300" href="#contact">Comms</a>
-          </nav>
-        </div>
-      </header>
+      {/* New Navbar */}
+      <Navbar />
+
+
+
       <main className="flex-1">
+      <MainIntro />
 
-        <section id="hero" className="min-h-screen flex flex-col justify-center items-center">
-          <div className="profile-container bg-slate-800 p-6 rounded-full shadow-lg mb-6">
-            <img
-              src="/hero.png"
-              alt="Profile"
-              className="w-40 h-40 object-cover rounded-full border-4 border-sky-500"
-            />
-          </div>
-          <h1 className="text-5xl font-bold mb-4">Demiffy!</h1>
-          <p className="text-xl text-sky-300 mb-8">EVERYTHING IS A PLACEHOLDER FOR NOW! - Small description here</p>
-          <Button className="bg-sky-600 hover:bg-sky-700 text-white">Scramble to Projects</Button>
-          <div
-            className={`scroll-indicator ${!arrowVisible ? 'hidden' : ''}`}
-            onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            <span className="arrow">↓</span>
-          </div>
-        </section>
-
-        <section id="skills" className="py-20 bg-slate-800">
-          <div className="container">
-            <h2 className="text-3xl font-bold mb-10 text-center">Combat Arsenal</h2>
-            <RadarAnimation skills={skills} />
-          </div>
-        </section>
+        <section id="skills" className="py-20">
+        <h2 className="text-3xl font-bold text-center text-sky-400 mb-8">Skills Overview</h2>
+        <RadarAnimation skills={radarskills} />
+        <div className="h-8"></div>
+        <SkillsOverview skills={skills} />
+      </section>
 
         <section id="projects" className="py-20">
           <div className="container">
@@ -282,16 +301,11 @@ export default function App() {
         <section id="contact" className="py-20 bg-slate-800">
           <div className="container max-w-md mx-auto">
             <h2 className="text-3xl font-bold mb-10 text-center">Establish Comms</h2>
-            <CockpitContactForm />
+            <ContactForm />
           </div>
         </section>
-        
       </main>
-      <footer className="bg-slate-900 border-t border-sky-500/20 py-6">
-        <div className="container text-center text-sky-400">
-          <p>&copy; 2024 Demiffy. All rights reserved. Fly safe, code strong.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

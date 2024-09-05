@@ -17,12 +17,13 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
         {milestones.map((milestone, index) => (
           <motion.div
             key={milestone.date}
-            className="mb-10 ml-10"
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            className="mb-10 ml-10 relative"
+            initial={{ opacity: 0, x: -50, scale: 0.95 }}
+            whileInView={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ duration: 0.5, delay: index * 0.2 }}
           >
-            <Card className="bg-slate-800 border-sky-500 overflow-hidden">
+            <Card className="bg-slate-800 border-sky-500 overflow-hidden relative shadow-md">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-sky-500 opacity-10 pointer-events-none"></div>
               <CardContent className="p-6">
                 <h3 className="text-xl font-bold text-sky-400">{milestone.title}</h3>
                 <p className="text-sky-300 text-sm">{milestone.date}</p>

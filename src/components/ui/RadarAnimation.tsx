@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Badge } from "./badge";
 
-const RadarAnimation = ({ skills }: { skills: string[] }) => {
+const RadarAnimation = ({ skills }: { skills: { name: string }[] }) => {
   const radarLine = useAnimation();
 
   useEffect(() => {
@@ -13,7 +13,7 @@ const RadarAnimation = ({ skills }: { skills: string[] }) => {
   }, [radarLine]);
 
   return (
-    <div className="relative w-80 h-80 mx-auto">
+    <div className="relative w-80 h-80 mx-auto mb-12">
       {/* Radar circles */}
       <div className="absolute inset-0 rounded-full border-2 border-sky-500 opacity-20"></div>
       <div className="absolute inset-4 rounded-full border-2 border-sky-500 opacity-40"></div>
@@ -36,7 +36,7 @@ const RadarAnimation = ({ skills }: { skills: string[] }) => {
 
         return (
           <motion.div
-            key={skill}
+            key={skill.name}
             className="absolute"
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 1, 0] }}
@@ -47,7 +47,7 @@ const RadarAnimation = ({ skills }: { skills: string[] }) => {
               transform: "translate(-50%, -50%)",
             }}
           >
-            <Badge className="bg-sky-700 text-white">{skill}</Badge>
+            <Badge className="bg-sky-700 text-white">{skill.name}</Badge>
           </motion.div>
         );
       })}
