@@ -1,0 +1,9 @@
+{
+    "rewrites": [
+      {
+        "source": "/user-active",
+        "destination": "http://109.80.40.13:7000/user-active"
+      }
+    ]
+  }
+  
