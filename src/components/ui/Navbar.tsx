@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link as ScrollLink } from 'react-scroll';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom'; // Import RouterLink
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,15 +19,16 @@ const Navbar = () => {
 
         {/* Desktop Links */}
         <nav className="hidden md:flex space-x-8">
-          <ScrollLink
-            to="about"
-            smooth={true}
-            duration={500}
+          {/* RouterLink for About (redirects to /about) */}
+          <RouterLink
+            to="/about" // Redirects to /about page
             className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
           >
             About
             <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
-          </ScrollLink>
+          </RouterLink>
+
+          {/* ScrollLink for internal sections */}
           <ScrollLink
             to="skills"
             smooth={true}
@@ -80,15 +81,13 @@ const Navbar = () => {
         } z-40 flex flex-col items-center justify-center text-white`}
       >
         <nav className="flex space-x-8 text-center text-xl">
-          <ScrollLink
-            to="about"
-            smooth={true}
-            duration={500}
+          <RouterLink
+            to="/about"
             onClick={toggleMenu}
             className="hover:text-sky-400 transition-colors"
           >
-            Flight Log
-          </ScrollLink>
+            About
+          </RouterLink>
           <ScrollLink
             to="skills"
             smooth={true}
@@ -96,7 +95,7 @@ const Navbar = () => {
             onClick={toggleMenu}
             className="hover:text-sky-400 transition-colors"
           >
-            Arsenal
+            Skills
           </ScrollLink>
           <ScrollLink
             to="projects"
@@ -105,7 +104,7 @@ const Navbar = () => {
             onClick={toggleMenu}
             className="hover:text-sky-400 transition-colors"
           >
-            Missions
+            Projects
           </ScrollLink>
           <ScrollLink
             to="contact"
@@ -114,7 +113,7 @@ const Navbar = () => {
             onClick={toggleMenu}
             className="hover:text-sky-400 transition-colors"
           >
-            Comms
+            Contact
           </ScrollLink>
         </nav>
       </div>
