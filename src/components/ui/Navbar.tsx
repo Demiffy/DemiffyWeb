@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-scroll';
+import { Link as ScrollLink } from 'react-scroll';
+import { Link as RouterLink } from 'react-router-dom';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,42 +19,42 @@ const Navbar = () => {
 
         {/* Desktop Links */}
         <nav className="hidden md:flex space-x-8">
-          <Link
+          <ScrollLink
             to="about"
             smooth={true}
             duration={500}
             className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
           >
-            Flight Log
+            About
             <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
-          </Link>
-          <Link
+          </ScrollLink>
+          <ScrollLink
             to="skills"
             smooth={true}
             duration={500}
             className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
           >
-            Arsenal
+            Skills
             <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
-          </Link>
-          <Link
+          </ScrollLink>
+          <ScrollLink
             to="projects"
             smooth={true}
             duration={500}
             className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
           >
-            Missions
+            Projects
             <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
-          </Link>
-          <Link
+          </ScrollLink>
+          <ScrollLink
             to="contact"
             smooth={true}
             duration={500}
             className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
           >
-            Comms
+            Contact
             <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
-          </Link>
+          </ScrollLink>
         </nav>
 
         {/* Mobile Hamburger Menu */}
@@ -79,7 +80,7 @@ const Navbar = () => {
         } z-40 flex flex-col items-center justify-center text-white`}
       >
         <nav className="flex space-x-8 text-center text-xl">
-          <Link
+          <ScrollLink
             to="about"
             smooth={true}
             duration={500}
@@ -87,8 +88,8 @@ const Navbar = () => {
             className="hover:text-sky-400 transition-colors"
           >
             Flight Log
-          </Link>
-          <Link
+          </ScrollLink>
+          <ScrollLink
             to="skills"
             smooth={true}
             duration={500}
@@ -96,8 +97,8 @@ const Navbar = () => {
             className="hover:text-sky-400 transition-colors"
           >
             Arsenal
-          </Link>
-          <Link
+          </ScrollLink>
+          <ScrollLink
             to="projects"
             smooth={true}
             duration={500}
@@ -105,8 +106,8 @@ const Navbar = () => {
             className="hover:text-sky-400 transition-colors"
           >
             Missions
-          </Link>
-          <Link
+          </ScrollLink>
+          <ScrollLink
             to="contact"
             smooth={true}
             duration={500}
@@ -114,7 +115,7 @@ const Navbar = () => {
             className="hover:text-sky-400 transition-colors"
           >
             Comms
-          </Link>
+          </ScrollLink>
         </nav>
       </div>
     </header>

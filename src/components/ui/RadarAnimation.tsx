@@ -2,55 +2,68 @@ import { useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Badge } from "./badge";
 
-const RadarAnimation = ({ skills }: { skills: { name: string }[] }) => {
+interface Skill {
+  name: string;
+  level: number;
+  focus: string;
+}
+
+const RadarAnimation = ({ skills }: { skills: Skill[] }) => {
   const radarLine = useAnimation();
+  const duration = 4;
+
+  const positions = skills.map((_, index) => {
+    const angle = (index / skills.length) * 360;
+    const top = `${50 + 40 * Math.sin((angle * Math.PI) / 180)}%`;
+    const left = `${50 + 40 * Math.cos((angle * Math.PI) / 180)}%`;
+    return { top, left, angle };
+  });
 
   useEffect(() => {
     radarLine.start({
       rotate: 360,
-      transition: { duration: 4, repeat: Infinity, ease: "linear" },
+      transition: { duration, repeat: Infinity, ease: "linear" },
     });
   }, [radarLine]);
 
   return (
-    <div className="relative w-80 h-80 mx-auto mb-12">
-      {/* Radar circles */}
+    <div className="relative w-80 h-80 mx-auto">
       <div className="absolute inset-0 rounded-full border-2 border-sky-500 opacity-20"></div>
-      <div className="absolute inset-4 rounded-full border-2 border-sky-500 opacity-40"></div>
-      <div className="absolute inset-8 rounded-full border-2 border-sky-500 opacity-60"></div>
-
-      {/* Radar line */}
+      <div className="absolute inset-8 rounded-full border-2 border-sky-500 opacity-40"></div>
+      <div className="absolute inset-16 rounded-full border-2 border-sky-500 opacity-60"></div>
       <motion.div
-        className="absolute top-1/2 left-1/2 w-1 h-40 bg-sky-500 origin-bottom"
+        className="absolute top-1/2 left-1/2 w-0.5 h-40 bg-sky-500 origin-bottom"
         animate={radarLine}
         style={{
-          transformOrigin: "center bottom",
+          transformOrigin: 'center bottom',
+          transform: 'translate(-50%, 0)',
+          marginTop: '-50%',
         }}
-      ></motion.div>
-
-      {/* Radar dots (skills) */}
-      {skills.map((skill, index) => {
-        const angle = (index / skills.length) * 360;
-        const radians = (angle * Math.PI) / 180;
-        const distance = 80; // Distance from center
-
-        return (
-          <motion.div
-            key={skill.name}
-            className="absolute"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{ duration: 2, repeat: Infinity, delay: index * 0.5 }}
-            style={{
-              top: `calc(50% + ${Math.sin(radians) * distance}px)`,
-              left: `calc(50% + ${Math.cos(radians) * distance}px)`,
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            <Badge className="bg-sky-700 text-white">{skill.name}</Badge>
-          </motion.div>
-        );
-      })}
+      />
+      {skills.map((skill, index) => (
+        <motion.div
+          key={skill.name} // Changed from `key={skill}` to `key={skill.name}`
+          className="absolute"
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: [0, 1, 1, 0],
+          }}
+          transition={{
+            duration: 1.5,
+            delay: (positions[index].angle / 360) * duration + 1,
+            repeat: Infinity,
+            repeatType: "loop",
+            repeatDelay: duration - 1.5,
+          }}
+          style={{
+            top: positions[index].top,
+            left: positions[index].left,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <Badge className="bg-sky-700 text-white">{skill.name}</Badge> {/* Use skill.name */}
+        </motion.div>
+      ))}
     </div>
   );
 };

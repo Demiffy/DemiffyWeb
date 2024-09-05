@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from './button';
 
 const MainIntro = () => {
   const [arrowVisible, setArrowVisible] = useState(true);
@@ -27,8 +26,7 @@ const MainIntro = () => {
         />
       </div>
       <h1 className="text-5xl font-bold mb-4">Demiffy!</h1>
-      <p className="text-xl text-sky-300 mb-8 px-4 text-center">THIS IS A PLACEHOLDER, KEEP CLEAR, TEST TEST TEST TEST TEST TEST</p>
-      <Button className="bg-sky-600 hover:bg-sky-700 text-white">Scramble to Projects</Button>
+      <p className="text-xl text-sky-300 mb-8 px-4 text-center">18-year-old Czech, passionate about IT, military technologies, and aspiring to be an AČR jet pilot.</p>
 
       <div
         className={`scroll-indicator ${!arrowVisible ? 'hidden' : ''}`}
