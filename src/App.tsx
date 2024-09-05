@@ -174,8 +174,6 @@ const JetFlightPath = () => {
     }
   }, [jet]);
 
-
-
   return (
     <svg className="absolute inset-0 w-full h-full" style={{ zIndex: -1 }}>
       <path
@@ -200,67 +198,6 @@ export default function App() {
     { title: "Full Stack Dogfight", description: "Engaging multiple technologies in an all-out development brawl.", image: "/img3.gif" },
   ];
 
-  useEffect(() => {
-    const canvas = document.getElementById('trailCanvas') as HTMLCanvasElement;
-    const ctx = canvas?.getContext('2d');
-    let trail: { x: number; y: number }[] = []; // Define the type of trail
-
-    const updateCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    updateCanvasSize();
-    window.addEventListener('resize', updateCanvasSize);
-
-    const drawTrail = () => {
-      if (!ctx) return; // Safeguard against null 'ctx'
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous frames
-
-      // Draw the trail as a single smooth curve
-      ctx.beginPath();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(10, 170, 255, 0.6)'; // Blue line with fading opacity
-
-      // Start drawing from the first trail point
-      if (trail.length > 0) {
-        ctx.moveTo(trail[0].x, trail[0].y);
-      }
-
-      // Use bezier curves for smooth transitions
-      for (let i = 1; i < trail.length - 1; i++) {
-        const currentPoint = trail[i];
-        const nextPoint = trail[i + 1];
-        const midX = (currentPoint.x + nextPoint.x) / 2;
-        const midY = (currentPoint.y + nextPoint.y) / 2;
-
-        ctx.quadraticCurveTo(currentPoint.x, currentPoint.y, midX, midY); // Smooth curve
-      }
-
-      ctx.stroke();
-
-      // Remove the oldest point to limit trail length
-      if (trail.length > 50) {
-        trail.shift();
-      }
-
-      requestAnimationFrame(drawTrail);
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      trail.push({ x: e.clientX, y: e.clientY }); // Push current mouse position to the trail
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    requestAnimationFrame(drawTrail);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', updateCanvasSize);
-    };
-  }, []);
-
   return (
     <div className="flex flex-col min-h-screen bg-slate-900 text-white">
       <JetFlightPath />
@@ -280,7 +217,6 @@ export default function App() {
       <main className="flex-1">
 
         <section id="hero" className="min-h-screen flex flex-col justify-center items-center">
-        <canvas id="trailCanvas" className="absolute top-0 left-0 w-full h-full"></canvas>
           <div className="profile-container bg-slate-800 p-6 rounded-full shadow-lg mb-6">
             <img
               src="/hero.png"
@@ -291,14 +227,7 @@ export default function App() {
           <h1 className="text-5xl font-bold mb-4">Demiffy!</h1>
           <p className="text-xl text-sky-300 mb-8">EVERYTHING IS A PLACEHOLDER FOR NOW! - Small description here</p>
           <Button className="bg-sky-600 hover:bg-sky-700 text-white">Scramble to Projects</Button>
-          {/* Scroll Indicator */}
-    <div
-      className="scroll-indicator"
-      onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}
-    >
-      <span className="arrow">↓</span>
-    </div>
-  </section>
+        </section>
 
         <section id="skills" className="py-20 bg-slate-800">
           <div className="container">
