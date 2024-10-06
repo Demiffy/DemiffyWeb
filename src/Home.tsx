@@ -23,36 +23,53 @@ const skills = [
       {
         title: "KybernaIS Made Better / UI-UX KybernaIS Redo",
         description: "A UI/UX redesign of KybernaIS to enhance user experience and optimize workflow.",
-        image: "/ksmb.png",
+        image: "/ksbmain.png",
         details: "This project focuses on redesigning the UI/UX of KybernaIS to improve its usability and performance. The new design brings a fresh, modern interface with intuitive navigation for users in the educational sector.",
-        additionalImages: ["placeholder.png", "/placeholder.png"],
+        additionalImages: [
+          { src: "/ksb1.png", title: "KybernaIS Main Dashboard" },
+          { src: "/ksb2.png", title: "User Management Interface" },
+          { src: "/ksb3.png", title: "Settings Panel" },
+          { src: "/ksb4.png", title: "Reports and Analytics" }
+        ],
         buttons: [
-          { label: "View UI Demo", onClick: () => window.open('https://example.com', '_blank') },
-          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy', '_blank') }
+          { label: "View on Chrome Extension Store", onClick: () => window.open('https://chromewebstore.google.com/detail/kybernais-made-better/plehhebncnogcplmmgnliaipgbmoohdf', '_blank') },
+          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/KybernaIS-MB', '_blank') }
         ]
       },
       {
         title: "Cloud Storage (Private)",
         description: "A private cloud storage system designed to store files securely and efficiently.",
-        image: "/clouds.png",
+        image: "/csd.png",
         details: "This project involves creating a cloud storage platform with a focus on privacy and security. Users can upload, manage, and retrieve files with enhanced encryption to ensure data protection.",
-        additionalImages: ["/placeholder.png", "/placeholder.png"],
+        additionalImages: [
+          { src: "/placeholder.png", title: "Login Screen" },
+          { src: "/placeholder.png", title: "File Management Interface" }
+        ],
         buttons: [
           { label: "Live Demo", onClick: () => window.open('https://example.com/cloud-demo', '_blank') }
         ]
       },
       {
-        title: "War Thunder Tree Analyzer",
-        description: "An analytical tool to explore and visualize vehicle trees in War Thunder.",
-        image: "/wtanalyze.gif",
-        details: "This project provides users with a tool to analyze War Thunder's vehicle trees. The tool helps players optimize their strategy by visualizing vehicle progression and performance.",
-        additionalImages: ["placeholder.png", "placeholder.png", "placeholder.png", "placeholder.png", "placeholder.png", "placeholder.png", "placeholder.png"],
+        title: "Horizon Control - WIP",
+        description: "A strategic airport management game where players oversee flight operations, reroute planes, and handle airport capacity to maintain passenger satisfaction.",
+        image: "/phcmain.png",
+        details: "In Horizon Control, players manage airports by directing flights, rerouting aircraft during disruptions, and keeping airports from becoming overcrowded. With a focus on balancing passenger happiness and smooth operations, the game challenges players to respond to events and emergencies while ensuring timely departures.",
+        additionalImages: [
+          { src: "ph2.png", title: "Main Menu Panel" },
+          { src: "projecthorizon.png", title: "Europe Map Level" },
+          { src: "placeholder.png", title: "Event Management Interface" },
+          { src: "placeholder.png", title: "Passenger Satisfaction Dashboard" },
+          { src: "placeholder.png", title: "Emergency Response Panel" },
+          { src: "placeholder.png", title: "Flight Schedule Overview" },
+          { src: "placeholder.png", title: "Airport Expansion Options" },
+          { src: "placeholder.png", title: "Staff Management Interface" }
+        ],
         buttons: [
-          { label: "Try the Analyzer", onClick: () => window.open('https://example.com/wt-analyzer', '_blank') },
-          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/wt-analyzer', '_blank') }
+          { label: "Play Now", onClick: () => window.open('https://nothing.com/project-horizon-control', '_blank') },
+          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/project-horizon-control', '_blank') }
         ]
       }
-    ];
+    ];    
     
 
   const milestones = [

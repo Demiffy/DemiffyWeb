@@ -6,7 +6,7 @@ interface Project {
   description: string;
   image: string;
   details: string;
-  additionalImages?: string[];
+  additionalImages?: { src: string; title: string }[];
   buttons?: { label: string; onClick: () => void }[];
 }
 
@@ -86,7 +86,8 @@ const MissionBriefing = ({ projects }: { projects: Project[] }) => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.3 }}
-              className="bg-slate-900 p-6 rounded-lg shadow-lg max-w-4xl w-full relative"
+              className="bg-slate-900 p-6 rounded-lg shadow-lg max-w-4xl w-full relative overflow-hidden"
+              style={{ maxHeight: '90vh' }}
             >
               <button
                 onClick={handleClosePopup}
@@ -96,20 +97,26 @@ const MissionBriefing = ({ projects }: { projects: Project[] }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+                {/* Left: Image Section */}
+                <div className="grid grid-cols-2 gap-4 overflow-y-auto pr-4" style={{ maxHeight: '90vh', paddingBottom: '3rem' }}>
                   {projects[activeProject].additionalImages &&
                     projects[activeProject].additionalImages.map((img, index) => (
-                      <img
-                        key={index}
-                        src={img}
-                        alt={`Additional image ${index + 1}`}
-                        className="w-32 h-32 object-cover rounded-md"
-                      />
+                      <div key={index} className="flex flex-col items-center">
+                        <a href={img.src} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={img.src}
+                            alt={`Additional image ${index + 1}`}
+                            className="w-full h-auto object-cover rounded-md hover:opacity-90 transition-opacity"
+                          />
+                        </a>
+                        <p className="text-center text-sm text-gray-400 mt-2">{img.title}</p>
+                      </div>
                     ))}
                 </div>
 
-                <div>
+                {/* Right: Title and Description */}
+                <div className="sticky top-0">
                   <h3 className="text-2xl font-bold text-sky-400 mb-4">{projects[activeProject].title}</h3>
                   <p className="text-lg text-gray-300 mb-6">{projects[activeProject].details}</p>
 
@@ -118,7 +125,6 @@ const MissionBriefing = ({ projects }: { projects: Project[] }) => {
                     <div className="flex space-x-4">
                       {projects[activeProject].buttons.map((button, index) => (
                         <button
-                          disabled={true}
                           key={index}
                           onClick={button.onClick}
                           className="bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-700 transition-colors"
