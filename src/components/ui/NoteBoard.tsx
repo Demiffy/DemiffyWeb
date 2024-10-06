@@ -49,7 +49,7 @@ const NoteBoard = () => {
   useEffect(() => {
     fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
       .then((res) => res.json())
-      .then((data: { notes: Note[], bannedIPs: string[] }) => {
+      .then((data: { notes: Note[]; bannedIPs: string[] }) => {
         setNotes(data.notes);
         setBannedIPs(data.bannedIPs);
       });
@@ -71,7 +71,7 @@ const NoteBoard = () => {
 
     // Check if the user is banned
     if (bannedIPs.includes(userIP)) {
-      setPostError("You are banned from posting notes.");
+      setPostError('You are banned from posting notes.');
       return;
     }
 
@@ -87,14 +87,14 @@ const NoteBoard = () => {
       .then((res) => {
         if (!res.ok) {
           if (res.status === 403) {
-            setPostError("You are banned from posting notes.");
+            setPostError('You are banned from posting notes.');
             fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
               .then((res) => res.json())
               .then((data: { bannedIPs: string[] }) => {
                 setBannedIPs(data.bannedIPs);
               });
           } else {
-            setPostError("An error occurred while posting your note.");
+            setPostError('An error occurred while posting your note.');
           }
           throw new Error(`Error posting note: ${res.statusText}`);
         }
@@ -108,7 +108,7 @@ const NoteBoard = () => {
       .catch((err) => {
         console.error(err);
         if (!postError) {
-          setPostError("An unexpected error occurred.");
+          setPostError('An unexpected error occurred.');
         }
       });
   };
@@ -122,17 +122,16 @@ const NoteBoard = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ ip }),
-      })
-        .then(() => {
-          fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
-            .then((res) => res.json())
-            .then((data: { bannedIPs: string[] }) => {
-              setBannedIPs(data.bannedIPs);
-              if (ip === userIP) {
-                setPostError("You are banned from posting notes.");
-              }
-            });
-        });
+      }).then(() => {
+        fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
+          .then((res) => res.json())
+          .then((data: { bannedIPs: string[] }) => {
+            setBannedIPs(data.bannedIPs);
+            if (ip === userIP) {
+              setPostError('You are banned from posting notes.');
+            }
+          });
+      });
     }
   };
 
@@ -194,13 +193,13 @@ const NoteBoard = () => {
   // Detect if text is a URL or image URL
   const renderTextWithLinks = (text: string | undefined) => {
     if (!text) return null;
-  
+
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     const elements: JSX.Element[] = [];
-  
+
     text.split('\n').forEach((line, index) => {
       const parts = line.split(' ');
-  
+
       parts.forEach((word, i) => {
         if (urlPattern.test(word)) {
           if (/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/.test(word)) {
@@ -215,7 +214,6 @@ const NoteBoard = () => {
               </div>
             );
           } else {
-            // Render normal URL as a link
             elements.push(
               <a
                 key={`${index}-${i}`}
@@ -232,17 +230,17 @@ const NoteBoard = () => {
           elements.push(<span key={`${index}-${i}`}>{word} </span>);
         }
       });
-  
+
       elements.push(<div key={`br-${index}`} className="my-2" />);
     });
-  
+
     return elements;
   };
 
   return (
-    <div className="container mx-auto py-10 flex justify-between space-x-8">
+    <div className="container mx-auto py-10 flex flex-col lg:flex-row justify-between space-y-8 lg:space-y-0 lg:space-x-8">
       {/* Note Input Form */}
-      <div className="w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg">
+      <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg">
         <motion.h3
           className="text-sky-400 font-bold text-lg mb-4 select-none"
           onClick={handleTitleClick}
@@ -260,7 +258,11 @@ const NoteBoard = () => {
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
           />
-          <p className={`text-sm ${newNote.length > characterLimit ? 'text-red-500' : 'text-gray-400'}`}>
+          <p
+            className={`text-sm ${
+              newNote.length > characterLimit ? 'text-red-500' : 'text-gray-400'
+            }`}
+          >
             {newNote.length}/{characterLimit} characters
           </p>
           {error && <p className="text-red-500">{error}</p>}
@@ -274,38 +276,39 @@ const NoteBoard = () => {
           </motion.button>
           {postError && <p className="text-red-500">{postError}</p>}
           <p className="text-sm text-gray-400 mt-4">
-            Your note is public. Please avoid sharing explicit content. Serious violations may result in legal action.
+            Your note is public. Please avoid sharing explicit content. Serious violations may
+            result in legal action.
           </p>
         </form>
         {adminText && <p className="text-sm text-sky-500 mt-4">{adminText}</p>}
 
         {/* Admin Section */}
         {isAdmin && (
-        <div className="mt-6">
+          <div className="mt-6">
             <h4 className="text-sky-400 font-bold text-lg mb-2">Banned IPs</h4>
             {bannedIPs.length === 0 ? (
-            <p className="text-white">No banned IPs.</p>
+              <p className="text-white">No banned IPs.</p>
             ) : (
-            <ul className="space-y-2">
+              <ul className="space-y-2">
                 {bannedIPs.map((ip, index) => (
-                <li key={index} className="text-white">
+                  <li key={index} className="text-white">
                     IP: {ip}{' '}
                     <span
-                    className="text-green-500 cursor-pointer hover:underline"
-                    onClick={() => handleUnbanIP(ip)}
+                      className="text-green-500 cursor-pointer hover:underline"
+                      onClick={() => handleUnbanIP(ip)}
                     >
-                    Unban IP
+                      Unban IP
                     </span>
-                </li>
+                  </li>
                 ))}
-            </ul>
+              </ul>
             )}
-        </div>
+          </div>
         )}
       </div>
 
       {/* Scrollable Notes Container */}
-      <div className="w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg h-[600px] overflow-y-auto">
+      <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg h-[600px] overflow-y-auto">
         <h3 className="text-sky-400 font-bold text-lg mb-4">Notes Board</h3>
         {notes.length === 0 ? (
           <p className="text-white">No notes yet. Be the first to leave one!</p>
@@ -321,7 +324,7 @@ const NoteBoard = () => {
                 {isAdmin && (
                   <button
                     onClick={() => handleDeleteNote(note.id)}
-                    className="absolute top-3 right-3 p-2 bg-transparent hover:bg-slate-700 text-white rounded-full z-50"
+                    className="absolute top-3 right-3 p-2 bg-transparent hover:bg-slate-700 text-white rounded-full"
                     style={{ zIndex: 50 }}
                   >
                     <svg
@@ -346,7 +349,7 @@ const NoteBoard = () => {
                   <p className="text-sm text-gray-500 mt-1">
                     IP: {note.ip}{' '}
                     <span
-                      className="text-red-500 cursor-pointer"
+                      className="text-red-500 cursor-pointer hover:underline"
                       onClick={() => handleBanIP(note.ip)}
                     >
                       Ban IP
