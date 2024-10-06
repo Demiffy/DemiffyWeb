@@ -1,0 +1,12 @@
+name = "demiffy-noteboard-worker"
+type = "javascript"
+compatibility_date = "2024-10-06"
+
+account_id = "6682e05a81212d8e158de5a72b24152b"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "NOTES"
+id = "466604d131514a9c927ca73a938e57f7"
+
+main = "./noteboard-worker.js"

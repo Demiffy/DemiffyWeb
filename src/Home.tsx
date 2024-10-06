@@ -6,6 +6,7 @@ import MissionBriefing from './components/ui/MissionBriefing';
 import MilestoneTimeline from './components/ui/MilestoneTimeline';
 import ContactForm from './components/ui/ContactForm';
 import Footer from './components/ui/Footer';
+import NoteBoard from './components/ui/NoteBoard';
 
 const Home = () => {
 const skills = [
@@ -105,7 +106,7 @@ const skills = [
         <MilestoneTimeline milestones={milestones} />
       </section>
       <section id="contact" className="py-20 bg-slate-800">
-        <ContactForm />
+        <NoteBoard />
       </section>
       <Footer />
     </div>
