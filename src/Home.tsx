@@ -26,14 +26,20 @@ const skills = [
         image: "/ksbmain.png",
         details: "This project focuses on redesigning the UI/UX of KybernaIS to improve its usability and performance. The new design brings a fresh, modern interface with intuitive navigation for users in the educational sector.",
         additionalImages: [
-          { src: "/ksb1.png", title: "KybernaIS Main Dashboard" },
-          { src: "/ksb2.png", title: "User Management Interface" },
-          { src: "/ksb3.png", title: "Settings Panel" },
-          { src: "/ksb4.png", title: "Reports and Analytics" }
+          { src: "/ksb1.png", title: "Clear Design" },
+          { src: "/ksb2.png", title: "Selection of Themes" },
+          { src: "/ksb3.png", title: "More Modern Styles" },
+          { src: "/ksb4.png", title: "Built-in Grade Predictor" }
         ],
         buttons: [
           { label: "View on Chrome Extension Store", onClick: () => window.open('https://chromewebstore.google.com/detail/kybernais-made-better/plehhebncnogcplmmgnliaipgbmoohdf', '_blank') },
           { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/KybernaIS-MB', '_blank') }
+        ],
+        technologies: [
+          { name: "HTML5", image: "/html5-icon.png" },
+          { name: "CSS3", image: "/css3-icon.png" },
+          { name: "JavaScript", image: "/js-icon.png" },
+          { name: "C#", image: "/c-icon.png" }
         ]
       },
       {
@@ -46,7 +52,7 @@ const skills = [
           { src: "/placeholder.png", title: "File Management Interface" }
         ],
         buttons: [
-          { label: "Live Demo", onClick: () => window.open('https://example.com/cloud-demo', '_blank') }
+          { label: "Live Demo", onClick: () => window.open('https://demiffy.com', '_blank') }
         ]
       },
       {
@@ -67,6 +73,10 @@ const skills = [
         buttons: [
           { label: "Play Now", onClick: () => window.open('https://nothing.com/project-horizon-control', '_blank') },
           { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/project-horizon-control', '_blank') }
+        ],
+        technologies: [
+          { name: "Unity", image: "/unity-icon.png" },
+          { name: "C#", image: "/c-icon.png" },
         ]
       }
     ];    

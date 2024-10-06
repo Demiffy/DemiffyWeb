@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+interface Technology {
+  name: string;
+  image?: string;
+}
+
 interface Project {
   title: string;
   description: string;
@@ -8,6 +13,7 @@ interface Project {
   details: string;
   additionalImages?: { src: string; title: string }[];
   buttons?: { label: string; onClick: () => void }[];
+  technologies?: Technology[];
 }
 
 const MissionBriefing = ({ projects }: { projects: Project[] }) => {
@@ -89,14 +95,28 @@ const MissionBriefing = ({ projects }: { projects: Project[] }) => {
               className="bg-slate-900 p-6 rounded-lg shadow-lg max-w-4xl w-full relative overflow-hidden"
               style={{ maxHeight: '90vh' }}
             >
+              {/* Exit Button */}
               <button
                 onClick={handleClosePopup}
-                className="absolute top-3 right-3 p-2 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-md"
+                className="absolute top-3 right-3 p-2 bg-transparent hover:bg-slate-700 text-white rounded-full z-50"
+                style={{ zIndex: 50 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
                 {/* Left: Image Section */}
                 <div className="grid grid-cols-2 gap-4 overflow-y-auto pr-4" style={{ maxHeight: '90vh', paddingBottom: '3rem' }}>
@@ -115,10 +135,27 @@ const MissionBriefing = ({ projects }: { projects: Project[] }) => {
                     ))}
                 </div>
 
-                {/* Right: Title and Description */}
+                {/* Right: Title, Description, and Tools */}
                 <div className="sticky top-0">
-                  <h3 className="text-2xl font-bold text-sky-400 mb-4">{projects[activeProject].title}</h3>
+                  <h3 className="text-2xl font-bold text-sky-400 mb-4 truncate max-w-full">{projects[activeProject].title}</h3>
                   <p className="text-lg text-gray-300 mb-6">{projects[activeProject].details}</p>
+
+                  {/* Tools and Technologies Used */}
+                  {projects[activeProject].technologies && (
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold text-sky-400 mb-2">Technologies Used:</h4>
+                      <ul className="list-disc list-inside text-gray-300">
+                        {projects[activeProject].technologies.map((tech, index) => (
+                          <li key={index} className="flex items-center space-x-2">
+                            {tech.image && (
+                              <img src={tech.image} alt={tech.name} className="w-6 h-6" />
+                            )}
+                            <span>{tech.name}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   {projects[activeProject].buttons && (
