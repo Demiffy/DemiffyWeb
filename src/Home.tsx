@@ -4,7 +4,6 @@ import RadarAnimation from './components/ui/RadarAnimation';
 import SkillsOverview from './components/ui/SkillsOverview';
 import MissionBriefing from './components/ui/MissionBriefing';
 import MilestoneTimeline from './components/ui/MilestoneTimeline';
-import ContactForm from './components/ui/ContactForm';
 import Footer from './components/ui/Footer';
 import NoteBoard from './components/ui/NoteBoard';
 
