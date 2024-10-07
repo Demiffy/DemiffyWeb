@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DOMPurify from 'dompurify';
 
 interface Note {
   id: number;
