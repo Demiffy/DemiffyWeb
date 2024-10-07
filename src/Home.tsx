@@ -12,9 +12,9 @@ const skills = [
     { name: 'HTML & CSS', level: 80, focus: 'Web Page Structure & Styling' },
     { name: 'JavaScript', level: 60, focus: 'Frontend Scripting & Web Interactivity' },
     { name: 'React', level: 50, focus: 'Frontend Framework & UI Development' },
-    { name: 'Node.js', level: 40, focus: 'Backend Development & APIs' },
-    { name: 'C#', level: 45, focus: 'Object-Oriented Programming & Application Development' },
-    { name: 'Python', level: 20, focus: 'Scripting, Automation & General-Purpose Programming' },
+    { name: 'Node.js', level: 15, focus: 'Backend Development & APIs' },
+    { name: 'C#', level: 40, focus: 'Object-Oriented Programming & Application Development' },
+    { name: 'Python', level: 15, focus: 'Scripting, Automation & General-Purpose Programming' },
     { name: 'Unity', level: 45, focus: 'Game Development & Interactive Simulations' },
     ];      
 

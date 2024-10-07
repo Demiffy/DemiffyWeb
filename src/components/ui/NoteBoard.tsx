@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import DOMPurify from 'dompurify';
 
 interface Note {
   id: number;
@@ -15,12 +16,16 @@ const NoteBoard = () => {
   const [newNote, setNewNote] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [clickCount, setClickCount] = useState<number>(0);
-  const [typedString, setTypedString] = useState<string>('');
+  const [adminPassword, setAdminPassword] = useState<string>('');
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string>('');
   const [adminText, setAdminText] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [bannedIPs, setBannedIPs] = useState<string[]>([]);
   const [userIP, setUserIP] = useState<string>('');
   const [postError, setPostError] = useState<string | null>(null);
+  const [postingDisabled, setPostingDisabled] = useState<boolean>(false);
+  const [noteCount, setNoteCount] = useState<number>(0);
 
   // Fetch IP from jsonip.com
   const fetchIPFromJsonIP = async () => {
@@ -49,10 +54,18 @@ const NoteBoard = () => {
   useEffect(() => {
     fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
       .then((res) => res.json())
-      .then((data: { notes: Note[]; bannedIPs: string[] }) => {
-        setNotes(data.notes);
-        setBannedIPs(data.bannedIPs);
-      });
+      .then(
+        (data: {
+          notes: Note[];
+          bannedIPs: string[];
+          postingDisabled: boolean;
+        }) => {
+          setNotes(data.notes);
+          setBannedIPs(data.bannedIPs);
+          setPostingDisabled(data.postingDisabled);
+          setNoteCount(data.notes.length);
+        }
+      );
 
     // Fetch user's IP
     fetchUserIP();
@@ -62,6 +75,11 @@ const NoteBoard = () => {
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
     setPostError(null);
+
+    if (postingDisabled) {
+      setPostError('Posting is currently disabled.');
+      return;
+    }
 
     if (!newNote.trim()) return;
     if (newNote.length > characterLimit) {
@@ -88,7 +106,9 @@ const NoteBoard = () => {
         if (!res.ok) {
           if (res.status === 403) {
             setPostError('You are banned from posting notes.');
-            fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
+            fetch(
+              'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
+            )
               .then((res) => res.json())
               .then((data: { bannedIPs: string[] }) => {
                 setBannedIPs(data.bannedIPs);
@@ -104,6 +124,7 @@ const NoteBoard = () => {
         setNotes([...notes, { ...note, timestamp }]);
         setNewNote('');
         setError('');
+        setNoteCount(noteCount + 1);
       })
       .catch((err) => {
         console.error(err);
@@ -116,14 +137,19 @@ const NoteBoard = () => {
   // Handle banning an IP
   const handleBanIP = (ip: string) => {
     if (isAdmin) {
-      fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/ban-ip', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ip }),
-      }).then(() => {
-        fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
+      fetch(
+        'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/ban-ip',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ip }),
+        }
+      ).then(() => {
+        fetch(
+          'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
+        )
           .then((res) => res.json())
           .then((data: { bannedIPs: string[] }) => {
             setBannedIPs(data.bannedIPs);
@@ -138,14 +164,19 @@ const NoteBoard = () => {
   // Handle unbanning an IP
   const handleUnbanIP = (ip: string) => {
     if (isAdmin) {
-      fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/unban-ip', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ip }),
-      }).then(() => {
-        fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
+      fetch(
+        'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/unban-ip',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ip }),
+        }
+      ).then(() => {
+        fetch(
+          'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
+        )
           .then((res) => res.json())
           .then((data: { bannedIPs: string[] }) => {
             setBannedIPs(data.bannedIPs);
@@ -157,14 +188,18 @@ const NoteBoard = () => {
   // Handle deleting a note
   const handleDeleteNote = (noteId: number) => {
     if (isAdmin) {
-      fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/delete-note', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id: noteId }),
-      }).then(() => {
+      fetch(
+        'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/delete-note',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: noteId }),
+        }
+      ).then(() => {
         setNotes(notes.filter((note) => note.id !== noteId));
+        setNoteCount(noteCount - 1);
       });
     }
   };
@@ -174,26 +209,22 @@ const NoteBoard = () => {
   };
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      setTypedString((prev) => (prev + e.key).slice(-4));
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    if (clickCount >= 10 && typedString === 'demi') {
-      setIsAdmin(true);
-      setAdminText('Admin mode enabled');
+    if (clickCount >= 10) {
+      setShowLoginModal(true);
+      setClickCount(0);
     }
+  }, [clickCount]);
 
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [clickCount, typedString]);
-
-  // Detect if text is a URL or image URL
-  const renderTextWithLinks = (text: string | undefined) => {
+   // Detect if text contains iframe tag and render it
+   const renderTextWithLinks = (text: string | undefined) => {
     if (!text) return null;
 
+    // If the text contains an iframe tag, render it using dangerouslySetInnerHTML
+    if (text.includes('<iframe')) {
+      return <div dangerouslySetInnerHTML={{ __html: text }} />;
+    }
+
+    // Original URL and image handling
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     const elements: JSX.Element[] = [];
 
@@ -237,8 +268,20 @@ const NoteBoard = () => {
     return elements;
   };
 
+  // Animation variants for modal
+  const modalVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { opacity: 1, scale: 1 },
+  };
+
+  // Animation variants for admin panel
+  const adminPanelVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
-    <div className="container mx-auto py-10 flex flex-col lg:flex-row justify-between space-y-8 lg:space-y-0 lg:space-x-8">
+    <div className="container mx-auto py-10 flex flex-col lg:flex-row justify-between space-y-8 lg:space-y-0 lg:space-x-8 relative">
       {/* Note Input Form */}
       <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg">
         <motion.h3
@@ -260,7 +303,9 @@ const NoteBoard = () => {
           />
           <p
             className={`text-sm ${
-              newNote.length > characterLimit ? 'text-red-500' : 'text-gray-400'
+              newNote.length > characterLimit
+                ? 'text-red-500'
+                : 'text-gray-400'
             }`}
           >
             {newNote.length}/{characterLimit} characters
@@ -276,42 +321,20 @@ const NoteBoard = () => {
           </motion.button>
           {postError && <p className="text-red-500">{postError}</p>}
           <p className="text-sm text-gray-400 mt-4">
-            Your note is public. Please avoid sharing explicit content. Serious violations may
-            result in legal action.
+            Your note is public. Please avoid sharing explicit content. Serious
+            violations may result in legal action.
           </p>
         </form>
         {adminText && <p className="text-sm text-sky-500 mt-4">{adminText}</p>}
-
-        {/* Admin Section */}
-        {isAdmin && (
-          <div className="mt-6">
-            <h4 className="text-sky-400 font-bold text-lg mb-2">Banned IPs</h4>
-            {bannedIPs.length === 0 ? (
-              <p className="text-white">No banned IPs.</p>
-            ) : (
-              <ul className="space-y-2">
-                {bannedIPs.map((ip, index) => (
-                  <li key={index} className="text-white">
-                    IP: {ip}{' '}
-                    <span
-                      className="text-green-500 cursor-pointer hover:underline"
-                      onClick={() => handleUnbanIP(ip)}
-                    >
-                      Unban IP
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Scrollable Notes Container */}
       <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg h-[600px] overflow-y-auto">
         <h3 className="text-sky-400 font-bold text-lg mb-4">Notes Board</h3>
         {notes.length === 0 ? (
-          <p className="text-white">No notes yet. Be the first to leave one!</p>
+          <p className="text-white">
+            No notes yet. Be the first to leave one!
+          </p>
         ) : (
           <div className="space-y-4">
             {notes.map((note) => (
@@ -343,7 +366,9 @@ const NoteBoard = () => {
                     </svg>
                   </button>
                 )}
-                <div className="text-white break-words">{renderTextWithLinks(note.text)}</div>
+                <div className="text-white break-words">
+                  {renderTextWithLinks(note.text)}
+                </div>
                 <p className="text-sm text-gray-400 mt-2">{note.timestamp}</p>
                 {isAdmin && (
                   <p className="text-sm text-gray-500 mt-1">
@@ -361,6 +386,203 @@ const NoteBoard = () => {
           </div>
         )}
       </div>
+
+      {/* Admin Panel */}
+      <AnimatePresence>
+        {isAdmin && (
+          <motion.div
+            className="fixed bottom-4 right-4 w-80 bg-slate-950 bg-opacity-50 backdrop-blur-lg shadow-lg p-6 rounded-lg"
+            variants={adminPanelVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+          >
+            <h4 className="text-sky-400 font-bold text-lg mb-4">
+              Admin Dashboard
+            </h4>
+            <p className="text-white mb-2">
+              <strong>Total Notes:</strong> {noteCount}
+            </p>
+            <div className="mb-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={postingDisabled}
+                  onChange={() => {
+                    // Toggle postingDisabled state
+                    fetch(
+                      'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/toggle-posting',
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                      }
+                    ).then(() => {
+                      // Fetch updated postingDisabled status
+                      fetch(
+                        'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
+                      )
+                        .then((res) => res.json())
+                        .then((data: { postingDisabled: boolean }) => {
+                          setPostingDisabled(data.postingDisabled);
+                        });
+                    });
+                  }}
+                  className="form-checkbox h-5 w-5 text-sky-600"
+                />
+                <span className="ml-2 text-white">Disable Posting</span>
+              </label>
+            </div>
+            <button
+              className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors mb-4"
+              onClick={() => {
+                // Clear all notes
+                fetch(
+                  'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/clear-notes',
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                  }
+                ).then(() => {
+                  // Clear notes in state
+                  setNotes([]);
+                  setNoteCount(0);
+                });
+              }}
+            >
+              Clear All Notes
+            </button>
+
+            {/* Banned IPs Section */}
+            <div className="mb-4">
+              <h4 className="text-sky-400 font-bold text-lg mb-2">
+                Banned IPs
+              </h4>
+              {bannedIPs.length === 0 ? (
+                <p className="text-white">No banned IPs.</p>
+              ) : (
+                <ul className="space-y-2 max-h-32 overflow-y-auto">
+                  {bannedIPs.map((ip, index) => (
+                    <li key={index} className="text-white text-sm">
+                      {ip}{' '}
+                      <span
+                        className="text-green-500 cursor-pointer hover:underline"
+                        onClick={() => handleUnbanIP(ip)}
+                      >
+                        Unban
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Additional Admin Features */}
+            <div className="mb-4">
+              <button
+                className="w-full bg-sky-600 text-white py-2 px-4 rounded-lg hover:bg-sky-700 transition-colors mb-2"
+                onClick={() => {
+                  // Refresh notes from server
+                  fetch(
+                    'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
+                  )
+                    .then((res) => res.json())
+                    .then(
+                      (data: {
+                        notes: Note[];
+                        bannedIPs: string[];
+                        postingDisabled: boolean;
+                      }) => {
+                        setNotes(data.notes);
+                        setBannedIPs(data.bannedIPs);
+                        setPostingDisabled(data.postingDisabled);
+                        setNoteCount(data.notes.length);
+                      }
+                    );
+                }}
+              >
+                Refresh Notes
+              </button>
+              <button
+                className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+                onClick={() => {
+                  // Logout admin
+                  setIsAdmin(false);
+                  setAdminText('');
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin Login Modal */}
+      <AnimatePresence>
+        {showLoginModal && (
+          <motion.div
+            className="fixed inset-0 flex items-center justify-center z-50"
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+          >
+            <motion.div
+              className="bg-slate-950 p-6 rounded-lg shadow-lg w-80 bg-opacity-50 backdrop-blur-lg"
+              variants={modalVariants}
+            >
+              <h2 className="text-sky-400 font-bold text-lg mb-4 text-center">
+                Admin Login
+              </h2>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (adminPassword === 'demi') {
+                    setIsAdmin(true);
+                    setShowLoginModal(false);
+                    setAdminText('Admin mode enabled');
+                    setAdminPassword('');
+                    setLoginError('');
+                  } else {
+                    setLoginError('Incorrect password');
+                  }
+                }}
+                className="space-y-4"
+              >
+                <input
+                  type="password"
+                  className="w-full p-3 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  placeholder="Enter admin password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                />
+                {loginError && <p className="text-red-500">{loginError}</p>}
+                <button
+                  type="submit"
+                  className="w-full bg-sky-600 text-white py-3 rounded-lg hover:bg-sky-700 transition-colors"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  className="w-full bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setAdminPassword('');
+                    setLoginError('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
