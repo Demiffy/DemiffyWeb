@@ -10,7 +10,7 @@ const Navbar = () => {
   };
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-lg border-b border-sky-500/20 shadow-lg">
+    <header className="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-lg border-b border-sky-500/20 shadow-lg select-none">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         {/* Demiffy */}
         <RouterLink to="/">
@@ -54,7 +54,7 @@ const Navbar = () => {
             duration={500}
             className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
           >
-            Contact
+            Notes
             <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
           </ScrollLink>
         </nav>

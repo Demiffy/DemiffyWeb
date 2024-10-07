@@ -25,7 +25,7 @@ const MainIntro = () => {
           className="w-40 h-40 object-cover rounded-full border-4 border-sky-500"
         />
       </div>
-      <h1 className="text-5xl font-bold mb-4">Demiffy!</h1>
+      <h1 className="text-5xl font-bold mb-4 select-none">Demiffy!</h1>
       <p className="text-xl text-sky-300 mb-8 px-4 text-center">18-year-old Czech, passionate about IT, military technologies, and aspiring to be an AČR jet pilot.</p>
 
       <div

@@ -93,7 +93,7 @@ const skills = [
     <div className="min-h-screen bg-slate-900 text-white">
       <MainIntro />
       <section id="skills" className="py-20">
-        <h2 className="text-3xl font-bold text-center text-sky-400 mb-8">Skills Overview</h2>
+        <h2 className="text-3xl font-bold text-center text-sky-400 mb-8 select-none">Skills Overview</h2>
         <RadarAnimation skills={skills} />
         <div className="h-8"></div>
         <SkillsOverview skills={skills} />

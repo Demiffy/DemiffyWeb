@@ -7,7 +7,7 @@ const SkillsOverview = ({ skills }: { skills: { name: string, level: number, foc
             <h3 className="text-xl font-bold text-sky-400 mb-2">{skill.name}</h3>
             
             <div className="mb-4">
-              <p className="text-gray-300"><strong>Proficiency Level:</strong> {skill.level}%</p>
+              <p className="text-gray-300 select-none"><strong>Proficiency Level:</strong> {skill.level}%</p>
               <div className="w-full bg-gray-700 h-2 rounded-full">
                 <div 
                   className="bg-sky-500 h-2 rounded-full" 

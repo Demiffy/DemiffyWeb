@@ -43,7 +43,7 @@ const RadarAnimation = ({ skills }: { skills: Skill[] }) => {
       {skills.map((skill, index) => (
         <motion.div
           key={skill.name}
-          className="absolute"
+          className="absolute select-none"
           initial={{ opacity: 0 }}
           animate={{
             opacity: [0, 1, 1, 0],

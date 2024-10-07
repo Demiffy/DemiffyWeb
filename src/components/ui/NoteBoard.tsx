@@ -305,7 +305,7 @@ const NoteBoard = () => {
               newNote.length > characterLimit
                 ? 'text-red-500'
                 : 'text-gray-400'
-            }`}
+            } select-none`}
           >
             {newNote.length}/{characterLimit} characters
           </p>
@@ -329,7 +329,7 @@ const NoteBoard = () => {
 
       {/* Scrollable Notes Container */}
       <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg h-[600px] overflow-y-auto">
-        <h3 className="text-sky-400 font-bold text-lg mb-4">Notes Board</h3>
+        <h3 className="text-sky-400 font-bold text-lg mb-4 select-none">Notes Board</h3>
         {notes.length === 0 ? (
           <p className="text-white">
             No notes yet. Be the first to leave one!
@@ -390,7 +390,7 @@ const NoteBoard = () => {
       <AnimatePresence>
         {isAdmin && (
           <motion.div
-            className="fixed bottom-4 right-4 w-80 bg-slate-950 bg-opacity-50 backdrop-blur-lg shadow-lg p-6 rounded-lg"
+            className="fixed bottom-4 right-4 w-80 bg-slate-950 bg-opacity-50 backdrop-blur-lg shadow-lg p-6 rounded-lg select-none"
             variants={adminPanelVariants}
             initial="hidden"
             animate="visible"
@@ -534,7 +534,7 @@ const NoteBoard = () => {
               className="bg-slate-950 p-6 rounded-lg shadow-lg w-80 bg-opacity-50 backdrop-blur-lg"
               variants={modalVariants}
             >
-              <h2 className="text-sky-400 font-bold text-lg mb-4 text-center">
+              <h2 className="text-sky-400 font-bold text-lg mb-4 text-center select-none">
                 Admin Login
               </h2>
               <form
@@ -550,7 +550,7 @@ const NoteBoard = () => {
                     setLoginError('Incorrect password');
                   }
                 }}
-                className="space-y-4"
+                className="space-y-4 select-none"
               >
                 <input
                   type="password"

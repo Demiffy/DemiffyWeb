@@ -14,15 +14,15 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
 
   return (
     <div className="container py-20 relative">
-      <h2 className="text-3xl font-bold mb-10 text-center text-sky-400">
+      <h2 className="text-3xl font-bold mb-10 text-center text-sky-400 select-none">
         Milestones
       </h2>
 
       {/* Display highest and lowest dates */}
-      <div className="absolute top-12">
+      <div className="absolute top-12 select-none">
         <p className="text-sky-400 text-sm font-bold">{highestDate}</p>
       </div>
-      <div className="absolute bottom-[-2rem]">
+      <div className="absolute bottom-[-2rem] select-none">
         <p className="text-sky-400 text-sm font-bold">{lowestDate}</p>
       </div>
 
