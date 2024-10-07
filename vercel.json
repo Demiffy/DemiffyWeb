@@ -1,12 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/user-active",
-      "destination": "https://109.80.40.13:443/user-active"
-    },
-    {
       "source": "/getgrades*",
-      "destination": "https://109.80.40.13:443/getgrades"
+      "destination": "ttps://109.80.40.13:443/getgrades"
     }
   ]
 }
