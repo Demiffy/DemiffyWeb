@@ -1,4 +1,5 @@
 // Home.tsx
+import { Helmet } from 'react-helmet-async';
 import MainIntro from './components/ui/MainIntro';
 import RadarAnimation from './components/ui/RadarAnimation';
 import SkillsOverview from './components/ui/SkillsOverview';
@@ -91,6 +92,12 @@ const skills = [
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
+      <Helmet>
+        <title>Home - Demiffy</title>
+        <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
+        <meta name="keywords" content="Demiffy, IT, aviation, jet pilot, projects, programming, portfolio" />
+        <link rel="canonical" href="https://demiffy.com" />
+      </Helmet>
       <MainIntro />
       <section id="skills" className="py-20">
         <h2 className="text-3xl font-bold text-center text-sky-400 mb-8 select-none">Skills Overview</h2>
