@@ -16,16 +16,29 @@ const COLORS = [
 ];
 
 const Place = () => {
-  const [grid, setGrid] = useState<string[][]>(Array(GRID_SIZE).fill(Array(GRID_SIZE).fill('#FFFFFF')));
+  const [grid, setGrid] = useState<string[][]>(
+    Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill('#FFFFFF'))
+  );
   const [selectedColor, setSelectedColor] = useState<string>(COLORS[0]);
   const [cooldown, setCooldown] = useState(false);
 
   useEffect(() => {
-    axios.get(`${WORKER_API_URL}/grid`).then((response) => {
-      setGrid(response.data);
-    }).catch((error) => {
-      console.error('Error fetching grid:', error);
-    });
+    const fetchGrid = () => {
+      axios
+        .get(`${WORKER_API_URL}/grid`)
+        .then((response) => {
+          setGrid(response.data);
+        })
+        .catch((error) => {
+          console.error('Error fetching grid:', error);
+        });
+    };
+
+    fetchGrid();
+
+    const intervalId = setInterval(fetchGrid, 10000); //10 seconds
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const handlePlacePixel = (x: number, y: number) => {
@@ -47,8 +60,12 @@ const Place = () => {
 
   return (
     <div className="min-h-screen flex flex-row items-start justify-center p-4 mt-20 space-x-6">
-      <div className="grid-container" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 20px)` }}>
-        {grid.map((row, rowIndex) => (
+      {/* Grid Container */}
+      <div
+        className="grid-container"
+        style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 20px)` }}
+      >
+        {grid.map((row, rowIndex) =>
           row.map((pixelColor, colIndex) => (
             <div
               key={`${rowIndex}-${colIndex}`}
@@ -57,9 +74,10 @@ const Place = () => {
               style={{ backgroundColor: pixelColor }}
             ></div>
           ))
-        ))}
+        )}
       </div>
 
+      {/* Color Picker */}
       <div className="flex flex-col items-center">
         <h2 className="text-lg mb-4">Select a Color:</h2>
         <div className="grid grid-cols-2 gap-4">
@@ -67,11 +85,17 @@ const Place = () => {
             <div
               key={color}
               onClick={() => setSelectedColor(color)}
-              className={`w-10 h-10 rounded-full cursor-pointer border-2 ${selectedColor === color ? 'active-color' : 'inactive-color'}`}
+              className={`w-10 h-10 rounded-full cursor-pointer border-2 ${
+                selectedColor === color ? 'active-color' : 'inactive-color'
+              }`}
               style={{ backgroundColor: color }}
             />
           ))}
         </div>
+        <p className="mt-4 text-gray-600">
+          Currently selected color:{' '}
+          <span style={{ color: selectedColor }}>{selectedColor}</span>
+        </p>
       </div>
     </div>
   );
