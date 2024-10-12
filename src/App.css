@@ -352,19 +352,44 @@ body {
 /* Grid container */
 .grid-container {
   display: grid;
-  gap: 1px;
+  justify-content: center;
 }
 
 .grid-block {
-  width: 20px;
-  height: 20px;
   cursor: pointer;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.grid-block:hover {
+  border: 2px solid rgba(0, 150, 255, 0.8);
 }
 
 .active-color {
-  border-color: black;
+  border: 3px solid rgba(0, 150, 255, 0.8);
 }
 
 .inactive-color {
   border-color: transparent;
+}
+
+.color-picker {
+  direction: rtl;
+}
+
+@media (max-width: 768px) {
+  .grid-container {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .color-picker {
+    grid-template-columns: repeat(4, 1fr);
+    direction: rtl;
+    display: flex;
+    justify-content: center;
+     flex-wrap: wrap;
+  }
+}
+
+.color-picker div:hover {
+  box-shadow: 0 0 5px 2px rgba(0, 150, 255, 0.5);
 }

@@ -1,4 +1,4 @@
-// In Place.tsx
+// Place.tsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
@@ -79,7 +79,6 @@ const Place = () => {
         setCooldown(false);
 
         if (error.response && error.response.status === 403) {
-          // Placing is disabled
           setPlacingDisabled(true);
           setErrorMessage('Placing is currently disabled.');
           setTimeout(() => {
@@ -105,11 +104,13 @@ const Place = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-row items-start justify-center p-4 mt-20 space-x-6">
+    <div className="min-h-screen flex flex-col md:flex-row items-start justify-center p-4 mt-20 space-y-6 md:space-x-6 md:space-y-0">
       {/* Grid Container */}
       <div
         className="grid-container"
-        style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 20px)` }}
+        style={{
+          gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(10px, 20px))`,
+        }}
       >
         {grid.map((row, rowIndex) =>
           row.map((pixelColor, colIndex) => (
@@ -117,7 +118,11 @@ const Place = () => {
               key={`${rowIndex}-${colIndex}`}
               onClick={() => handlePlacePixel(rowIndex, colIndex)}
               className="grid-block"
-              style={{ backgroundColor: pixelColor }}
+              style={{
+                backgroundColor: pixelColor,
+                width: 'min(vw, 20px)',
+                height: 'min(4vw, 20px)',
+              }}
             ></div>
           ))
         )}
@@ -137,12 +142,12 @@ const Place = () => {
         >
           Select a Color:
         </h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 color-picker">
           {COLORS.map((color) => (
             <div
               key={color}
               onClick={() => setSelectedColor(color)}
-              className={`w-10 h-10 rounded-full cursor-pointer border-2 ${
+              className={`w-8 h-8 md:w-10 md:h-10 rounded-full cursor-pointer border-2 ${
                 selectedColor === color ? 'active-color' : 'inactive-color'
               }`}
               style={{ backgroundColor: color }}
