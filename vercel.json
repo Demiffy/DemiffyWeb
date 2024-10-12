@@ -7,6 +7,10 @@
     {
       "source": "/getgrades/(.*)",
       "destination": "https://109.80.40.13:443/getgrades"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
     }
   ]
 }
