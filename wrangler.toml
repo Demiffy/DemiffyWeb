@@ -18,5 +18,5 @@ account_id = "6682e05a81212d8e158de5a72b24152b"
 workers_dev = true
 
 [[env.place_worker.kv_namespaces]]
-binding = "GRID"  # Optional, if you want to store the grid state
-id = "c6e80961d4e1401ba41296cb0859cc27"  # Replace this with your actual new KV namespace ID for grid storage
+binding = "GRID"
+id = "c6e80961d4e1401ba41296cb0859cc27"

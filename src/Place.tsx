@@ -1,6 +1,7 @@
-//Place.tsx
+// In Place.tsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import './App.css';
 
 const GRID_SIZE = 50;
 const WORKER_API_URL = 'https://demiffy-place-worker.velnertomas78-668.workers.dev';
@@ -46,18 +47,14 @@ const Place = () => {
 
   return (
     <div className="min-h-screen flex flex-row items-start justify-center p-4 mt-20 space-x-6">
-      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 20px)` }}>
+      <div className="grid-container" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 20px)` }}>
         {grid.map((row, rowIndex) => (
           row.map((pixelColor, colIndex) => (
             <div
               key={`${rowIndex}-${colIndex}`}
               onClick={() => handlePlacePixel(rowIndex, colIndex)}
-              className="cursor-pointer border border-gray-300"
-              style={{
-                width: '20px',
-                height: '20px',
-                backgroundColor: pixelColor,
-              }}
+              className="grid-block"
+              style={{ backgroundColor: pixelColor }}
             ></div>
           ))
         ))}
@@ -70,7 +67,7 @@ const Place = () => {
             <div
               key={color}
               onClick={() => setSelectedColor(color)}
-              className={`w-10 h-10 rounded-full cursor-pointer border-2 ${selectedColor === color ? 'border-black' : 'border-transparent'}`}
+              className={`w-10 h-10 rounded-full cursor-pointer border-2 ${selectedColor === color ? 'active-color' : 'inactive-color'}`}
               style={{ backgroundColor: color }}
             />
           ))}
