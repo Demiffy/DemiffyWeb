@@ -4,6 +4,7 @@ import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import Navbar from './components/ui/Navbar';
 import About from './About';
 import Home from './Home';
+import Place from './Place';
 import './App.css';
 
 const AnimatedRoutes = () => {
@@ -19,6 +20,7 @@ const AnimatedRoutes = () => {
         <Routes location={location}>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/place" element={<Place />} />
         </Routes>
       </CSSTransition>
     </TransitionGroup>

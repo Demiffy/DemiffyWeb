@@ -1,9 +1,22 @@
+# Wrangler config for both workers
+
+# Noteboard Worker
 name = "demiffy-noteboard-worker"
 compatibility_date = "2024-10-06"
-
 account_id = "6682e05a81212d8e158de5a72b24152b"
 workers_dev = true
 
 [[kv_namespaces]]
 binding = "NOTES"
-id = "466604d131514a9c927ca73a938e57f7"
+id = "466604d131514a9c927ca73a938e57f7"  # Existing KV namespace for noteboard
+
+# Place Worker
+[env.place_worker]  # Configuration for the /place worker
+name = "demiffy-place-worker"
+compatibility_date = "2024-10-12"
+account_id = "6682e05a81212d8e158de5a72b24152b"
+workers_dev = true
+
+[[env.place_worker.kv_namespaces]]
+binding = "GRID"  # Optional, if you want to store the grid state
+id = "c6e80961d4e1401ba41296cb0859cc27"  # Replace this with your actual new KV namespace ID for grid storage
