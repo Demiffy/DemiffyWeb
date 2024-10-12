@@ -1,4 +1,5 @@
 // Place.tsx
+import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
@@ -105,6 +106,18 @@ const Place = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row items-start justify-center p-4 mt-20 space-y-6 md:space-x-6 md:space-y-0">
+      <Helmet>
+        <title>Place - Demiffy</title>
+        <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
+        <meta name="keywords" content="Demiffy, IT, aviation, jet pilot, projects, programming, portfolio" />
+        <link rel="canonical" href="https://demiffy.com" />
+        {/* Discord tags */}
+        <meta property="og:title" content="Demiffy!" />
+        <meta property="og:description" content="What a dumbass who coded this" />
+        <meta property="og:url" content="https://demiffy.com" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://demiffy.com/plane.png" />
+      </Helmet>
       {/* Grid Container */}
       <div
         className="grid-container"

@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { useState } from 'react';
 import Footer from './components/ui/Footer';
 
@@ -29,6 +30,18 @@ const About = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <Helmet>
+        <title>About - Demiffy</title>
+        <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
+        <meta name="keywords" content="Demiffy, IT, aviation, jet pilot, projects, programming, portfolio" />
+        <link rel="canonical" href="https://demiffy.com" />
+        {/* Discord tags */}
+        <meta property="og:title" content="Demiffy!" />
+        <meta property="og:description" content="What a dumbass who coded this" />
+        <meta property="og:url" content="https://demiffy.com" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://demiffy.com/plane.png" />
+      </Helmet>
       <div className="flex-grow">
         <div className="about-page-wrapper py-20">
           {!isLoggedIn && (
