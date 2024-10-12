@@ -23,7 +23,8 @@ const Navbar = () => {
         <nav className="hidden md:flex space-x-8">
           <RouterLink
             to="/about"
-            className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
+            className="relative group text-gray-500 cursor-not-allowed py-2"
+            onClick={(e) => e.preventDefault()}
           >
             About
             <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
