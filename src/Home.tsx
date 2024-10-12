@@ -97,6 +97,12 @@ const skills = [
         <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
         <meta name="keywords" content="Demiffy, IT, aviation, jet pilot, projects, programming, portfolio" />
         <link rel="canonical" href="https://demiffy.com" />
+        {/* Discord tags */}
+        <meta property="og:title" content="Demiffy!" />
+        <meta property="og:description" content="What a dumbass who coded this" />
+        <meta property="og:url" content="https://demiffy.com" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://demiffy.com/plane.png" />
       </Helmet>
       <MainIntro />
       <section id="skills" className="py-20">
