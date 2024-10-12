@@ -348,3 +348,24 @@ body {
 ::-webkit-scrollbar-thumb:active {
   background-color: #3b82f6;
 }
+
+/* Grid container */
+.grid-container {
+  display: grid;
+  gap: 1px;
+}
+
+.grid-block {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+}
+
+.active-color {
+  border-color: black;
+}
+
+.inactive-color {
+  border-color: transparent;
+}
