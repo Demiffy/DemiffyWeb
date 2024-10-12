@@ -1,4 +1,4 @@
-# Demiffy's Portfolio Website
+# Demiffy!
 
 Personal portfolio, where I showcase my skills, projects, and milestones in **IT**, **web development**. Website highlights my expertise in various technologies, all presented in a visually engaging format. Additionally, this platform serves as a space for web experiments, such as **demiffy/place** (demiffy.com/place)
 
