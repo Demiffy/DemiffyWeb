@@ -64,21 +64,19 @@ const Place = () => {
   }, []);
 
   const handlePlacePixel = (x: number, y: number) => {
-    if (cooldown) return;
-
+    if (cooldown || placingDisabled) return;
+  
     setCooldown(true);
-
+  
     axios
       .post(`${WORKER_API_URL}/place`, { x, y, color: selectedColor })
       .then((response) => {
         setGrid(response.data);
-        setCooldown(false);
         setErrorMessage('');
       })
       .catch((error) => {
         console.error('Error placing pixel:', error);
-        setCooldown(false);
-
+  
         if (error.response && error.response.status === 403) {
           setPlacingDisabled(true);
           setErrorMessage('Placing is currently disabled.');
@@ -91,8 +89,14 @@ const Place = () => {
             setErrorMessage('');
           }, 2000);
         }
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setCooldown(false);
+        }, 300);
       });
   };
+  
 
   const adminPanelVariants = {
     hidden: { opacity: 0, y: 50 },

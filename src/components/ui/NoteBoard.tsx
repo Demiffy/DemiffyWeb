@@ -25,6 +25,7 @@ const NoteBoard = () => {
   const [postError, setPostError] = useState<string | null>(null);
   const [postingDisabled, setPostingDisabled] = useState<boolean>(false);
   const [noteCount, setNoteCount] = useState<number>(0);
+  const [lastPostTime, setLastPostTime] = useState<number | null>(null);
 
   // Fetch IP from jsonip.com
   const fetchIPFromJsonIP = async () => {
@@ -71,67 +72,78 @@ const NoteBoard = () => {
   }, []);
 
   // Handle adding a new note
-  const handleAddNote = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPostError(null);
+const handleAddNote = (e: React.FormEvent) => {
+  e.preventDefault();
+  setPostError(null);
 
-    if (postingDisabled) {
-      setPostError('Posting is currently disabled.');
-      return;
-    }
+  if (postingDisabled) {
+    setPostError('Posting is currently disabled.');
+    return;
+  }
 
-    if (!newNote.trim()) return;
-    if (newNote.length > characterLimit) {
-      setError(`Note cannot exceed ${characterLimit} characters`);
-      return;
-    }
+  if (!newNote.trim()) return;
+  if (newNote.length > characterLimit) {
+    setError(`Note cannot exceed ${characterLimit} characters`);
+    return;
+  }
 
-    // Check if the user is banned
-    if (bannedIPs.includes(userIP)) {
-      setPostError('You are banned from posting notes.');
-      return;
-    }
+  // Check if the user is banned
+  if (bannedIPs.includes(userIP)) {
+    setPostError('You are banned from posting notes.');
+    return;
+  }
 
-    const timestamp = new Date().toLocaleString();
+  // Rate limit
+  const currentTime = Date.now();
+  if (lastPostTime && currentTime - lastPostTime < 30000) {
+    setPostError('Please wait 30 seconds between posting notes.');
+    setTimeout(() => {
+      setPostError(null);
+    }, 5000);
+    return;
+  }
 
-    fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ text: newNote, timestamp }),
+  const timestamp = new Date().toLocaleString();
+
+  fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ text: newNote, timestamp }),
+  })
+    .then((res) => {
+      if (!res.ok) {
+        if (res.status === 403) {
+          setPostError('You are banned from posting notes.');
+          fetch(
+            'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
+          )
+            .then((res) => res.json())
+            .then((data: { bannedIPs: string[] }) => {
+              setBannedIPs(data.bannedIPs);
+            });
+        } else {
+          setPostError('An error occurred while posting your note.');
+        }
+        throw new Error(`Error posting note: ${res.statusText}`);
+      }
+      return res.json();
     })
-      .then((res) => {
-        if (!res.ok) {
-          if (res.status === 403) {
-            setPostError('You are banned from posting notes.');
-            fetch(
-              'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
-            )
-              .then((res) => res.json())
-              .then((data: { bannedIPs: string[] }) => {
-                setBannedIPs(data.bannedIPs);
-              });
-          } else {
-            setPostError('An error occurred while posting your note.');
-          }
-          throw new Error(`Error posting note: ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then((note: Note) => {
-        setNotes([...notes, { ...note, timestamp }]);
-        setNewNote('');
-        setError('');
-        setNoteCount(noteCount + 1);
-      })
-      .catch((err) => {
-        console.error(err);
-        if (!postError) {
-          setPostError('An unexpected error occurred.');
-        }
-      });
-  };
+    .then((note: Note) => {
+      setNotes([...notes, { ...note, timestamp }]);
+      setNewNote('');
+      setError('');
+      setNoteCount(noteCount + 1);
+      setLastPostTime(currentTime);
+    })
+    .catch((err) => {
+      console.error(err);
+      if (!postError) {
+        setPostError('An unexpected error occurred.');
+      }
+    });
+};
 
   // Handle banning an IP
   const handleBanIP = (ip: string) => {
