@@ -1,5 +1,8 @@
+// NoteBoard.tsx
+
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 
 interface Note {
   id: number;
@@ -9,20 +12,21 @@ interface Note {
 }
 
 const characterLimit = 250;
+const WORKER_API_URL = 'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev';
 
 const NoteBoard = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [clickCount, setClickCount] = useState<number>(0);
-  const [adminPassword, setAdminPassword] = useState<string>('');
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [adminPassword, setAdminPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
-  const [adminText, setAdminText] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [bannedIPs, setBannedIPs] = useState<string[]>([]);
   const [userIP, setUserIP] = useState<string>('');
   const [postError, setPostError] = useState<string | null>(null);
+  const [adminActionError, setAdminActionError] = useState<string | null>(null);
   const [postingDisabled, setPostingDisabled] = useState<boolean>(false);
   const [noteCount, setNoteCount] = useState<number>(0);
   const [lastPostTime, setLastPostTime] = useState<number | null>(null);
@@ -50,168 +54,171 @@ const NoteBoard = () => {
     }
   };
 
-  // Fetch notes and banned IPs from the worker API
+  // Fetch notes and banned IPs from worker
   useEffect(() => {
-    fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev')
-      .then((res) => res.json())
-      .then(
-        (data: {
-          notes: Note[];
-          bannedIPs: string[];
-          postingDisabled: boolean;
-        }) => {
-          setNotes(data.notes);
-          setBannedIPs(data.bannedIPs);
-          setPostingDisabled(data.postingDisabled);
-          setNoteCount(data.notes.length);
-        }
-      );
-
-    // Fetch user's IP
+    fetchNotes();
     fetchUserIP();
   }, []);
 
+  const fetchNotes = () => {
+    axios
+      .get(WORKER_API_URL)
+      .then((response) => {
+        const data = response.data;
+        setNotes(data.notes);
+        setBannedIPs(data.bannedIPs);
+        setPostingDisabled(data.postingDisabled);
+        setNoteCount(data.notes.length);
+      })
+      .catch((error) => {
+        console.error('Error fetching notes:', error);
+      });
+  };
+
   // Handle adding a new note
-const handleAddNote = (e: React.FormEvent) => {
-  e.preventDefault();
-  setPostError(null);
+  const handleAddNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPostError(null);
 
-  if (postingDisabled) {
-    setPostError('Posting is currently disabled.');
-    return;
-  }
+    if (postingDisabled) {
+      setPostError('Posting is currently disabled.');
+      return;
+    }
 
-  if (!newNote.trim()) return;
-  if (newNote.length > characterLimit) {
-    setError(`Note cannot exceed ${characterLimit} characters`);
-    return;
-  }
+    if (!newNote.trim()) return;
+    if (newNote.length > characterLimit) {
+      setError(`Note cannot exceed ${characterLimit} characters`);
+      return;
+    }
 
-  // Check if the user is banned
-  if (bannedIPs.includes(userIP)) {
-    setPostError('You are banned from posting notes.');
-    return;
-  }
+    // Check if the user is banned
+    if (bannedIPs.includes(userIP)) {
+      setPostError('You are banned from posting notes.');
+      return;
+    }
 
-  // Rate limit
-  const currentTime = Date.now();
-  if (lastPostTime && currentTime - lastPostTime < 30000) {
-    setPostError('Please wait 30 seconds between posting notes.');
-    setTimeout(() => {
-      setPostError(null);
-    }, 5000);
-    return;
-  }
+    // Rate limit
+    const currentTime = Date.now();
+    if (lastPostTime && currentTime - lastPostTime < 30000) {
+      setPostError('Please wait 30 seconds between posting notes.');
+      setTimeout(() => {
+        setPostError(null);
+      }, 5000);
+      return;
+    }
 
-  const timestamp = new Date().toLocaleString();
+    const timestamp = new Date().toLocaleString();
 
-  fetch('https://demiffy-noteboard-worker.velnertomas78-668.workers.dev', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ text: newNote, timestamp }),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        if (res.status === 403) {
-          setPostError('You are banned from posting notes.');
-          fetch(
-            'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
-          )
-            .then((res) => res.json())
-            .then((data: { bannedIPs: string[] }) => {
-              setBannedIPs(data.bannedIPs);
-            });
+    axios
+      .post(`${WORKER_API_URL}/`, { text: newNote, timestamp })
+      .then((res) => {
+        const response = res.data;
+        if (response.success) {
+          setNotes([...notes, { ...response.note, timestamp }]);
+          setNewNote('');
+          setError('');
+          setNoteCount(noteCount + 1);
+          setLastPostTime(currentTime);
         } else {
-          setPostError('An error occurred while posting your note.');
+          setPostError(response.message || 'An error occurred while posting your note.');
         }
-        throw new Error(`Error posting note: ${res.statusText}`);
-      }
-      return res.json();
-    })
-    .then((note: Note) => {
-      setNotes([...notes, { ...note, timestamp }]);
-      setNewNote('');
-      setError('');
-      setNoteCount(noteCount + 1);
-      setLastPostTime(currentTime);
-    })
-    .catch((err) => {
-      console.error(err);
-      if (!postError) {
-        setPostError('An unexpected error occurred.');
-      }
-    });
-};
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!postError) {
+          setPostError('An unexpected error occurred.');
+        }
+      });
+  };
 
   // Handle banning an IP
   const handleBanIP = (ip: string) => {
     if (isAdmin) {
-      fetch(
-        'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/ban-ip',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ip }),
-        }
-      ).then(() => {
-        fetch(
-          'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
+      axios
+        .post(
+          `${WORKER_API_URL}/ban-ip`,
+          { ip, password: adminPassword },
+          { headers: { 'Content-Type': 'application/json' } }
         )
-          .then((res) => res.json())
-          .then((data: { bannedIPs: string[] }) => {
-            setBannedIPs(data.bannedIPs);
-            if (ip === userIP) {
-              setPostError('You are banned from posting notes.');
-            }
-          });
-      });
+        .then((res) => {
+          const response = res.data;
+          if (response.success) {
+            fetchNotes();
+            setAdminActionError(null);
+          } else {
+            setAdminActionError(response.message || 'Failed to ban IP.');
+            console.error(response.message);
+          }
+        })
+        .catch((error) => {
+          console.error('Error banning IP:', error);
+          if (error.response && error.response.data && error.response.data.message) {
+            setAdminActionError(error.response.data.message);
+          } else {
+            setAdminActionError('An unexpected error occurred while banning the IP.');
+          }
+        });
     }
   };
 
   // Handle unbanning an IP
   const handleUnbanIP = (ip: string) => {
     if (isAdmin) {
-      fetch(
-        'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/unban-ip',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ip }),
-        }
-      ).then(() => {
-        fetch(
-          'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
+      axios
+        .post(
+          `${WORKER_API_URL}/unban-ip`,
+          { ip, password: adminPassword },
+          { headers: { 'Content-Type': 'application/json' } }
         )
-          .then((res) => res.json())
-          .then((data: { bannedIPs: string[] }) => {
-            setBannedIPs(data.bannedIPs);
-          });
-      });
+        .then((res) => {
+          const response = res.data;
+          if (response.success) {
+            fetchNotes();
+            setAdminActionError(null);
+          } else {
+            setAdminActionError(response.message || 'Failed to unban IP.');
+            console.error(response.message);
+          }
+        })
+        .catch((error) => {
+          console.error('Error unbanning IP:', error);
+          if (error.response && error.response.data && error.response.data.message) {
+            setAdminActionError(error.response.data.message);
+          } else {
+            setAdminActionError('An unexpected error occurred while unbanning the IP.');
+          }
+        });
     }
   };
 
   // Handle deleting a note
   const handleDeleteNote = (noteId: number) => {
     if (isAdmin) {
-      fetch(
-        'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/delete-note',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ id: noteId }),
-        }
-      ).then(() => {
-        setNotes(notes.filter((note) => note.id !== noteId));
-        setNoteCount(noteCount - 1);
-      });
+      axios
+        .post(
+          `${WORKER_API_URL}/delete-note`,
+          { id: noteId, password: adminPassword },
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+        .then((res) => {
+          const response = res.data;
+          if (response.success) {
+            setNotes(notes.filter((note) => note.id !== noteId));
+            setNoteCount(noteCount - 1);
+            setAdminActionError(null);
+          } else {
+            setAdminActionError(response.message || 'Failed to delete note.');
+            console.error(response.message);
+          }
+        })
+        .catch((error) => {
+          console.error('Error deleting note:', error);
+          if (error.response && error.response.data && error.response.data.message) {
+            setAdminActionError(error.response.data.message);
+          } else {
+            setAdminActionError('An unexpected error occurred while deleting the note.');
+          }
+        });
     }
   };
 
@@ -226,16 +233,13 @@ const handleAddNote = (e: React.FormEvent) => {
     }
   }, [clickCount]);
 
-   // Detect if text contains iframe tag and render it
-   const renderTextWithLinks = (text: string | undefined) => {
+  const renderTextWithLinks = (text: string | undefined) => {
     if (!text) return null;
 
-    // If the text contains an iframe tag, render it using dangerouslySetInnerHTML
     if (text.includes('<iframe')) {
       return <div dangerouslySetInnerHTML={{ __html: text }} />;
     }
 
-    // Original URL and image handling
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     const elements: JSX.Element[] = [];
 
@@ -279,16 +283,104 @@ const handleAddNote = (e: React.FormEvent) => {
     return elements;
   };
 
-  // Animation variants for modal
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.8 },
     visible: { opacity: 1, scale: 1 },
   };
 
-  // Animation variants for admin panel
   const adminPanelVariants = {
     hidden: { opacity: 0, y: 50 },
     visible: { opacity: 1, y: 0 },
+  };
+
+  // Handle Admin Login Submission
+  const handleAdminLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+  };
+
+  // Function to handle admin login
+  const handleAdminLogin = () => {
+    axios
+      .post(`${WORKER_API_URL}/admin-login`, { password: adminPassword }, { headers: { 'Content-Type': 'application/json' } })
+      .then((response) => {
+        const data = response.data;
+        if (data.success) {
+          setIsAdmin(true);
+          setShowLoginModal(false);
+          setLoginError('');
+          setAdminActionError(null);
+        } else {
+          setLoginError(data.message || 'Login failed');
+        }
+      })
+      .catch((error) => {
+        console.error('Admin login error:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          setLoginError(error.response.data.message);
+        } else {
+          setLoginError('An unexpected error occurred.');
+        }
+      });
+  };
+
+  // Function to handle toggling posting status
+  const togglePosting = () => {
+    if (!isAdmin) return;
+
+    axios
+      .post(`${WORKER_API_URL}/toggle-posting`, { password: adminPassword }, { headers: { 'Content-Type': 'application/json' } })
+      .then((response) => {
+        const data = response.data;
+        if (data.success) {
+          setPostingDisabled(data.postingDisabled || false);
+          setAdminActionError(null);
+        } else {
+          setAdminActionError(data.message || 'Failed to toggle posting status.');
+          console.error(data.message);
+        }
+      })
+      .catch((error) => {
+        console.error('Error toggling posting status:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          setAdminActionError(error.response.data.message);
+        } else {
+          setAdminActionError('An unexpected error occurred while toggling posting status.');
+        }
+      });
+  };
+
+  // Function to handle clearing all notes
+  const clearNotes = () => {
+    if (!isAdmin) return;
+
+    axios
+      .post(`${WORKER_API_URL}/clear-notes`, { password: adminPassword }, { headers: { 'Content-Type': 'application/json' } })
+      .then((response) => {
+        const data = response.data;
+        if (data.success) {
+          setNotes([]);
+          setNoteCount(0);
+          setAdminActionError(null);
+        } else {
+          setAdminActionError(data.message || 'Failed to clear all notes.');
+          console.error(data.message);
+        }
+      })
+      .catch((error) => {
+        console.error('Error clearing notes:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          setAdminActionError(error.response.data.message);
+        } else {
+          setAdminActionError('An unexpected error occurred while clearing notes.');
+        }
+      });
+  };
+
+  // Function to handle admin logout
+  const handleAdminLogout = () => {
+    setIsAdmin(false);
+    setAdminPassword('');
+    setAdminActionError(null);
   };
 
   return (
@@ -336,7 +428,6 @@ const handleAddNote = (e: React.FormEvent) => {
             violations may result in legal action.
           </p>
         </form>
-        {adminText && <p className="text-sm text-sky-500 mt-4">{adminText}</p>}
       </div>
 
       {/* Scrollable Notes Container */}
@@ -419,27 +510,7 @@ const handleAddNote = (e: React.FormEvent) => {
                 <input
                   type="checkbox"
                   checked={postingDisabled}
-                  onChange={() => {
-                    // Toggle postingDisabled state
-                    fetch(
-                      'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/toggle-posting',
-                      {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                      }
-                    ).then(() => {
-                      // Fetch updated postingDisabled status
-                      fetch(
-                        'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
-                      )
-                        .then((res) => res.json())
-                        .then((data: { postingDisabled: boolean }) => {
-                          setPostingDisabled(data.postingDisabled);
-                        });
-                    });
-                  }}
+                  onChange={togglePosting}
                   className="form-checkbox h-5 w-5 text-sky-600"
                 />
                 <span className="ml-2 text-white">Disable Posting</span>
@@ -447,22 +518,7 @@ const handleAddNote = (e: React.FormEvent) => {
             </div>
             <button
               className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors mb-4"
-              onClick={() => {
-                // Clear all notes
-                fetch(
-                  'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev/clear-notes',
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                  }
-                ).then(() => {
-                  // Clear notes in state
-                  setNotes([]);
-                  setNoteCount(0);
-                });
-              }}
+              onClick={clearNotes}
             >
               Clear All Notes
             </button>
@@ -491,39 +547,22 @@ const handleAddNote = (e: React.FormEvent) => {
               )}
             </div>
 
+            {/* Admin Action Error Message */}
+            {adminActionError && (
+              <p className="text-red-500 text-sm mb-2">{adminActionError}</p>
+            )}
+
             {/* Additional Admin Features */}
             <div className="mb-4">
               <button
                 className="w-full bg-sky-600 text-white py-2 px-4 rounded-lg hover:bg-sky-700 transition-colors mb-2"
-                onClick={() => {
-                  // Refresh notes from server
-                  fetch(
-                    'https://demiffy-noteboard-worker.velnertomas78-668.workers.dev'
-                  )
-                    .then((res) => res.json())
-                    .then(
-                      (data: {
-                        notes: Note[];
-                        bannedIPs: string[];
-                        postingDisabled: boolean;
-                      }) => {
-                        setNotes(data.notes);
-                        setBannedIPs(data.bannedIPs);
-                        setPostingDisabled(data.postingDisabled);
-                        setNoteCount(data.notes.length);
-                      }
-                    );
-                }}
+                onClick={fetchNotes}
               >
                 Refresh Notes
               </button>
               <button
                 className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
-                onClick={() => {
-                  // Logout admin
-                  setIsAdmin(false);
-                  setAdminText('');
-                }}
+                onClick={handleAdminLogout}
               >
                 Logout
               </button>
@@ -549,21 +588,7 @@ const handleAddNote = (e: React.FormEvent) => {
               <h2 className="text-sky-400 font-bold text-lg mb-4 text-center select-none">
                 Admin Login
               </h2>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (adminPassword === 'demi') {
-                    setIsAdmin(true);
-                    setShowLoginModal(false);
-                    setAdminText('Admin mode enabled');
-                    setAdminPassword('');
-                    setLoginError('');
-                  } else {
-                    setLoginError('Incorrect password');
-                  }
-                }}
-                className="space-y-4 select-none"
-              >
+              <form onSubmit={handleAdminLoginSubmit} className="space-y-4 select-none">
                 <input
                   type="password"
                   className="w-full p-3 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -573,8 +598,9 @@ const handleAddNote = (e: React.FormEvent) => {
                 />
                 {loginError && <p className="text-red-500">{loginError}</p>}
                 <button
-                  type="submit"
+                  type="button"
                   className="w-full bg-sky-600 text-white py-3 rounded-lg hover:bg-sky-700 transition-colors"
+                  onClick={handleAdminLogin}
                 >
                   Login
                 </button>

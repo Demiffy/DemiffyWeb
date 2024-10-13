@@ -17,6 +17,17 @@ const COLORS = [
   '#d4d7d9', '#ffffff'
 ];
 
+interface AdminResponse {
+  success: boolean;
+  message?: string;
+}
+
+interface PlaceResponse {
+  success: boolean;
+  message?: string;
+  placingDisabled?: boolean;
+}
+
 const Place = () => {
   const [grid, setGrid] = useState<string[][]>(
     Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill('#FFFFFF'))
@@ -27,10 +38,10 @@ const Place = () => {
   const [clickCount, setClickCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [customColor, setCustomColor] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [adminPassword, setAdminPassword] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+  const [customColor, setCustomColor] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     const fetchGrid = () => {
@@ -65,9 +76,9 @@ const Place = () => {
 
   const handlePlacePixel = (x: number, y: number) => {
     if (cooldown || placingDisabled) return;
-  
+
     setCooldown(true);
-  
+
     axios
       .post(`${WORKER_API_URL}/place`, { x, y, color: selectedColor })
       .then((response) => {
@@ -76,7 +87,7 @@ const Place = () => {
       })
       .catch((error) => {
         console.error('Error placing pixel:', error);
-  
+
         if (error.response && error.response.status === 403) {
           setPlacingDisabled(true);
           setErrorMessage('Placing is currently disabled.');
@@ -96,7 +107,6 @@ const Place = () => {
         }, 300);
       });
   };
-  
 
   const adminPanelVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -107,6 +117,87 @@ const Place = () => {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
   };
+
+  // Handle Admin Login Submission
+  const handleAdminLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+  };
+
+  // Function to handle admin login
+  const handleAdminLogin = () => {
+    axios
+      .post(`${WORKER_API_URL}/admin-login`, { password: adminPassword })
+      .then((response) => {
+        const data: AdminResponse = response.data;
+        if (data.success) {
+          setIsAdmin(true);
+          setShowLoginModal(false);
+          setLoginError('');
+        } else {
+          setLoginError(data.message || 'Login failed');
+        }
+      })
+      .catch((error) => {
+        console.error('Admin login error:', error);
+        setLoginError('An unexpected error occurred.');
+      });
+  };
+
+  // Function to handle toggling placing status
+  const togglePlacing = () => {
+    if (!isAdmin) return;
+
+    axios
+      .post(`${WORKER_API_URL}/toggle-placing`, { password: adminPassword })
+      .then((response) => {
+        const data: PlaceResponse = response.data;
+        if (data.success) {
+          setPlacingDisabled(data.placingDisabled || false);
+        } else {
+          console.error(data.message);
+        }
+      })
+      .catch((error) => {
+        console.error('Error toggling placing status:', error);
+      });
+  };
+
+  // Function to handle clearing the grid
+  const clearGrid = () => {
+    if (!isAdmin) return;
+
+    axios
+      .post(`${WORKER_API_URL}/clear-grid`, { password: adminPassword })
+      .then((response) => {
+        const data: PlaceResponse = response.data;
+        if (data.success) {
+          const clearedGrid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill('#FFFFFF'));
+          setGrid(clearedGrid);
+        } else {
+          console.error(data.message);
+        }
+      })
+      .catch((error) => {
+        console.error('Error clearing grid:', error);
+      });
+  };
+
+  // Function to handle admin logout
+  const handleAdminLogout = () => {
+    setIsAdmin(false);
+    setAdminPassword('');
+  };
+
+  const handleTitleClick = () => {
+    setClickCount((prevCount) => prevCount + 1);
+  };
+
+  useEffect(() => {
+    if (clickCount >= 10) {
+      setShowLoginModal(true);
+      setClickCount(0);
+    }
+  }, [clickCount]);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row items-start justify-center p-4 mt-20 space-y-6 md:space-x-6 md:space-y-0">
@@ -122,6 +213,7 @@ const Place = () => {
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://demiffy.com/plane.png" />
       </Helmet>
+      
       {/* Grid Container */}
       <div
         className="grid-container"
@@ -149,13 +241,7 @@ const Place = () => {
       <div className="flex flex-col items-center">
         <h2
           className="text-lg mb-4 select-none"
-          onClick={() => {
-            setClickCount((prev) => prev + 1);
-            if (clickCount + 1 >= 10) {
-              setShowLoginModal(true);
-              setClickCount(0);
-            }
-          }}
+          onClick={handleTitleClick}
         >
           Select a Color:
         </h2>
@@ -203,7 +289,6 @@ const Place = () => {
         )}
 
         <p className="mt-4 text-gray-600 bg-slate-950 bg-opacity-50 backdrop-blur-lg shadow-lg p-2 rounded-lg">
-          {' '}
           <span style={{ color: selectedColor }}>{selectedColor}</span>
         </p>
 
@@ -231,17 +316,7 @@ const Place = () => {
                 <input
                   type="checkbox"
                   checked={placingDisabled}
-                  onChange={() => {
-                    axios
-                      .post(`${WORKER_API_URL}/toggle-placing`)
-                      .then(() => {
-                        axios
-                          .get(`${WORKER_API_URL}/placing-disabled`)
-                          .then((response) => {
-                            setPlacingDisabled(response.data.placingDisabled);
-                          });
-                      });
-                  }}
+                  onChange={togglePlacing}
                   className="form-checkbox h-5 w-5 text-sky-600"
                 />
                 <span className="ml-2 text-white">Disable Placing</span>
@@ -249,13 +324,7 @@ const Place = () => {
             </div>
             <button
               className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors mb-4"
-              onClick={() => {
-                axios.post(`${WORKER_API_URL}/clear-grid`).then(() => {
-                  axios.get(`${WORKER_API_URL}/grid`).then((response) => {
-                    setGrid(response.data);
-                  });
-                });
-              }}
+              onClick={clearGrid}
             >
               Clear Grid
             </button>
@@ -271,10 +340,7 @@ const Place = () => {
             </button>
             <button
               className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
-              onClick={() => {
-                setIsAdmin(false);
-                setAdminPassword('');
-              }}
+              onClick={handleAdminLogout}
             >
               Logout
             </button>
@@ -299,20 +365,7 @@ const Place = () => {
               <h2 className="text-sky-400 font-bold text-lg mb-4 text-center select-none">
                 Admin Login
               </h2>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (adminPassword === 'demi') {
-                    setIsAdmin(true);
-                    setShowLoginModal(false);
-                    setAdminPassword('');
-                    setLoginError('');
-                  } else {
-                    setLoginError('Incorrect password');
-                  }
-                }}
-                className="space-y-4 select-none"
-              >
+              <form onSubmit={handleAdminLoginSubmit} className="space-y-4 select-none">
                 <input
                   type="password"
                   className="w-full p-3 rounded-lg bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -322,8 +375,9 @@ const Place = () => {
                 />
                 {loginError && <p className="text-red-500">{loginError}</p>}
                 <button
-                  type="submit"
+                  type="button"
                   className="w-full bg-sky-600 text-white py-3 rounded-lg hover:bg-sky-700 transition-colors"
+                  onClick={handleAdminLogin}
                 >
                   Login
                 </button>

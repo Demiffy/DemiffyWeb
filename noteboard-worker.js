@@ -1,3 +1,5 @@
+// noteboard-worker.js
+
 addEventListener('fetch', (event) => {
   event.respondWith(handleRequest(event.request));
 });
@@ -5,136 +7,223 @@ addEventListener('fetch', (event) => {
 async function handleRequest(request) {
   const url = new URL(request.url);
 
-  // CORS headers
+  const allowedOrigins = ['https://demiffy.com', 'http://localhost:5173'];
+  const origin = request.headers.get('Origin');
+
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 
-  // Handle OPTIONS request
+  if (origin && allowedOrigins.includes(origin)) {
+    corsHeaders['Access-Control-Allow-Origin'] = origin;
+  } else {
+    if (origin) {
+      return new Response('Forbidden: CORS policy', { status: 403, headers: corsHeaders });
+    }
+  }
+
   if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: corsHeaders,
-    });
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  let parsedBody = null;
+
+  if (request.method === 'POST') {
+    try {
+      parsedBody = await request.clone().json();
+    } catch (err) {
+    }
   }
 
   // Retrieve banned IPs from KV storage
-  const bannedIPs = JSON.parse((await NOTES.get('banned-ips')) || '[]');
+  let bannedIPs;
+  try {
+    bannedIPs = JSON.parse((await NOTES.get('banned-ips')) || '[]');
+  } catch (e) {
+    bannedIPs = [];
+  }
 
-  // Get the IP address from the request
   const ipAddress = request.headers.get('CF-Connecting-IP');
 
-  // Retrieve postingDisabled status from KV storage
   const postingDisabled = (await NOTES.get('posting-disabled')) === 'true';
+
+  const sendJSON = (data, status = 200) => {
+    return new Response(JSON.stringify(data), {
+      status: status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  };
+
+  // Handle Admin Login
+  if (request.method === 'POST' && url.pathname === '/admin-login') {
+    if (!parsedBody || !parsedBody.password) {
+      return sendJSON({ success: false, message: 'Password is required' }, 400);
+    }
+
+    const { password } = parsedBody;
+
+    const adminPassword = ADMIN_PASSWORD;
+
+    if (password === adminPassword) {
+      return sendJSON({ success: true }, 200);
+    } else {
+      return sendJSON({ success: false, message: 'Invalid password' }, 401);
+    }
+  }
+
+  const protectedRoutes = ['/ban-ip', '/unban-ip', '/delete-note', '/toggle-posting', '/clear-notes'];
+  if (protectedRoutes.includes(url.pathname)) {
+    if (!parsedBody || !parsedBody.password) {
+      return sendJSON({ success: false, message: 'Password is required' }, 400);
+    }
+
+    const { password } = parsedBody;
+    const adminPassword = ADMIN_PASSWORD;
+
+    if (password !== adminPassword) {
+      return sendJSON({ success: false, message: 'Unauthorized: Invalid password' }, 401);
+    }
+  }
 
   // Handle banning an IP
   if (request.method === 'POST' && url.pathname === '/ban-ip') {
-    const body = await request.json();
-    if (!bannedIPs.includes(body.ip)) {
-      bannedIPs.push(body.ip);
+    if (!parsedBody || !parsedBody.ip) {
+      return sendJSON({ success: false, message: 'Invalid or missing "ip" field' }, 400);
+    }
+
+    const { ip } = parsedBody;
+
+    if (typeof ip !== 'string') {
+      return sendJSON({ success: false, message: '"ip" must be a string' }, 400);
+    }
+
+    if (!bannedIPs.includes(ip)) {
+      bannedIPs.push(ip);
       await NOTES.put('banned-ips', JSON.stringify(bannedIPs));
     }
-    return new Response('IP banned', { headers: corsHeaders });
+
+    return sendJSON({ success: true, message: 'IP banned successfully' }, 200);
   }
 
   // Handle unbanning an IP
   if (request.method === 'POST' && url.pathname === '/unban-ip') {
-    const body = await request.json();
-    const index = bannedIPs.indexOf(body.ip);
+    if (!parsedBody || !parsedBody.ip) {
+      return sendJSON({ success: false, message: 'Invalid or missing "ip" field' }, 400);
+    }
+
+    const { ip } = parsedBody;
+
+    if (typeof ip !== 'string') {
+      return sendJSON({ success: false, message: '"ip" must be a string' }, 400);
+    }
+
+    const index = bannedIPs.indexOf(ip);
     if (index !== -1) {
       bannedIPs.splice(index, 1);
       await NOTES.put('banned-ips', JSON.stringify(bannedIPs));
     }
-    return new Response('IP unbanned', { headers: corsHeaders });
+
+    return sendJSON({ success: true, message: 'IP unbanned successfully' }, 200);
   }
 
   // Handle deleting a note
   if (request.method === 'POST' && url.pathname === '/delete-note') {
-    const body = await request.json();
+    if (!parsedBody || !parsedBody.id) {
+      return sendJSON({ success: false, message: 'Missing "id" field' }, 400);
+    }
+
+    const { id } = parsedBody;
+
+    // Validate that 'id' is a number
+    if (typeof id !== 'number') {
+      return sendJSON({ success: false, message: '"id" must be a number' }, 400);
+    }
+
     const notes = JSON.parse((await NOTES.get('all-notes')) || '[]');
-    const updatedNotes = notes.filter((note) => note.id !== body.id);
+    const updatedNotes = notes.filter((note) => note.id !== id);
+
     await NOTES.put('all-notes', JSON.stringify(updatedNotes));
-    return new Response('Note deleted', { headers: corsHeaders });
+
+    return sendJSON({ success: true, message: 'Note deleted successfully' }, 200);
   }
 
   // Handle toggling posting status
   if (request.method === 'POST' && url.pathname === '/toggle-posting') {
-    const currentStatus = (await NOTES.get('posting-disabled')) === 'true';
-    await NOTES.put('posting-disabled', (!currentStatus).toString());
-    return new Response('Posting status toggled', { headers: corsHeaders });
+    try {
+      const currentStatus = (await NOTES.get('posting-disabled')) === 'true';
+      await NOTES.put('posting-disabled', (!currentStatus).toString());
+      return sendJSON({ success: true, postingDisabled: !currentStatus }, 200);
+    } catch (err) {
+      return sendJSON({ success: false, message: 'Failed to toggle posting status' }, 500);
+    }
   }
 
   // Handle clearing all notes
   if (request.method === 'POST' && url.pathname === '/clear-notes') {
-    await NOTES.put('all-notes', JSON.stringify([]));
-    return new Response('All notes cleared', { headers: corsHeaders });
+    try {
+      await NOTES.put('all-notes', JSON.stringify([]));
+      return sendJSON({ success: true, message: 'All notes cleared' }, 200);
+    } catch (err) {
+      return sendJSON({ success: false, message: 'Failed to clear notes' }, 500);
+    }
   }
 
   // Handle GET request to fetch notes
   if (request.method === 'GET') {
-    const notes = await NOTES.get('all-notes');
-    const response = {
-      notes: JSON.parse(notes || '[]'),
-      bannedIPs: bannedIPs,
-      postingDisabled: postingDisabled,
-    };
-    return new Response(JSON.stringify(response), {
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
-    });
+    try {
+      const notes = JSON.parse((await NOTES.get('all-notes')) || '[]');
+      const response = {
+        notes: notes,
+        bannedIPs: bannedIPs,
+        postingDisabled: postingDisabled,
+      };
+      return sendJSON(response, 200);
+    } catch (err) {
+      return sendJSON({ success: false, message: 'Failed to fetch notes' }, 500);
+    }
   }
 
   // Handle POST request to add a note
   if (request.method === 'POST' && url.pathname === '/') {
     if (postingDisabled) {
-      return new Response('Posting is currently disabled.', {
-        status: 403,
-        headers: corsHeaders,
-      });
+      return sendJSON({ success: false, message: 'Posting is currently disabled.' }, 403);
     }
 
     if (bannedIPs.includes(ipAddress)) {
-      return new Response('You are banned from posting notes.', {
-        status: 403,
-        headers: corsHeaders,
-      });
+      return sendJSON({ success: false, message: 'You are banned from posting notes.' }, 403);
     }
 
-    const body = await request.json();
-
-    // Validate that the note text is not empty
-    if (!body.text || body.text.trim() === '') {
-      return new Response('Invalid note content', {
-        status: 400,
-        headers: corsHeaders,
-      });
+    if (!parsedBody || !parsedBody.text || typeof parsedBody.text !== 'string') {
+      return sendJSON({ success: false, message: 'Invalid or missing "text" field' }, 400);
     }
 
-    const notes = JSON.parse((await NOTES.get('all-notes')) || '[]');
+    const { text, timestamp } = parsedBody;
 
-    // Add the new note with IP and timestamp
-    const newNote = {
-      id: Date.now(),
-      text: body.text,
-      timestamp: body.timestamp,
-      ip: ipAddress,
-    };
-    notes.push(newNote);
-    await NOTES.put('all-notes', JSON.stringify(notes));
+    if (text.trim() === '') {
+      return sendJSON({ success: false, message: 'Note content cannot be empty' }, 400);
+    }
 
-    return new Response(JSON.stringify(newNote), {
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
-    });
+    try {
+      const notes = JSON.parse((await NOTES.get('all-notes')) || '[]');
+
+      const newNote = {
+        id: Date.now(),
+        text: text,
+        timestamp: timestamp,
+        ip: ipAddress,
+      };
+      notes.push(newNote);
+      await NOTES.put('all-notes', JSON.stringify(notes));
+
+      return sendJSON({ success: true, note: newNote }, 200);
+    } catch (err) {
+      return sendJSON({ success: false, message: 'Failed to add note' }, 500);
+    }
   }
 
-  return new Response('Method not allowed', {
+  return new Response(JSON.stringify({ success: false, message: 'Method not allowed' }), {
     status: 405,
-    headers: corsHeaders,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 }
