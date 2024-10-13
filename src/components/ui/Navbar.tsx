@@ -115,7 +115,7 @@ const Navbar = () => {
             onClick={toggleMenu}
             className="hover:text-sky-400 transition-colors"
           >
-            Contact
+            Notes
           </ScrollLink>
         </nav>
       </div>
