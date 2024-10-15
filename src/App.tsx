@@ -5,6 +5,7 @@ import Navbar from './components/ui/Navbar';
 import About from './About';
 import Home from './Home';
 import Place from './Place';
+import Tetris from './Tetris';
 import SowwyProto from './SowwyProto';
 import './App.css';
 
@@ -22,7 +23,8 @@ const AnimatedRoutes = () => {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/place" element={<Place />} />
-          <Route path="/sowwyproto" element={<SowwyProto />} />
+          <Route path="/games/tetris" element={<Tetris />} />
+          <Route path="/proto/sowwy" element={<SowwyProto />} />
         </Routes>
       </CSSTransition>
     </TransitionGroup>
