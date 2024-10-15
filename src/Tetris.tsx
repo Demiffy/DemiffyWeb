@@ -58,7 +58,6 @@ const TETROMINOES = {
   },
 };
 
-
 const createEmptyGrid = (): CellType[][] => {
   return Array.from({ length: ROWS }, () =>
     Array.from({ length: COLS }, () => ({ filled: false, color: 'bg-gray-800' }))
@@ -170,7 +169,6 @@ const TetrisGame: React.FC = () => {
       return prevGrid;
     });
   };
-  
 
   const movePiece = (dir: number) => {
     if (!checkCollision(dir, 0, currentPiece!.shape)) {
@@ -267,7 +265,7 @@ const TetrisGame: React.FC = () => {
           <div className="absolute top-4 right-4 text-white text-2xl">Score: {score}</div>
           <div className="flex justify-center items-start space-x-8">
             <div
-              className="grid grid-cols-10 gap-0"
+              className="grid grid-cols-10 gap-0 tetris-grid"
               style={{
                 backgroundColor: '#2d3748',
                 padding: '0.5rem',
