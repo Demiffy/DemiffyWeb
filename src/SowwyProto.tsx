@@ -68,7 +68,7 @@ const SowwyProto: React.FC = () => {
           I’m trying my best to make things right, love Thanks for being so patient
         </p>
         <p className="text-xs text-gray-500">
-          (Refresh the page to hear more of my heartfelt apologies)
+          (Refresh the page for more)
         </p>
 
         <div className="absolute inset-0 border-4 border-pink-500 rounded-lg opacity-20 animate-pulse-slow"></div>
