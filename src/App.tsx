@@ -1,4 +1,4 @@
-import { HelmetProvider } from 'react-helmet-async';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import Navbar from './components/ui/Navbar';
@@ -31,6 +31,17 @@ export default function App() {
   return (
     <HelmetProvider>
       <Router>
+        <Helmet>
+          <meta itemProp="name" content="Demiffy!" />
+          <meta itemProp="description" content="What a dumbass, who coded this?" />
+          <meta name="description" content="What a dumbass, who coded this?" />
+          <meta itemProp="image" content="http://example.com/default.png" />
+          <meta property="og:title" content="Demiffy!" />
+          <meta property="og:description" content="What a dumbass, who coded this?" />
+          <meta property="og:url" content="https://demiffy.com" />
+          <meta property="og:type" content="website" />
+          <meta property="og:image" content="https://demiffy.com/plane.png" />
+        </Helmet>
         <Navbar />
         <AnimatedRoutes />
       </Router>
