@@ -11,44 +11,6 @@
     <meta property="og:url" id="og-url" content="https://demiffy.com" />
     <meta property="og:type" id="og-type" content="website" />
     <meta property="og:image" id="og-image" content="https://demiffy.com/plane.png" />
-
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        var path = window.location.pathname;
-        
-        // Handle root URL
-        if (path === "/") {
-          document.getElementById("og-title").setAttribute("content", "Demiffy!");
-          document.getElementById("og-description").setAttribute("content", "What a dumbass, who coded this?");
-          document.getElementById("og-url").setAttribute("content", "https://demiffy.com");
-          document.getElementById("og-image").setAttribute("content", "https://demiffy.com/plane.png");
-        }
-
-        // Handle /place URL
-        else if (path === "/place") {
-          document.getElementById("og-title").setAttribute("content", "Demiffy /place!");
-          document.getElementById("og-description").setAttribute("content", "Painting together");
-          document.getElementById("og-url").setAttribute("content", "https://demiffy.com/place");
-          document.getElementById("og-image").setAttribute("content", "https://demiffy.com/dplace.png");
-        }
-
-        // Handle /proto/sowwy URL
-        else if (path === "/proto/sowwy") {
-          document.getElementById("og-title").setAttribute("content", "Demiffy /proto/sowwy!");
-          document.getElementById("og-description").setAttribute("content", "Sowwy, my prototype code went haywire");
-          document.getElementById("og-url").setAttribute("content", "https://demiffy.com/proto/sowwy");
-          document.getElementById("og-image").setAttribute("content", "https://demiffy.com/sowwy.png");
-        }
-
-        // Handle /games/tetris URL
-        else if (path === "/games/tetris") {
-          document.getElementById("og-title").setAttribute("content", "Demiffy /games/tetris!");
-          document.getElementById("og-description").setAttribute("content", "Enjoy the classic Tetris game on Demiffy!");
-          document.getElementById("og-url").setAttribute("content", "https://demiffy.com/games/tetris");
-          document.getElementById("og-image").setAttribute("content", "https://demiffy.com/tetris.png");
-        }
-      });
-    </script>
   </head>
   <body>
     <div id="root"></div>

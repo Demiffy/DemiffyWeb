@@ -6,6 +6,7 @@ import About from './About';
 import Home from './Home';
 import Place from './Place';
 import Tetris from './Tetris';
+import Sudoku from './components/Sudoku';
 import SowwyProto from './SowwyProto';
 import './App.css';
 
@@ -24,6 +25,7 @@ const AnimatedRoutes = () => {
           <Route path="/about" element={<About />} />
           <Route path="/place" element={<Place />} />
           <Route path="/games/tetris" element={<Tetris />} />
+          <Route path="/games/sudoku" element={<Sudoku />} />
           <Route path="/proto/sowwy" element={<SowwyProto />} />
         </Routes>
       </CSSTransition>

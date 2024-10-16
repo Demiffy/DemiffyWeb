@@ -317,6 +317,9 @@ const Place = () => {
         <meta property="og:image" content="https://demiffy.com/plane.png" />
       </Helmet>
       
+      {/* TEMP */}
+      <h1>/place<br/>is under<br/>renovation</h1>
+
       {/* Grid Container */}
       <div
         className="grid-container"
