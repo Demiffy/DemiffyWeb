@@ -9,6 +9,8 @@ const Game: React.FC = () => {
     const [newTiles, setNewTiles] = useState<{ row: number; col: number }[]>([]);
     const [mergedTiles, setMergedTiles] = useState<{ row: number; col: number }[]>([]);
 
+    const [startTouch, setStartTouch] = useState<{ x: number; y: number } | null>(null);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const newBoard = moveTiles(board, e.key);
@@ -20,11 +22,51 @@ const Game: React.FC = () => {
             }
         };
 
+        const handleTouchStart = (e: TouchEvent) => {
+            const touch = e.touches[0];
+            setStartTouch({ x: touch.clientX, y: touch.clientY });
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!startTouch) return;
+
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - startTouch.x;
+            const deltaY = touch.clientY - startTouch.y;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+                const direction = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
+                const newBoard = moveTiles(board, direction);
+                if (newBoard) {
+                    setBoard(newBoard.board);
+                    setScore(prevScore => prevScore + newBoard.score);
+                    setNewTiles(newBoard.newTiles);
+                    setMergedTiles(newBoard.mergedTiles);
+                }
+                setStartTouch(null);
+            } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 30) {
+                const direction = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
+                const newBoard = moveTiles(board, direction);
+                if (newBoard) {
+                    setBoard(newBoard.board);
+                    setScore(prevScore => prevScore + newBoard.score);
+                    setNewTiles(newBoard.newTiles);
+                    setMergedTiles(newBoard.mergedTiles);
+                }
+                setStartTouch(null);
+            }
+        };
+
         window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('touchstart', handleTouchStart);
+        window.addEventListener('touchmove', handleTouchMove);
+
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchmove', handleTouchMove);
         };
-    }, [board]);
+    }, [board, startTouch]);
 
     return (
         <div className="flex flex-col items-center justify-center h-screen">
