@@ -1,7 +1,7 @@
 import { Card, CardContent } from './card';
 import { Input } from './input';
 import { Textarea } from './textarea';
-import { Button } from './button';
+//import { Button } from './button';
 
 const ContactForm = () => {
   return (
@@ -55,9 +55,9 @@ const ContactForm = () => {
             </div>
 
             {/* Submit Button */}
-            <Button className="w-full bg-sky-600 text-white py-3 rounded-lg hover:bg-sky-700 transition-colors">
+            {/*<Button className="w-full bg-sky-600 text-white py-3 rounded-lg hover:bg-sky-700 transition-colors">
               Send Message
-            </Button>
+            </Button> */}
           </form>
         </CardContent>
       </Card>
