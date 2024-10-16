@@ -7,6 +7,7 @@ import Home from './Home';
 import Place from './Place';
 import Tetris from './Tetris';
 import Sudoku from './components/Sudoku';
+import TwoThousandFortyEightGame from './components/2048Game';
 import SowwyProto from './SowwyProto';
 import './App.css';
 
@@ -26,6 +27,7 @@ const AnimatedRoutes = () => {
           <Route path="/place" element={<Place />} />
           <Route path="/games/tetris" element={<Tetris />} />
           <Route path="/games/sudoku" element={<Sudoku />} />
+          <Route path="/games/2048" element={<TwoThousandFortyEightGame />} />
           <Route path="/proto/sowwy" element={<SowwyProto />} />
         </Routes>
       </CSSTransition>
