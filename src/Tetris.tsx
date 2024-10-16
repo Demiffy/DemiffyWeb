@@ -163,7 +163,7 @@ const TetrisGame: React.FC = () => {
         const emptyRows = Array.from({ length: clearedLines }, () =>
           Array.from({ length: COLS }, () => ({ filled: false, color: 'bg-gray-800' }))
         );
-        setScore(prevScore => prevScore + clearedLines * 0.5);
+        setScore(prevScore => prevScore + clearedLines * 1);
         return [...emptyRows, ...newGrid];
       }
       return prevGrid;
