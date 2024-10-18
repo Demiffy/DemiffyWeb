@@ -11,10 +11,12 @@ const COLOR_PALETTE = [
 
 const GRID_SIZE = 50;
 
+const ADMIN_PASSWORD = "temp";
+
 // Utility functions
 const colorToIndex = (color) => {
   const index = COLOR_PALETTE.indexOf(color.toUpperCase());
-  return index !== -1 ? index : null; // Return null if color not in palette
+  return index !== -1 ? index : null;
 };
 
 const indexToColor = (index) => {
@@ -33,7 +35,7 @@ const parseGridString = (gridStr) => {
         if (!isNaN(colorIndex)) {
           gridMap.set(`${x},${y}`, colorIndex);
         } else {
-          gridMap.set(`${x},${y}`, color.toUpperCase()); // Store hex if not in palette
+          gridMap.set(`${x},${y}`, color.toUpperCase());
         }
       }
     }
@@ -53,6 +55,9 @@ const serializeGridMap = (gridMap) => {
   });
   return gridStr;
 };
+
+// Constants
+const MAX_CHANGES = 100;
 
 addEventListener('fetch', (event) => {
   event.respondWith(handleRequest(event.request));
@@ -89,9 +94,8 @@ async function handleRequest(request) {
       const body = await request.json();
       const { password } = body;
 
-      const adminPassword = ADMIN_PASSWORD;
-
-      if (password !== adminPassword) {
+      // Password handling remains from original code
+      if (password !== ADMIN_PASSWORD) {
         return new Response(JSON.stringify({ success: false, message: 'Unauthorized: Invalid password' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -111,9 +115,8 @@ async function handleRequest(request) {
       const body = await request.json();
       const { password } = body;
 
-      const adminPassword = ADMIN_PASSWORD;
-
-      if (password === adminPassword) {
+      // Password handling remains from original code
+      if (password === ADMIN_PASSWORD) {
         return new Response(JSON.stringify({ success: true }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -153,11 +156,8 @@ async function handleRequest(request) {
     // Filter changes since 'since' timestamp
     const newChanges = changesList.filter(change => {
       if (change) {
-        const [coords, color] = change.split(':');
-        // Assuming the color entry includes timestamp
-        // For simplicity, let's include timestamp in the color part separated by a comma
-        // Example: "10;15:5,1697051234567"
-        const [colorPart, timestampStr] = color.split(',');
+        const [coords, colorPart] = change.split(':');
+        const [color, timestampStr] = colorPart.split(',');
         const timestamp = parseInt(timestampStr, 10);
         return timestamp > since;
       }
@@ -205,9 +205,9 @@ async function handleRequest(request) {
 
         changesList.push(`${x};${y}:white,${timestamp}`);
 
-        // Keep only last 10 changes
-        if (changesList.length > 10) {
-          changesList = changesList.slice(-10);
+        // Cap the changes to the last MAX_CHANGES
+        if (changesList.length > MAX_CHANGES) {
+          changesList = changesList.slice(-MAX_CHANGES);
         }
 
         const updatedChangesStr = changesList.join('/');
@@ -256,9 +256,9 @@ async function handleRequest(request) {
         changesList.push(`${x};${y}:${finalColor},${timestamp}`);
       }
 
-      // Keep only last 10 changes
-      if (changesList.length > 10) {
-        changesList = changesList.slice(-10);
+      // Cap the changes to the last MAX_CHANGES
+      if (changesList.length > MAX_CHANGES) {
+        changesList = changesList.slice(-MAX_CHANGES);
       }
 
       const updatedChangesStr = changesList.join('/');

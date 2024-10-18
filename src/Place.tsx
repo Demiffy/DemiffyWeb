@@ -1,6 +1,7 @@
 // Place.tsx
+
 import { Helmet } from 'react-helmet-async';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -18,8 +19,6 @@ const COLOR_PALETTE = [
   '#D4D7D9', '#FFFFFF' // Index 31
 ];
 
-// Removed unused 'Change' interface
-
 // Define interfaces for API responses
 interface TogglePlacingResponse {
   success: boolean;
@@ -32,6 +31,7 @@ interface PlaceResponse {
   y: number;
   color: number | string;
   timestamp: number;
+  message?: string;
 }
 
 interface AdminLoginResponse {
@@ -39,9 +39,13 @@ interface AdminLoginResponse {
   message?: string;
 }
 
+interface GetChangesResponse {
+  changes: string[];
+}
+
 const Place = () => {
-  const [grid, setGrid] = useState<(number | string)[]>(Array(GRID_SIZE * GRID_SIZE).fill(31)); // Default to white
-  const [selectedColor, setSelectedColor] = useState<number>(0); // Default to first color in palette
+  const [grid, setGrid] = useState<(number | string)[]>(Array(GRID_SIZE * GRID_SIZE).fill(31));
+  const [selectedColor, setSelectedColor] = useState<number>(0);
   const [cooldown, setCooldown] = useState(false);
   const [placingDisabled, setPlacingDisabled] = useState(false);
   const [clickCount, setClickCount] = useState(0);
@@ -53,9 +57,10 @@ const Place = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [lastUpdate, setLastUpdate] = useState<number>(0);
 
-  // Utility function to convert compact grid string to array of color indices
+  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  
   const parseGridString = (gridStr: string): (number | string)[] => {
-    const gridArray: (number | string)[] = Array(GRID_SIZE * GRID_SIZE).fill(31); // Initialize with white
+    const gridArray: (number | string)[] = Array(GRID_SIZE * GRID_SIZE).fill(31);
     if (!gridStr) return gridArray;
     const pixels = gridStr.split('/');
     pixels.forEach(pixel => {
@@ -65,11 +70,11 @@ const Place = () => {
         if (!isNaN(x) && !isNaN(y)) {
           const position = x * GRID_SIZE + y;
           if (position >= 0 && position < GRID_SIZE * GRID_SIZE) {
-            const [color] = colorPart.split(','); // Removed 'timestampStr'
+            const [color] = colorPart.split(',');
             if (!isNaN(parseInt(color, 10))) {
               gridArray[position] = parseInt(color, 10);
             } else {
-              gridArray[position] = color.toUpperCase(); // Store hex if not in palette
+              gridArray[position] = color.toUpperCase();
             }
           }
         }
@@ -83,7 +88,7 @@ const Place = () => {
     if (typeof value === 'number') {
       return COLOR_PALETTE[value] || '#FFFFFF';
     }
-    return value; // Assume it's a valid hex code
+    return value;
   };
 
   useEffect(() => {
@@ -99,63 +104,74 @@ const Place = () => {
         }
       } catch (error) {
         console.error('Error fetching initial grid:', error);
+        setErrorMessage('Failed to load the grid. Please try again later.');
+        setTimeout(() => {
+          setErrorMessage('');
+        }, 5000);
       }
     };
 
     fetchInitialData();
 
-    const fetchChanges = async () => {
+    // Start polling for changes
+    pollingInterval.current = setInterval(async () => {
       try {
-        const response = await axios.get(`${WORKER_API_URL}/get-changes`, {
+        const response = await axios.get<GetChangesResponse>(`${WORKER_API_URL}/get-changes`, {
           params: { since: lastUpdate },
         });
         const data = response.data;
-        const changes: string[] = data.changes;
+        const changes = data.changes;
 
         if (changes.length > 0) {
+          const parsedChanges = changes.map(changeStr => {
+            const [coords, colorTimestamp] = changeStr.split(':');
+            const [color, timestampStr] = colorTimestamp.split(',');
+            const [x, y] = coords.split(';').map(Number);
+            const timestamp = parseInt(timestampStr, 10);
+            return { x, y, color, timestamp };
+          });
+
           setGrid(prevGrid => {
             const newGrid = [...prevGrid];
-            changes.forEach(changeStr => {
-              if (changeStr) {
-                const [coords, colorTimestamp] = changeStr.split(':');
-                const [color] = colorTimestamp.split(','); // Removed 'timestampStr'
-                const [x, y] = coords.split(';').map(Number);
-                const position = x * GRID_SIZE + y;
-                if (position >= 0 && position < GRID_SIZE * GRID_SIZE) {
-                  if (color.toLowerCase() === 'white') {
-                    newGrid[position] = 31; // Reset to white
+            parsedChanges.forEach(change => {
+              const { x, y, color } = change;
+              const position = x * GRID_SIZE + y;
+              if (position >= 0 && position < GRID_SIZE * GRID_SIZE) {
+                if (color.toLowerCase() === 'white') {
+                  newGrid[position] = 31; // Reset to white
+                } else {
+                  const colorIndex = parseInt(color, 10);
+                  if (!isNaN(colorIndex) && COLOR_PALETTE[colorIndex]) {
+                    newGrid[position] = colorIndex;
                   } else {
-                    const colorIndex = parseInt(color, 10);
-                    if (!isNaN(colorIndex) && COLOR_PALETTE[colorIndex]) {
-                      newGrid[position] = colorIndex;
-                    } else {
-                      newGrid[position] = color.toUpperCase();
-                    }
+                    newGrid[position] = color.toUpperCase();
                   }
                 }
               }
             });
             return newGrid;
           });
+
           // Update lastUpdate to the latest timestamp
-          const latestTimestamp = changes.reduce((max, changeStr) => {
-            const [_, colorTimestamp] = changeStr.split(':');
-            const [__, timestampStr] = colorTimestamp.split(',');
-            const timestamp = parseInt(timestampStr, 10);
-            return timestamp > max ? timestamp : max;
+          const latestTimestamp = parsedChanges.reduce((max, change) => {
+            return change.timestamp > max ? change.timestamp : max;
           }, lastUpdate);
           setLastUpdate(latestTimestamp);
         }
       } catch (error) {
         console.error('Error fetching changes:', error);
+        setErrorMessage('Failed to update the grid. Please check your connection.');
+        setTimeout(() => {
+          setErrorMessage('');
+        }, 5000);
+      }
+    }, 90000); // Poll every 90 seconds
+
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
       }
     };
-
-    const pollingInterval = 5000; // 5 seconds to reduce KV usage
-
-    const intervalId = setInterval(fetchChanges, pollingInterval);
-
-    return () => clearInterval(intervalId);
   }, [lastUpdate]);
 
   const handlePlacePixel = async (x: number, y: number) => {
@@ -182,8 +198,10 @@ const Place = () => {
         setLastUpdate(data.timestamp);
         setErrorMessage('');
       } else {
-        // Since 'message' does not exist, provide a generic error message
-        setErrorMessage('Placing failed.');
+        setErrorMessage(data.message || 'Placing failed.');
+        setTimeout(() => {
+          setErrorMessage('');
+        }, 5000);
       }
     } catch (error: any) {
       console.error('Error placing pixel:', error);
@@ -193,18 +211,17 @@ const Place = () => {
         setErrorMessage('Placing is currently disabled.');
         setTimeout(() => {
           setErrorMessage('');
-        }, 2000);
+        }, 5000);
       } else if (error.response && error.response.data && error.response.data.message) {
-        // This block can be removed or modified if 'message' is not expected
         setErrorMessage(error.response.data.message);
         setTimeout(() => {
           setErrorMessage('');
-        }, 2000);
+        }, 5000);
       } else {
         setErrorMessage('An error occurred while placing the pixel.');
         setTimeout(() => {
           setErrorMessage('');
-        }, 2000);
+        }, 5000);
       }
     } finally {
       setTimeout(() => {
@@ -239,12 +256,17 @@ const Place = () => {
         setShowLoginModal(false);
         setLoginError('');
       } else {
-        // Ensure that 'message' exists before accessing it
         setLoginError(data.message || 'Login failed');
+        setTimeout(() => {
+          setLoginError('');
+        }, 5000);
       }
     } catch (error) {
       console.error('Admin login error:', error);
       setLoginError('An unexpected error occurred.');
+      setTimeout(() => {
+        setLoginError('');
+      }, 5000);
     }
   };
 
@@ -258,11 +280,18 @@ const Place = () => {
       if (data.success) {
         setPlacingDisabled(data.placingDisabled);
       } else {
-        // Since 'message' does not exist, log a generic error
         console.error('Toggle placing failed.');
+        setErrorMessage('Failed to toggle placing status.');
+        setTimeout(() => {
+          setErrorMessage('');
+        }, 5000);
       }
     } catch (error) {
       console.error('Error toggling placing status:', error);
+      setErrorMessage('An error occurred while toggling placing status.');
+      setTimeout(() => {
+        setErrorMessage('');
+      }, 5000);
     }
   };
 
@@ -274,14 +303,23 @@ const Place = () => {
       const response = await axios.post<{ success: boolean; message: string }>(`${WORKER_API_URL}/clear-grid`, { password: adminPassword });
       const data = response.data;
       if (data.success) {
-        const clearedGrid = Array(GRID_SIZE * GRID_SIZE).fill(31); // Reset to white
+        const clearedGrid = Array(GRID_SIZE * GRID_SIZE).fill(31);
         setGrid(clearedGrid);
         setLastUpdate(Date.now());
+        setErrorMessage('');
       } else {
         console.error(data.message);
+        setErrorMessage(data.message || 'Failed to clear the grid.');
+        setTimeout(() => {
+          setErrorMessage('');
+        }, 5000);
       }
     } catch (error) {
       console.error('Error clearing grid:', error);
+      setErrorMessage('An error occurred while clearing the grid.');
+      setTimeout(() => {
+        setErrorMessage('');
+      }, 5000);
     }
   };
 
@@ -326,8 +364,8 @@ const Place = () => {
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${GRID_SIZE}, 20px)`,
-          gridGap: '0px', // Remove gaps between pixels
-          backgroundColor: '#000', // Optional: Background color for grid
+          gridGap: '0px',
+          backgroundColor: '#000',
         }}
       >
         {grid.map((value, index) => {
@@ -400,7 +438,7 @@ const Place = () => {
                   setErrorMessage('Invalid Hex');
                   setTimeout(() => {
                     setErrorMessage('');
-                  }, 1000);
+                  }, 5000);
                 }
               }}
             >
@@ -463,8 +501,13 @@ const Place = () => {
                   if (data.placingDisabled !== undefined) {
                     setPlacingDisabled(data.placingDisabled);
                   }
+                  setErrorMessage('');
                 } catch (error) {
                   console.error('Error refreshing grid:', error);
+                  setErrorMessage('Failed to refresh the grid.');
+                  setTimeout(() => {
+                    setErrorMessage('');
+                  }, 5000);
                 }
               }}
             >
