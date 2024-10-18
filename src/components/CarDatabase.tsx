@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { carData, CarData } from '../data/carData';
 import CarCard from '../components/ui/CarCard';
 import SearchBar from '../components/ui/SearchBar';
-import { Menu, X } from 'lucide-react';
 
 export default function CarDatabase() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [savedCars, setSavedCars] = useState<number[]>([]);
 
@@ -31,15 +29,6 @@ export default function CarDatabase() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white pt-16">
-      {/* Navigation */}
-      <header className="bg-gray-800 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden">
-            {isMenuOpen ? <X /> : <Menu />}
-          </button>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Search Bar */}
