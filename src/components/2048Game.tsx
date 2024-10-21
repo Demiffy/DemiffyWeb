@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Tile from './ui/Tile';
 import { initializeBoard, moveTiles } from '../utils/2048Logic';
+import Footer from './ui/Footer';
 
 const Game: React.FC = () => {
     const [board, setBoard] = useState<number[][]>(initializeBoard());
@@ -69,23 +70,26 @@ const Game: React.FC = () => {
     }, [board, startTouch]);
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen">
-            <h1 className="text-4xl font-bold mb-4">2048</h1>
-            <div className="grid grid-cols-4 gap-2 transition-opacity duration-300">
-                {board.map((row, rowIndex) =>
-                    row.map((tile, colIndex) => (
-                        <Tile
-                            key={`${rowIndex}-${colIndex}`}
-                            value={tile}
-                            isNew={newTiles.some(t => t.row === rowIndex && t.col === colIndex)}
-                            isMerged={mergedTiles.some(t => t.row === rowIndex && t.col === colIndex)}
-                        />
-                    ))
-                )}
-            </div>
-            <div className="mt-4 text-xl">Score: {score}</div>
+    <div className="min-h-screen flex flex-col text-white">
+        <div className="flex-grow flex flex-col items-center justify-center p-4">
+        <h1 className="text-4xl font-bold mb-4">2048</h1>
+        <div className="grid grid-cols-4 gap-2 transition-opacity duration-300">
+            {board.map((row, rowIndex) =>
+            row.map((tile, colIndex) => (
+                <Tile
+                key={`${rowIndex}-${colIndex}`}
+                value={tile}
+                isNew={newTiles.some(t => t.row === rowIndex && t.col === colIndex)}
+                isMerged={mergedTiles.some(t => t.row === rowIndex && t.col === colIndex)}
+                />
+            ))
+            )}
         </div>
+        <div className="mt-4 text-xl">Score: {score}</div>
+        </div>
+        <Footer />
+    </div>
     );
-};
+}
 
 export default Game;

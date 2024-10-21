@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Share2, Heart, ChevronRight, AlertTriangle, ShoppingCart, ChevronLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { carData, CarData } from '../data/carData';
+import Footer from './ui/Footer';
 
 export default function CarDetails() {
   const { carId } = useParams<{ carId: string }>();
@@ -53,16 +54,17 @@ export default function CarDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white pt-16 pb-8">
+    <div className="min-h-screen flex flex-col bg-gray-900 text-white pt-16 pb-8">
       {/* Back to Cars Link */}
       <div className="container mx-auto px-4 py-4">
-        <Link to="/cardatabase" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+        <Link to="/cardatabase" className="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center">
           <ArrowLeft className="inline-block mr-2" />
           Back to Cars
         </Link>
       </div>
-
-      <main className="container mx-auto px-4 py-8">
+  
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Image Carousel */}
           <div>
@@ -95,17 +97,23 @@ export default function CarDetails() {
               ))}
             </div>
             <div className="mt-4 flex justify-between">
-              <button onClick={handleShare} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center">
+              <button
+                onClick={handleShare}
+                className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center"
+              >
                 <Share2 className="mr-2" size={18} />
                 {shareText}
               </button>
-              <button onClick={handleSave} className={`bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center`}>
+              <button
+                onClick={handleSave}
+                className={`bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center`}
+              >
                 <Heart className={`mr-2 ${isSaved ? 'text-red-500' : 'text-white'}`} size={18} />
                 {isSaved ? 'Saved' : 'Save'}
               </button>
             </div>
           </div>
-
+  
           {/* Car Details */}
           <div>
             <h1 className="text-3xl font-bold mb-2">{car.name}</h1>
@@ -152,7 +160,7 @@ export default function CarDetails() {
             </div>
           </div>
         </div>
-
+  
         {/* Key Features */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-4">Key Features</h2>
@@ -165,7 +173,7 @@ export default function CarDetails() {
             ))}
           </ul>
         </div>
-
+  
         {/* Common Issues */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-4">Common Issues</h2>
@@ -180,10 +188,10 @@ export default function CarDetails() {
             </ul>
           </div>
         </div>
-
+  
         {/* Purchase Links */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-4">Available for purchase</h2>
+        <div className="mt-12 pb-12">
+          <h2 className="text-2xl font-bold mb-4">Available for Purchase</h2>
           <div className="grid md:grid-cols-3 gap-4">
             {car.purchaseLinks.map((link, index) => (
               <a
@@ -200,6 +208,9 @@ export default function CarDetails() {
           </div>
         </div>
       </main>
+  
+      {/* Footer */}
+      <Footer />
     </div>
   );
-}
+}  

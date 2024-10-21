@@ -4,6 +4,7 @@ import SudokuCell from './ui/SudokuCell';
 import * as sudoku from 'sudoku';
 import Button from "./ui/button";
 import { Clock, RotateCcw, Play, Zap, FastForward } from "lucide-react";
+import Footer from "./ui/Footer";
 
 interface BubbleProps {
   color: string;
@@ -297,7 +298,7 @@ const Sudoku: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-gray-900 text-gray-100 p-4 relative overflow-hidden">
       {isCompleted && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <Bubble color="#ec4899" /> {/* Pink */}
@@ -306,8 +307,9 @@ const Sudoku: React.FC = () => {
           <Bubble color="#f56565" /> {/* Red */}
         </div>
       )}
-
-      <div className="w-full max-w-4xl relative z-10">
+  
+      {/* Main Content */}
+      <div className="flex-grow w-full max-w-4xl relative z-10 mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8 text-cyan-400 glow mt-16">Sudoku!</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Sudoku Grid */}
@@ -333,8 +335,10 @@ const Sudoku: React.FC = () => {
               )}
             </div>
           </div>
-
+  
+          {/* Game Info and Controls */}
           <div className="space-y-6">
+            {/* Game Info */}
             <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4 text-cyan-400">Game Info</h2>
               <div className="flex justify-between items-center mb-2">
@@ -348,7 +352,8 @@ const Sudoku: React.FC = () => {
                 <span className="text-cyan-400 font-mono">{moves}</span>
               </div>
             </div>
-
+  
+            {/* Controls */}
             <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4 text-cyan-400">Controls</h2>
               <div className="grid grid-cols-2 gap-2">
@@ -399,10 +404,10 @@ const Sudoku: React.FC = () => {
             </div>
           </div>
         </div>
-
+  
         {message && <p className="mt-4 text-lg text-cyan-400 text-center">{message}</p>}
       </div>
-
+      
       <style>{`
         .glow {
           text-shadow: 0 0 10px rgba(6, 182, 212, 0.7),
@@ -410,8 +415,9 @@ const Sudoku: React.FC = () => {
                        0 0 30px rgba(6, 182, 212, 0.3);
         }
       `}</style>
+      <Footer />
     </div>
   );
-};
+}  
 
 export default Sudoku;

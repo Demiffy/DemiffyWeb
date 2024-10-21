@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { carData, CarData } from '../data/carData';
 import CarCard from '../components/ui/CarCard';
 import SearchBar from '../components/ui/SearchBar';
+import Footer from '../components/ui/Footer';
 
 export default function CarDatabase() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,18 +29,18 @@ export default function CarDatabase() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white pt-16">
+    <div className="min-h-screen flex flex-col bg-gray-900 text-white pt-16">
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-grow">
         {/* Search Bar */}
         <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-
+  
         {/* Car List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredCars.map((car: CarData) => {
             const firstModelYearKey = Math.min(...Object.keys(car.modelYears).map(year => parseInt(year)));
             const lastModelYearKey = Math.max(...Object.keys(car.modelYears).map(year => parseInt(year)));
-
+  
             return (
               <CarCard
                 key={car.id}
@@ -56,6 +57,7 @@ export default function CarDatabase() {
           })}
         </div>
       </main>
+      <Footer />
     </div>
   );
-}
+}  

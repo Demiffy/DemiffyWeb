@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 import { AnimatePresence, motion } from 'framer-motion';
+import Footer from './components/ui/Footer';
 
 const GRID_SIZE = 50;
 const WORKER_API_URL = 'https://demiffy-place-worker.velnertomas78-668.workers.dev';
@@ -417,7 +418,7 @@ const Place = () => {
   }, [clickCount]);
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row items-start justify-center p-4 mt-20 space-y-6 md:space-x-6 md:space-y-0 bg-gray-800">
+    <div className="min-h-screen flex flex-col bg-gray-800">
       <Helmet>
         <title>Place - Demiffy</title>
         <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
@@ -430,108 +431,110 @@ const Place = () => {
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://demiffy.com/plane.png" />
       </Helmet>
-
-      {/* Grid Container */}
-      <div
-        className="grid-container"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${GRID_SIZE}, 20px)`,
-          gridGap: '0px',
-          backgroundColor: '#000',
-        }}
-      >
-        {grid.map((value, index) => {
-          const x = Math.floor(index / GRID_SIZE);
-          const y = index % GRID_SIZE;
-          return (
-            <div
-              key={`${x}-${y}`}
-              onClick={() => handlePlacePixel(x, y)}
-              className="grid-block"
-              style={{
-                backgroundColor: getColor(value),
-                width: '20px',
-                height: '20px',
-                cursor: placingDisabled ? 'not-allowed' : 'pointer',
-              }}
-            ></div>
-          );
-        })}
-      </div>
-
-      {/* Color Picker */}
-      <div className="flex flex-col items-center">
-        <h2
-          className="text-lg mb-4 select-none cursor-pointer text-white"
-          onClick={handleTitleClick}
-          title="Click 10 times to open admin login"
+  
+      {/* Main Content */}
+      <div className="flex-grow flex flex-col md:flex-row items-start justify-center p-4 mt-20 space-y-6 md:space-x-6 md:space-y-0">
+        {/* Grid Container */}
+        <div
+          className="grid-container"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${GRID_SIZE}, 20px)`,
+            gridGap: '0px',
+            backgroundColor: '#000',
+          }}
         >
-          Select a Color:
-        </h2>
-        <div className="grid grid-cols-4 gap-2 color-picker">
-          {COLOR_PALETTE.map((color, index) => (
-            <div
-              key={color}
-              onClick={() => setSelectedColor(index)}
-              className={`w-8 h-8 rounded-full cursor-pointer ${
-                selectedColor === index ? 'ring-2 ring-black' : ''
-              }`}
-              style={{ backgroundColor: color }}
-            />
-          ))}
+          {grid.map((value, index) => {
+            const x = Math.floor(index / GRID_SIZE);
+            const y = index % GRID_SIZE;
+            return (
+              <div
+                key={`${x}-${y}`}
+                onClick={() => handlePlacePixel(x, y)}
+                className="grid-block"
+                style={{
+                  backgroundColor: getColor(value),
+                  width: '20px',
+                  height: '20px',
+                  cursor: placingDisabled ? 'not-allowed' : 'pointer',
+                }}
+              ></div>
+            );
+          })}
         </div>
-
-        {/* Custom Color Picker */}
-        {isAdmin && (
-          <div className="mt-4 flex items-center">
-            <input
-              type="text"
-              placeholder="Hex"
-              value={customColor}
-              onChange={(e) => setCustomColor(e.target.value)}
-              className="border rounded px-2 py-1 text-black"
-              style={{ width: '6rem' }}
-            />
-            <button
-              className="ml-2 px-3 py-1 bg-blue-500 text-white rounded"
-              onClick={() => {
-                if (/^#([0-9A-F]{3}){1,2}$/i.test(customColor)) {
-                  const upperHex = customColor.toUpperCase();
-                  const existingIndex = COLOR_PALETTE.indexOf(upperHex);
-                  if (existingIndex === -1) {
-                    // Add new color to palette
-                    COLOR_PALETTE.push(upperHex);
-                    setSelectedColor(COLOR_PALETTE.length - 1);
-                  } else {
-                    setSelectedColor(existingIndex);
-                  }
-                  setCustomColor('');
-                } else {
-                  setErrorMessage('Invalid Hex');
-                  setTimeout(() => {
-                    setErrorMessage('');
-                  }, 5000);
-                }
-              }}
-            >
-              Set
-            </button>
+  
+        {/* Color Picker */}
+        <div className="flex flex-col items-center">
+          <h2
+            className="text-lg mb-4 select-none cursor-pointer text-white"
+            onClick={handleTitleClick}
+            title="Click 10 times to open admin login"
+          >
+            Select a Color:
+          </h2>
+          <div className="grid grid-cols-4 gap-2 color-picker">
+            {COLOR_PALETTE.map((color, index) => (
+              <div
+                key={color}
+                onClick={() => setSelectedColor(index)}
+                className={`w-8 h-8 rounded-full cursor-pointer ${
+                  selectedColor === index ? 'ring-2 ring-black' : ''
+                }`}
+                style={{ backgroundColor: color }}
+              />
+            ))}
           </div>
-        )}
-
-        <p className="mt-4 text-gray-600 bg-slate-950 bg-opacity-50 backdrop-blur-lg shadow-lg p-2 rounded-lg">
-          <span style={{ color: getColor(COLOR_PALETTE[selectedColor]) }}>
-            {COLOR_PALETTE[selectedColor]}
-          </span>
-        </p>
-
-        {/* Display Error */}
-        {errorMessage && (
-          <p className="mt-2 text-red-500">{errorMessage}</p>
-        )}
+  
+          {/* Custom Color Picker */}
+          {isAdmin && (
+            <div className="mt-4 flex items-center">
+              <input
+                type="text"
+                placeholder="Hex"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="border rounded px-2 py-1 text-black"
+                style={{ width: '6rem' }}
+              />
+              <button
+                className="ml-2 px-3 py-1 bg-blue-500 text-white rounded"
+                onClick={() => {
+                  if (/^#([0-9A-F]{3}){1,2}$/i.test(customColor)) {
+                    const upperHex = customColor.toUpperCase();
+                    const existingIndex = COLOR_PALETTE.indexOf(upperHex);
+                    if (existingIndex === -1) {
+                      COLOR_PALETTE.push(upperHex);
+                      setSelectedColor(COLOR_PALETTE.length - 1);
+                    } else {
+                      setSelectedColor(existingIndex);
+                    }
+                    setCustomColor('');
+                  } else {
+                    setErrorMessage('Invalid Hex');
+                    setTimeout(() => {
+                      setErrorMessage('');
+                    }, 5000);
+                  }
+                }}
+              >
+                Set
+              </button>
+            </div>
+          )}
+  
+          <p className="mt-4 text-gray-600 bg-slate-950 bg-opacity-50 backdrop-blur-lg shadow-lg p-2 rounded-lg">
+            <span style={{ color: getColor(COLOR_PALETTE[selectedColor]) }}>
+              {COLOR_PALETTE[selectedColor]}
+            </span>
+          </p>
+  
+          {/* Display Error */}
+          {errorMessage && (
+            <p className="mt-2 text-red-500">{errorMessage}</p>
+          )}
+        </div>
       </div>
-
+  
       {/* Admin Panel */}
       <AnimatePresence>
         {isAdmin && (
@@ -595,7 +598,7 @@ const Place = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
+  
       {/* Admin Login Modal */}
       <AnimatePresence>
         {showLoginModal && (
@@ -644,8 +647,16 @@ const Place = () => {
           </motion.div>
         )}
       </AnimatePresence>
+  
+      {/* Display Global Error */}
+      {errorMessage && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded shadow-lg">
+          {errorMessage}
+        </div>
+      )}
+      <Footer />
     </div>
   );
-};
+}  
 
 export default Place;

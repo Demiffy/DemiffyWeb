@@ -5,6 +5,7 @@ import Cell from './components/ui/Cell';
 import NextPieceDisplay from './components/ui/NextPieceDisplay';
 import ControlsPanel from './components/ui/ControlsPanel';
 import { Tetromino, CellType } from './components/ui/types';
+import Footer from './components/ui/Footer';
 
 const ROWS = 20;
 const COLS = 10;
@@ -243,13 +244,14 @@ const TetrisGame: React.FC = () => {
   };
 
   return (
-    <div
-      className="flex justify-center items-center outline-none focus:outline-none p-8 mt-9 relative"
-      tabIndex={0}
-      onKeyDown={handleKeyPress}
-      onKeyUp={handleKeyUp}
-    >
-      {gameOver ? (
+    <div className="min-h-screen flex flex-col bg-gray-800">
+      <div
+        className="flex-grow flex justify-center items-center outline-none focus:outline-none p-8 mt-9 relative"
+        tabIndex={0}
+        onKeyDown={handleKeyPress}
+        onKeyUp={handleKeyUp}
+      >
+        {gameOver ? (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center">
             <h2 className="text-white text-5xl mb-4 animate-bounce">Game Over</h2>
             <p className="text-white text-2xl mb-8">Final Score: {score}</p>
@@ -261,37 +263,39 @@ const TetrisGame: React.FC = () => {
             </button>
           </div>
         ) : (
-        <>
-          <div className="absolute top-4 right-4 text-white text-2xl">Score: {score}</div>
-          <div className="flex justify-center items-start space-x-8">
-            <div
-              className="grid grid-cols-10 gap-0 tetris-grid"
-              style={{
-                backgroundColor: '#2d3748',
-                padding: '0.5rem',
-                width: 'auto',
-                height: 'auto',
-                overflow: 'hidden',
-              }}
-            >
-              {drawGrid()}
+          <>
+            <div className="absolute top-4 right-4 text-white text-2xl">Score: {score}</div>
+            <div className="flex justify-center items-start space-x-8">
+              <div
+                className="grid grid-cols-10 gap-0 tetris-grid"
+                style={{
+                  backgroundColor: '#2d3748',
+                  padding: '0.5rem',
+                  width: 'auto',
+                  height: 'auto',
+                  overflow: 'hidden',
+                }}
+              >
+                {drawGrid()}
+              </div>
+  
+              <div className="flex flex-col items-center justify-start">
+                <NextPieceDisplay nextPiece={nextPiece} />
+                <ControlsPanel
+                  moveLeft={() => movePiece(-1)}
+                  moveRight={() => movePiece(1)}
+                  rotatePiece={rotatePiece}
+                  dropPiece={dropPiece}
+                  resetSpeed={resetSpeed}
+                />
+              </div>
             </div>
-
-            <div className="flex flex-col items-center justify-start">
-              <NextPieceDisplay nextPiece={nextPiece} />
-              <ControlsPanel
-                moveLeft={() => movePiece(-1)}
-                moveRight={() => movePiece(1)}
-                rotatePiece={rotatePiece}
-                dropPiece={dropPiece}
-                resetSpeed={resetSpeed}
-              />
-            </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
+      <Footer />
     </div>
   );
-};
+}  
 
 export default TetrisGame;
