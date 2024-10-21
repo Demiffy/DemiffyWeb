@@ -1,7 +1,8 @@
-// src/FileConverter.tsx
+// /FileConverter.tsx
 
-import React, { useState, ChangeEvent, DragEvent } from 'react';
+import React, { useState, ChangeEvent, DragEvent, useRef } from 'react';
 import { ArrowUpTrayIcon, LinkIcon } from '@heroicons/react/24/solid';
+import Footer from './ui/Footer';
 
 type SupportedFormats = 'avif' | 'webp' | 'jpeg' | 'png' | 'bmp' | 'gif' | 'svg';
 
@@ -21,6 +22,8 @@ const FileConverter: React.FC = () => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [urlError, setUrlError] = useState<string>('');
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const supportedInputFormats: SupportedFormats[] = ['avif', 'webp', 'jpeg', 'png', 'bmp', 'gif', 'svg'];
   const supportedOutputFormats: SupportedFormats[] = ['avif', 'webp', 'jpeg', 'png', 'bmp', 'gif'];
@@ -280,198 +283,198 @@ const FileConverter: React.FC = () => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleUploadAreaClick = (): void => {
+    fileInputRef.current?.click();
+  };
+
   return (
-    <section className="min-h-screen flex flex-col items-center bg-gray-800 text-white p-12">
-      <h2 className="text-3xl font-bold mb-6">IMG Converter</h2>
-
-      <div className="flex flex-col lg:flex-row w-full max-w-5xl space-y-6 lg:space-y-0 lg:space-x-6">
-        {/* Drag and Drop Area */}
-        <div
-          onDragOverCapture={handleDragOver}
-          onDragEnterCapture={handleDragEnter}
-          onDragLeaveCapture={handleDragLeave}
-          onDropCapture={handleDrop}
-          role="button"
-          aria-label="File Upload Area"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              document.getElementById('fileInput')?.click();
-            }
-          }}
-          className={`flex flex-col items-center justify-center w-full lg:w-1/2 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 ${
-            isDragging
-              ? 'border-blue-400 bg-gray-600'
-              : 'border-gray-500 bg-gray-700 hover:bg-gray-600'
-          }`}
-        >
-          <ArrowUpTrayIcon className="h-12 w-12 text-blue-400 mb-4" />
-          <p className="text-center mb-4">
-            {isDragging
-              ? 'Release to upload your files'
-              : 'Drag and drop image files here, or click to select files.'}
-          </p>
-          <input
-            type="file"
-            accept={supportedInputFormats.map((fmt) => `.${fmt}`).join(', ')}
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
-            id="fileInput"
-          />
-          <label
-            htmlFor="fileInput"
-            className="cursor-pointer inline-flex items-center py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
-          >
-            <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
-            Select Files
-          </label>
-        </div>
-
-        {/* Output Format Selection and Convert Button */}
-        <div className="flex flex-col w-full lg:w-1/2 space-y-4">
-          {/* Output Format Selection */}
-          <div className="bg-gray-700 p-6 rounded shadow-md">
-            <label htmlFor="outputFormat" className="block mb-2 text-sm font-medium">
-              Select Output Format
-            </label>
-            <select
-              id="outputFormat"
-              value={outputFormat}
-              onChange={handleOutputFormatChange}
-              className="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
-            >
-              {supportedOutputFormats.map((fmt) => (
-                <option key={fmt} value={fmt}>
-                  {fmt.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Add Image from URL */}
-          <div className="bg-gray-700 p-6 rounded shadow-md flex flex-col">
-            <label htmlFor="imageUrl" className="block mb-2 text-sm font-medium">
-              Add Image from URL
-            </label>
-            <div className="flex">
-              <input
-                type="text"
-                id="imageUrl"
-                value={imageUrl}
-                onChange={handleImageUrlChange}
-                placeholder="Enter image URL"
-                className="flex-grow p-2 bg-gray-600 border border-gray-500 rounded-l text-white focus:outline-none"
-              />
-              <button
-                onClick={handleAddImageFromUrl}
-                className="py-2 px-4 bg-green-600 text-white rounded-l hover:bg-green-700 transition-colors duration-200 flex items-center"
-              >
-                <LinkIcon className="h-5 w-5 mr-2" />
-                Add
-              </button>
-            </div>
-            {urlError && <p className="text-red-400 mt-2">{urlError}</p>}
-          </div>
-
-          {/* Convert Button */}
-          {selectedFiles.length > 0 && (
-            <button
-              onClick={convertAllImages}
-              disabled={
-                selectedFiles.every((file) => file.error || file.convertedUrl) ||
-                selectedFiles.some((file) => file.isConverting)
+    <div className="min-h-screen text-white">
+      <section className="min-h-screen flex flex-col items-center text-white p-12">
+        <h2 className="text-3xl font-bold mb-6">IMG Converter</h2>
+  
+        <div className="flex flex-col lg:flex-row w-full max-w-5xl space-y-6 lg:space-y-0 lg:space-x-6">
+          {/* Drag and Drop Area */}
+          <div
+            onClick={handleUploadAreaClick}
+            onDragOverCapture={handleDragOver}
+            onDragEnterCapture={handleDragEnter}
+            onDragLeaveCapture={handleDragLeave}
+            onDropCapture={handleDrop}
+            role="button"
+            aria-label="File Upload Area"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                fileInputRef.current?.click();
               }
-              className={`w-full py-2 px-4 bg-blue-600 text-white rounded ${
-                selectedFiles.every((file) => file.error || file.convertedUrl) ||
-                selectedFiles.some((file) => file.isConverting)
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:bg-blue-700 transition-colors duration-200'
-              }`}
-            >
-              Convert All Images
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Global Error */}
-      {globalError && <p className="text-red-400 mb-4">{globalError}</p>}
-
-      {/* Selected Files List */}
-      {selectedFiles.length > 0 && (
-        <div className="w-full max-w-5xl mt-6">
-          <h3 className="text-xl font-semibold mb-2">Selected Files:</h3>
-          <ul className="space-y-2">
-            {selectedFiles.map((fileData, index) => (
-              <li
-                key={index}
-                className="relative flex items-center justify-between bg-gray-700 p-3 rounded"
+            }}
+            className={`flex flex-col items-center justify-center w-full lg:w-1/2 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer ${
+              isDragging
+                ? 'border-blue-400 bg-gray-600'
+                : 'border-gray-500 bg-gray-700 hover:bg-gray-600'
+            }`}
+          >
+            <ArrowUpTrayIcon className="h-12 w-12 text-blue-400 mb-4" />
+            <p className="text-center mb-4">
+              {isDragging
+                ? 'Release to upload your files'
+                : 'Drag and drop image files here, or click to select files.'}
+            </p>
+            <input
+              type="file"
+              accept={supportedInputFormats.map((fmt) => `.${fmt}`).join(', ')}
+              multiple
+              onChange={handleFileChange}
+              className="hidden"
+              ref={fileInputRef}
+            />
+          </div>
+  
+          {/* Output Format Selection and Convert Button */}
+          <div className="flex flex-col w-full lg:w-1/2 space-y-4">
+            <div className="bg-gray-700 p-6 rounded shadow-md">
+              <label htmlFor="outputFormat" className="block mb-2 text-sm font-medium">
+                Select Output Format
+              </label>
+              <select
+                id="outputFormat"
+                value={outputFormat}
+                onChange={handleOutputFormatChange}
+                className="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
               >
-                <div>
-                  <p className="font-medium">{fileData.file.name}</p>
-                  {fileData.error && <p className="text-red-400 text-sm">{fileData.error}</p>}
-                  {fileData.isConverting && <p className="text-yellow-400 text-sm">Converting...</p>}
-                  {fileData.convertedUrl && <p className="text-green-400 text-sm">Conversion Complete</p>}
-                </div>
+                {supportedOutputFormats.map((fmt) => (
+                  <option key={fmt} value={fmt}>
+                    {fmt.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+  
+            {/* Add Image from URL */}
+            <div className="bg-gray-700 p-6 rounded shadow-md flex flex-col">
+              <label htmlFor="imageUrl" className="block mb-2 text-sm font-medium">
+                Add Image from URL
+              </label>
+              <div className="flex">
+                <input
+                  type="text"
+                  id="imageUrl"
+                  value={imageUrl}
+                  onChange={handleImageUrlChange}
+                  placeholder="Enter image URL"
+                  className="flex-grow p-2 bg-gray-600 border border-gray-500 rounded-l text-white focus:outline-none"
+                />
                 <button
-                  onClick={() => removeFile(index)}
-                  className="absolute top-1.2 right-3 p-2 bg-transparent hover:bg-slate-700 text-white rounded-full"
-                  style={{ zIndex: 50 }}
-                  title="Remove File"
+                  onClick={handleAddImageFromUrl}
+                  className="py-2 px-4 bg-green-600 text-white rounded-l hover:bg-green-700 transition-colors duration-200 flex items-center"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <LinkIcon className="h-5 w-5 mr-2" />
+                  Add
                 </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Converted Files Display */}
-      {selectedFiles.some((file) => file.convertedUrl) && (
-        <div className="w-full max-w-5xl mt-6">
-          <h3 className="text-2xl font-semibold mb-4">Converted Images:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {selectedFiles.map((fileData, index) =>
-              fileData.convertedUrl ? (
-                <div key={index} className="bg-gray-700 p-4 rounded shadow-md">
-                  <img
-                    src={fileData.convertedUrl}
-                    alt={`Converted ${fileData.file.name}`}
-                    className="w-full h-auto mb-2 rounded"
-                    loading="lazy"
-                  />
-                <a
-                href={fileData.convertedUrl}
-                download={`${fileData.file.name.substring(0, fileData.file.name.lastIndexOf('.'))}_${outputFormat}.${outputFormat}`}
-                className="inline-flex items-center py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200"
-                style={{ color: 'white' }}
-                >
-                <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
-                Download {outputFormat.toUpperCase()}
-                </a>
-                </div>
-              ) : null
+              </div>
+              {urlError && <p className="text-red-400 mt-2">{urlError}</p>}
+            </div>
+  
+            {/* Convert Button */}
+            {selectedFiles.length > 0 && (
+              <button
+                onClick={convertAllImages}
+                disabled={
+                  selectedFiles.every((file) => file.error || file.convertedUrl) ||
+                  selectedFiles.some((file) => file.isConverting)
+                }
+                className={`w-full py-2 px-4 bg-blue-600 text-white rounded ${
+                  selectedFiles.every((file) => file.error || file.convertedUrl) ||
+                  selectedFiles.some((file) => file.isConverting)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-blue-700 transition-colors duration-200'
+                }`}
+              >
+                Convert All Images
+              </button>
             )}
           </div>
         </div>
-      )}
-    </section>
+  
+        {/* Global Error */}
+        {globalError && <p className="text-red-400 mb-4">{globalError}</p>}
+  
+        {/* Selected Files List */}
+        {selectedFiles.length > 0 && (
+          <div className="w-full max-w-5xl mt-6">
+            <h3 className="text-xl font-semibold mb-2">Selected Files:</h3>
+            <ul className="space-y-2">
+              {selectedFiles.map((fileData, index) => (
+                <li
+                  key={index}
+                  className="relative flex items-center justify-between bg-gray-700 p-3 rounded"
+                >
+                  <div>
+                    <p className="font-medium">{fileData.file.name}</p>
+                    {fileData.error && <p className="text-red-400 text-sm">{fileData.error}</p>}
+                    {fileData.isConverting && <p className="text-yellow-400 text-sm">Converting...</p>}
+                    {fileData.convertedUrl && <p className="text-green-400 text-sm">Conversion Complete</p>}
+                  </div>
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="absolute top-1.2 right-3 p-2 bg-transparent hover:bg-slate-700 text-white rounded-full"
+                    style={{ zIndex: 50 }}
+                    title="Remove File"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+  
+        {/* Converted Files Display */}
+        {selectedFiles.some((file) => file.convertedUrl) && (
+          <div className="w-full max-w-5xl mt-6">
+            <h3 className="text-2xl font-semibold mb-4">Converted Images:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {selectedFiles.map((fileData, index) =>
+                fileData.convertedUrl ? (
+                  <div key={index} className="bg-gray-700 p-4 rounded shadow-md">
+                    <img
+                      src={fileData.convertedUrl}
+                      alt={`Converted ${fileData.file.name}`}
+                      className="w-full h-auto mb-2 rounded"
+                      loading="lazy"
+                    />
+                    <a
+                      href={fileData.convertedUrl}
+                      download={`${fileData.file.name.substring(0, fileData.file.name.lastIndexOf('.'))}_${outputFormat}.${outputFormat}`}
+                      className="inline-flex items-center py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200"
+                      style={{ color: 'white' }}
+                    >
+                      <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                      Download {outputFormat.toUpperCase()}
+                    </a>
+                  </div>
+                ) : null
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+      <Footer />
+    </div>
   );
-};
+}  
 
 export default FileConverter;
