@@ -11,6 +11,7 @@ import TwoThousandFortyEightGame from './components/2048Game';
 import SowwyProto from './SowwyProto';
 import CarDatabase from './components/CarDatabase';
 import CarDetails from './components/CarDetails';
+import FileConverter from './components/FileConverter';
 import './App.css';
 
 const AnimatedRoutes = () => {
@@ -33,6 +34,7 @@ const AnimatedRoutes = () => {
           <Route path="/proto/sowwy" element={<SowwyProto />} />
           <Route path="/cardatabase" element={<CarDatabase />} />
           <Route path="/car/:carId" Component={CarDetails} />
+          <Route path="/ic" element={<FileConverter />} />
         </Routes>
       </CSSTransition>
     </TransitionGroup>
