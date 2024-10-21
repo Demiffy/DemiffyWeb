@@ -1,48 +1,33 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { Client, GatewayIntentBits } from 'discord.js';
+// api/fetchDiscordUser.ts
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
-});
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
-let isClientLoggedIn = false;
+import axios from 'axios';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { userId } = req.query;
 
-  const token = process.env.DISCORD_BOT_TOKEN;
-  if (!token) {
-    return res.status(500).json({ error: 'Discord bot token is missing' });
-  }
-
-  if (!isClientLoggedIn) {
-    try {
-      await client.login(token);
-      isClientLoggedIn = true;
-    } catch (loginError) {
-      console.error('Failed to login to Discord bot:', loginError);
-      return res.status(500).json({ error: 'Failed to login to Discord' });
-    }
+  if (!userId || typeof userId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing userId parameter.' });
   }
 
   try {
-    const user = await client.users.fetch(userId as string);
-
-    res.status(200).json({
-      id: user.id,
-      username: user.username,
-      discriminator: user.discriminator,
-      avatar: user.avatar,
+    const response = await axios.get(`https://discord.com/api/users/${userId}`, {
+      headers: {
+        Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+      },
     });
-  } catch (error) {
-    const err = error as Error;
 
-    console.error('Error fetching Discord user:', err);
+    const { id, username, discriminator, avatar } = response.data;
 
-    if (err.message && err.message.includes('Unknown User')) {
-      return res.status(404).json({ error: 'User not found' });
+    res.status(200).json({ id, username, discriminator, avatar });
+  } catch (error: any) {
+    if (error.response && error.response.status === 404) {
+      res.status(404).json({ error: 'User not found.' });
+    } else {
+      res.status(500).json({ error: 'Failed to fetch user data.' });
     }
-
-    return res.status(500).json({ error: err.message || 'Failed to fetch Discord user' });
   }
 }
