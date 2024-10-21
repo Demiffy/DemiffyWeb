@@ -88,13 +88,13 @@ async function handleRequest(request) {
 
   let placingDisabled = (await GRID.get('placingDisabled')) === 'true';
 
+  // **Removed '/place-batch' from protectedRoutes**
   const protectedRoutes = ['/clear-grid', '/toggle-placing'];
   if (protectedRoutes.includes(url.pathname)) {
     try {
       const body = await request.json();
       const { password } = body;
 
-      // Password handling remains from original code
       if (password !== ADMIN_PASSWORD) {
         return new Response(JSON.stringify({ success: false, message: 'Unauthorized: Invalid password' }), {
           status: 401,
@@ -115,7 +115,6 @@ async function handleRequest(request) {
       const body = await request.json();
       const { password } = body;
 
-      // Password handling remains from original code
       if (password === ADMIN_PASSWORD) {
         return new Response(JSON.stringify({ success: true }), {
           status: 200,
@@ -135,7 +134,7 @@ async function handleRequest(request) {
     }
   }
 
-  // Handle /grid - initial full grid
+  // Handle /grid
   if (request.method === 'GET' && url.pathname === '/grid') {
     const gridStr = await GRID.get('grid') || '';
     const lastUpdate = await GRID.get('lastUpdate') || '0';
@@ -198,7 +197,7 @@ async function handleRequest(request) {
         const newGridStr = serializeGridMap(gridMap);
         await GRID.put('grid', newGridStr);
 
-        // Record change as removal (set to white)
+        // Record change as removal
         const timestamp = Date.now();
         let changesStr = await GRID.get('changes') || '';
         let changesList = changesStr ? changesStr.split('/') : [];
@@ -230,7 +229,6 @@ async function handleRequest(request) {
       const existingColor = gridMap.get(key);
 
       if (existingColor === finalColor) {
-        // No change needed
         return new Response(JSON.stringify({ success: true, message: 'No change', timestamp: Date.now() }), {
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
@@ -276,9 +274,106 @@ async function handleRequest(request) {
     }
   }
 
+  // Handle /place-batch
+  if (request.method === 'POST' && url.pathname === '/place-batch') {
+    if (placingDisabled) {
+      return new Response(JSON.stringify({ success: false, message: 'Placing is disabled' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    try {
+      const body = await request.json();
+      const { pixels } = body;
+
+      if (!Array.isArray(pixels)) {
+        return new Response(JSON.stringify({ success: false, message: 'Invalid pixels format' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Initialize grid
+      let gridStr = await GRID.get('grid') || '';
+      const gridMap = parseGridString(gridStr);
+
+      const timestamp = Date.now();
+      let changesStr = await GRID.get('changes') || '';
+      let changesList = changesStr ? changesStr.split('/') : [];
+
+      let anySuccess = false;
+      let message = '';
+
+      for (const pixel of pixels) {
+        const { x, y, color } = pixel;
+
+        if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) {
+          continue;
+        }
+
+        if (color.toUpperCase() === '#FFFFFF') {
+          gridMap.delete(`${x},${y}`);
+          changesList.push(`${x};${y}:white,${timestamp}`);
+          anySuccess = true;
+          continue;
+        }
+
+        const colorIndex = colorToIndex(color);
+        let finalColor = colorIndex !== null ? colorIndex : color.toUpperCase();
+
+        const key = `${x},${y}`;
+        const existingColor = gridMap.get(key);
+
+        if (existingColor === finalColor) {
+          continue;
+        }
+
+        if (finalColor === 'white') {
+          gridMap.delete(key);
+        } else {
+          gridMap.set(key, finalColor);
+        }
+
+        if (typeof finalColor === 'number') {
+          changesList.push(`${x};${y}:${finalColor},${timestamp}`);
+        } else {
+          changesList.push(`${x};${y}:${finalColor},${timestamp}`);
+        }
+
+        anySuccess = true;
+      }
+
+      if (!anySuccess) {
+        return new Response(JSON.stringify({ success: true, message: 'No changes made', timestamp }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      // Cap the changes to the last MAX_CHANGES
+      if (changesList.length > MAX_CHANGES) {
+        changesList = changesList.slice(-MAX_CHANGES);
+      }
+
+      const newGridStr = serializeGridMap(gridMap);
+      await GRID.put('grid', newGridStr);
+      const updatedChangesStr = changesList.join('/');
+      await GRID.put('changes', updatedChangesStr);
+      await GRID.put('lastUpdate', timestamp.toString());
+
+      return new Response(JSON.stringify({ success: true, timestamp }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ success: false, message: 'Invalid request format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
   // Handle /clear-grid
   if (request.method === 'POST' && url.pathname === '/clear-grid') {
-    // Clear grid by removing all entries (since white is default)
     await GRID.put('grid', '');
     await GRID.put('changes', '');
     await GRID.put('lastUpdate', Date.now().toString());
@@ -298,7 +393,7 @@ async function handleRequest(request) {
     await GRID.put('placingDisabled', newStatus);
 
     return new Response(JSON.stringify({ success: true, placingDisabled: newStatus === 'true' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   }
 

@@ -9,8 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 const GRID_SIZE = 50;
 const WORKER_API_URL = 'https://demiffy-place-worker.velnertomas78-668.workers.dev';
 
-// Define the color palette with indices
-const COLOR_PALETTE = [
+const COLOR_PALETTE: string[] = [
   '#6D001A', '#BE0039', '#FF4500', '#FFA800', '#FFD635', '#FFF8B8',
   '#00A368', '#00CC78', '#7EED56', '#00756F', '#009EAA', '#00CCC0',
   '#2450A4', '#3690EA', '#51E9F4', '#493AC1', '#6A5CFF', '#94B3FF',
@@ -19,19 +18,9 @@ const COLOR_PALETTE = [
   '#D4D7D9', '#FFFFFF' // Index 31
 ];
 
-// Define interfaces for API responses
 interface TogglePlacingResponse {
   success: boolean;
   placingDisabled: boolean;
-}
-
-interface PlaceResponse {
-  success: boolean;
-  x: number;
-  y: number;
-  color: number | string;
-  timestamp: number;
-  message?: string;
 }
 
 interface AdminLoginResponse {
@@ -43,10 +32,22 @@ interface GetChangesResponse {
   changes: string[];
 }
 
+interface PixelAction {
+  x: number;
+  y: number;
+  color: string | number;
+  previousColor: string | number;
+}
+
+interface BatchPlaceResponse {
+  success: boolean;
+  timestamp: number;
+  message?: string;
+}
+
 const Place = () => {
   const [grid, setGrid] = useState<(number | string)[]>(Array(GRID_SIZE * GRID_SIZE).fill(31));
   const [selectedColor, setSelectedColor] = useState<number>(0);
-  const [cooldown, setCooldown] = useState(false);
   const [placingDisabled, setPlacingDisabled] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -58,7 +59,12 @@ const Place = () => {
   const [lastUpdate, setLastUpdate] = useState<number>(0);
 
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
-  
+  const gridFetchInterval = useRef<NodeJS.Timeout | null>(null);
+  const batchQueue = useRef<PixelAction[]>([]);
+  const batchTimer = useRef<NodeJS.Timeout | null>(null);
+  const isSendingBatch = useRef<boolean>(false);
+  const isFetchingGrid = useRef<boolean>(false);
+
   const parseGridString = (gridStr: string): (number | string)[] => {
     const gridArray: (number | string)[] = Array(GRID_SIZE * GRID_SIZE).fill(31);
     if (!gridStr) return gridArray;
@@ -83,12 +89,77 @@ const Place = () => {
     return gridArray;
   };
 
-  // Function to get color from grid value
   const getColor = (value: number | string): string => {
     if (typeof value === 'number') {
       return COLOR_PALETTE[value] || '#FFFFFF';
     }
     return value;
+  };
+
+  const sendBatch = async () => {
+    if (isSendingBatch.current || batchQueue.current.length === 0) {
+      return;
+    }
+
+    isSendingBatch.current = true;
+
+    const batch = [...batchQueue.current];
+    batchQueue.current = [];
+
+    try {
+      const response = await axios.post<BatchPlaceResponse>(`${WORKER_API_URL}/place-batch`, {
+        pixels: batch.map(action => ({
+          x: action.x,
+          y: action.y,
+          color: action.color
+        }))
+      });
+
+      const data = response.data;
+
+      if (!data.success) {
+        setGrid(prevGrid => {
+          const newGrid = [...prevGrid];
+          batch.forEach(action => {
+            const position = action.x * GRID_SIZE + action.y;
+            if (position >= 0 && position < GRID_SIZE * GRID_SIZE) {
+              newGrid[position] = action.previousColor;
+            }
+          });
+          return newGrid;
+        });
+        setErrorMessage(data.message || 'Batch placing failed.');
+        setTimeout(() => setErrorMessage(''), 5000);
+      } else {
+        setLastUpdate(data.timestamp);
+      }
+    } catch (error: any) {
+      console.error('Error sending batch:', error);
+      setGrid(prevGrid => {
+        const newGrid = [...prevGrid];
+        batch.forEach(action => {
+          const position = action.x * GRID_SIZE + action.y;
+          if (position >= 0 && position < GRID_SIZE * GRID_SIZE) {
+            newGrid[position] = action.previousColor;
+          }
+        });
+        return newGrid;
+      });
+
+      if (error.response && error.response.status === 403) {
+        setPlacingDisabled(true);
+        setErrorMessage('Placing is currently disabled.');
+        setTimeout(() => setErrorMessage(''), 5000);
+      } else if (error.response && error.response.data && error.response.data.message) {
+        setErrorMessage(error.response.data.message);
+        setTimeout(() => setErrorMessage(''), 5000);
+      } else {
+        setErrorMessage('An error occurred while placing the pixels.');
+        setTimeout(() => setErrorMessage(''), 5000);
+      }
+    } finally {
+      isSendingBatch.current = false;
+    }
   };
 
   useEffect(() => {
@@ -113,7 +184,7 @@ const Place = () => {
 
     fetchInitialData();
 
-    // Start polling for changes
+    // Start polling for changes every 90 seconds
     pollingInterval.current = setInterval(async () => {
       try {
         const response = await axios.get<GetChangesResponse>(`${WORKER_API_URL}/get-changes`, {
@@ -138,7 +209,7 @@ const Place = () => {
               const position = x * GRID_SIZE + y;
               if (position >= 0 && position < GRID_SIZE * GRID_SIZE) {
                 if (color.toLowerCase() === 'white') {
-                  newGrid[position] = 31; // Reset to white
+                  newGrid[position] = 31;
                 } else {
                   const colorIndex = parseInt(color, 10);
                   if (!isNaN(colorIndex) && COLOR_PALETTE[colorIndex]) {
@@ -165,69 +236,79 @@ const Place = () => {
           setErrorMessage('');
         }, 5000);
       }
-    }, 90000); // Poll every 90 seconds
+    }, 90000);
+
+    // Automatic grid fetching every 15 seconds
+    gridFetchInterval.current = setInterval(async () => {
+      if (isFetchingGrid.current) return;
+      isFetchingGrid.current = true;
+
+      try {
+        await sendBatch();
+
+        const response = await axios.get(`${WORKER_API_URL}/grid`);
+        const data = response.data;
+        const fetchedGrid = parseGridString(data.grid);
+        setGrid(fetchedGrid);
+        setLastUpdate(parseInt(data.lastUpdate, 10));
+        if (data.placingDisabled !== undefined) {
+          setPlacingDisabled(data.placingDisabled);
+        }
+      } catch (error) {
+        console.error('Error fetching grid:', error);
+        setErrorMessage('Failed to fetch the grid.');
+        setTimeout(() => {
+          setErrorMessage('');
+        }, 5000);
+      } finally {
+        isFetchingGrid.current = false;
+      }
+    }, 15000);
 
     return () => {
       if (pollingInterval.current) {
         clearInterval(pollingInterval.current);
       }
+      if (gridFetchInterval.current) {
+        clearInterval(gridFetchInterval.current);
+      }
     };
   }, [lastUpdate]);
 
-  const handlePlacePixel = async (x: number, y: number) => {
-    if (cooldown || placingDisabled) return;
+  const handlePlacePixel = (x: number, y: number) => {
+    if (placingDisabled) return;
 
-    setCooldown(true);
+    const position = x * GRID_SIZE + y;
+    const previousColor = grid[position];
+    const selectedColorValue = COLOR_PALETTE[selectedColor];
 
-    try {
-      const selectedColorValue = COLOR_PALETTE[selectedColor];
-      const response = await axios.post<PlaceResponse>(`${WORKER_API_URL}/place`, { x, y, color: selectedColorValue });
-      const data = response.data;
-
-      if (data.success) {
-        const position = x * GRID_SIZE + y;
-        const newGrid = [...grid];
-        if (data.color === 'white') {
-          newGrid[position] = 31; // Reset to white
-        } else if (typeof data.color === 'number') {
-          newGrid[position] = data.color;
-        } else {
-          newGrid[position] = data.color.toUpperCase();
-        }
-        setGrid(newGrid);
-        setLastUpdate(data.timestamp);
-        setErrorMessage('');
+    // Update grid immediately
+    setGrid(prevGrid => {
+      const newGrid = [...prevGrid];
+      if (selectedColorValue.toLowerCase() === 'white') {
+        newGrid[position] = 31;
       } else {
-        setErrorMessage(data.message || 'Placing failed.');
-        setTimeout(() => {
-          setErrorMessage('');
-        }, 5000);
+        newGrid[position] = selectedColor;
       }
-    } catch (error: any) {
-      console.error('Error placing pixel:', error);
+      return newGrid;
+    });
 
-      if (error.response && error.response.status === 403) {
-        setPlacingDisabled(true);
-        setErrorMessage('Placing is currently disabled.');
-        setTimeout(() => {
-          setErrorMessage('');
-        }, 5000);
-      } else if (error.response && error.response.data && error.response.data.message) {
-        setErrorMessage(error.response.data.message);
-        setTimeout(() => {
-          setErrorMessage('');
-        }, 5000);
-      } else {
-        setErrorMessage('An error occurred while placing the pixel.');
-        setTimeout(() => {
-          setErrorMessage('');
-        }, 5000);
-      }
-    } finally {
-      setTimeout(() => {
-        setCooldown(false);
-      }, 300);
+    // Add action to batch queue
+    batchQueue.current.push({
+      x,
+      y,
+      color: selectedColorValue,
+      previousColor,
+    });
+
+    // Reset the batch timer
+    if (batchTimer.current) {
+      clearTimeout(batchTimer.current);
     }
+
+    batchTimer.current = setTimeout(() => {
+      sendBatch();
+    }, 10000); // 10 seconds
   };
 
   const adminPanelVariants = {
@@ -240,13 +321,11 @@ const Place = () => {
     visible: { opacity: 1 },
   };
 
-  // Handle Admin Login Submission
   const handleAdminLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleAdminLogin();
   };
 
-  // Function to handle admin login
   const handleAdminLogin = async () => {
     try {
       const response = await axios.post<AdminLoginResponse>(`${WORKER_API_URL}/admin-login`, { password: adminPassword });
@@ -270,7 +349,6 @@ const Place = () => {
     }
   };
 
-  // Function to handle toggling placing status
   const togglePlacing = async () => {
     if (!isAdmin) return;
 
@@ -295,7 +373,6 @@ const Place = () => {
     }
   };
 
-  // Function to handle clearing the grid
   const clearGrid = async () => {
     if (!isAdmin) return;
 
@@ -323,14 +400,13 @@ const Place = () => {
     }
   };
 
-  // Function to handle admin logout
   const handleAdminLogout = () => {
     setIsAdmin(false);
     setAdminPassword('');
   };
 
   const handleTitleClick = () => {
-    setClickCount((prevCount) => prevCount + 1);
+    setClickCount(prevCount => prevCount + 1);
   };
 
   useEffect(() => {
@@ -341,7 +417,7 @@ const Place = () => {
   }, [clickCount]);
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row items-start justify-center p-4 mt-20 space-y-6 md:space-x-6 md:space-y-0">
+    <div className="min-h-screen flex flex-col md:flex-row items-start justify-center p-4 mt-20 space-y-6 md:space-x-6 md:space-y-0 bg-gray-800">
       <Helmet>
         <title>Place - Demiffy</title>
         <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
@@ -354,9 +430,6 @@ const Place = () => {
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://demiffy.com/plane.png" />
       </Helmet>
-      
-      {/* TEMP */}
-      <h1>/place<br/>is under<br/>renovation</h1>
 
       {/* Grid Container */}
       <div
@@ -390,7 +463,7 @@ const Place = () => {
       {/* Color Picker */}
       <div className="flex flex-col items-center">
         <h2
-          className="text-lg mb-4 select-none cursor-pointer"
+          className="text-lg mb-4 select-none cursor-pointer text-white"
           onClick={handleTitleClick}
           title="Click 10 times to open admin login"
         >
@@ -417,7 +490,7 @@ const Place = () => {
               placeholder="Hex"
               value={customColor}
               onChange={(e) => setCustomColor(e.target.value)}
-              className="border rounded px-2 py-1"
+              className="border rounded px-2 py-1 text-black"
               style={{ width: '6rem' }}
             />
             <button
