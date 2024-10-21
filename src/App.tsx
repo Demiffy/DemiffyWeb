@@ -12,6 +12,7 @@ import SowwyProto from './SowwyProto';
 import CarDatabase from './components/CarDatabase';
 import CarDetails from './components/CarDetails';
 import FileConverter from './components/FileConverter';
+import DiscordDetails from './components/DiscordDetails';
 import './App.css';
 
 const AnimatedRoutes = () => {
@@ -35,6 +36,7 @@ const AnimatedRoutes = () => {
           <Route path="/cardatabase" element={<CarDatabase />} />
           <Route path="/car/:carId" Component={CarDetails} />
           <Route path="/ic" element={<FileConverter />} />
+          <Route path="/dd" element={<DiscordDetails />} />
         </Routes>
       </CSSTransition>
     </TransitionGroup>
