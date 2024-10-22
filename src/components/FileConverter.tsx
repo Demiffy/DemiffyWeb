@@ -1,10 +1,21 @@
-// /FileConverter.tsx
+// FileConverter.tsx
 
 import React, { useState, ChangeEvent, DragEvent, useRef } from 'react';
 import { ArrowUpTrayIcon, LinkIcon } from '@heroicons/react/24/solid';
 import Footer from './ui/Footer';
 
-type SupportedFormats = 'avif' | 'webp' | 'jpeg' | 'png' | 'bmp' | 'gif' | 'svg';
+type SupportedFormats =
+  | 'avif'
+  | 'webp'
+  | 'jpeg'
+  | 'jpg'
+  | 'jpe'
+  | 'jfif'
+  | 'png'
+  | 'bmp'
+  | 'gif'
+  | 'svg'
+  | 'ico';
 
 interface FileData {
   file: File;
@@ -13,7 +24,7 @@ interface FileData {
   isConverting: boolean;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 const FileConverter: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileData[]>([]);
@@ -22,19 +33,89 @@ const FileConverter: React.FC = () => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [urlError, setUrlError] = useState<string>('');
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const supportedInputFormats: SupportedFormats[] = ['avif', 'webp', 'jpeg', 'png', 'bmp', 'gif', 'svg'];
-  const supportedOutputFormats: SupportedFormats[] = ['avif', 'webp', 'jpeg', 'png', 'bmp', 'gif'];
+  const supportedInputFormats: SupportedFormats[] = [
+    'avif',
+    'webp',
+    'jpeg',
+    'jpg',
+    'jpe',
+    'jfif',
+    'png',
+    'bmp',
+    'gif',
+    'svg',
+    'ico',
+  ];
+
+  const outputFormatOptions = [
+    { label: 'PNG', value: 'png' },
+    { label: 'JPEG', value: 'jpeg' },
+    { label: 'JPG', value: 'jpg' },
+    { label: 'ICO', value: 'ico' },
+    { label: 'WEBP', value: 'webp' },
+    { label: 'AVIF', value: 'avif' },
+    { label: 'BMP', value: 'bmp' },
+    { label: 'GIF', value: 'gif' },
+    { label: 'SVG', value: 'svg' },
+  ];
+
+  const supportedOutputFormats: SupportedFormats[] = outputFormatOptions.map(
+    (option) => option.value as SupportedFormats
+  );
+
+  const extensionToMimeType: { [key in SupportedFormats]: string } = {
+    avif: 'image/avif',
+    webp: 'image/webp',
+    jpeg: 'image/jpeg',
+    jpg: 'image/jpeg',
+    jpe: 'image/jpeg',
+    jfif: 'image/jpeg',
+    png: 'image/png',
+    bmp: 'image/bmp',
+    gif: 'image/gif',
+    svg: 'image/svg+xml',
+    ico: 'image/x-icon',
+  };
+
+  const mimeTypeToExtension: { [key: string]: SupportedFormats } = {
+    'image/avif': 'avif',
+    'image/webp': 'webp',
+    'image/jpeg': 'jpeg',
+    'image/png': 'png',
+    'image/bmp': 'bmp',
+    'image/gif': 'gif',
+    'image/svg+xml': 'svg',
+    'image/x-icon': 'ico',
+    'image/vnd.microsoft.icon': 'ico',
+  };
+
+  const outputExtensionMapping: { [key in SupportedFormats]: string } = {
+    avif: 'avif',
+    webp: 'webp',
+    jpeg: 'jpeg',
+    jpg: 'jpg',
+    jpe: 'jpe',
+    jfif: 'jfif',
+    png: 'png',
+    bmp: 'bmp',
+    gif: 'gif',
+    svg: 'svg',
+    ico: 'ico',
+  };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setGlobalError('');
     const files = e.target.files;
     if (files) {
       const filesArray: FileData[] = Array.from(files).map((file) => {
-        const fileExtension = file.name.split('.').pop()?.toLowerCase() as SupportedFormats;
-        if (!supportedInputFormats.includes(fileExtension)) {
+        const fileExtension = file.name
+          .split('.')
+          .pop()
+          ?.toLowerCase() as SupportedFormats;
+        if (!fileExtension || !supportedInputFormats.includes(fileExtension)) {
           return {
             file,
             convertedUrl: '',
@@ -61,7 +142,9 @@ const FileConverter: React.FC = () => {
     }
   };
 
-  const handleOutputFormatChange = (e: ChangeEvent<HTMLSelectElement>): void => {
+  const handleOutputFormatChange = (
+    e: ChangeEvent<HTMLSelectElement>
+  ): void => {
     const format = e.target.value as SupportedFormats;
     setOutputFormat(format);
   };
@@ -91,8 +174,11 @@ const FileConverter: React.FC = () => {
     const files = e.dataTransfer.files;
     if (files) {
       const filesArray: FileData[] = Array.from(files).map((file) => {
-        const fileExtension = file.name.split('.').pop()?.toLowerCase() as SupportedFormats;
-        if (!supportedInputFormats.includes(fileExtension)) {
+        const fileExtension = file.name
+          .split('.')
+          .pop()
+          ?.toLowerCase() as SupportedFormats;
+        if (!fileExtension || !supportedInputFormats.includes(fileExtension)) {
           return {
             file,
             convertedUrl: '',
@@ -137,8 +223,8 @@ const FileConverter: React.FC = () => {
       }
 
       const blob = await response.blob();
-      const fileExtension = blob.type.split('/')[1] as SupportedFormats;
-      if (!supportedInputFormats.includes(fileExtension)) {
+      const fileExtension = mimeTypeToExtension[blob.type];
+      if (!fileExtension || !supportedInputFormats.includes(fileExtension)) {
         setUrlError('Unsupported image format.');
         return;
       }
@@ -148,7 +234,11 @@ const FileConverter: React.FC = () => {
         return;
       }
 
-      const file = new File([blob], `image_from_url.${fileExtension}`, { type: blob.type });
+      const file = new File(
+        [blob],
+        `image_from_url.${outputExtensionMapping[fileExtension] || fileExtension}`,
+        { type: blob.type }
+      );
       const newFile: FileData = {
         file,
         convertedUrl: '',
@@ -162,11 +252,16 @@ const FileConverter: React.FC = () => {
     }
   };
 
-  const convertImage = async (fileData: FileData, index: number): Promise<void> => {
+  const convertImage = async (
+    fileData: FileData,
+    index: number
+  ): Promise<void> => {
     const { file } = fileData;
 
     setSelectedFiles((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, isConverting: true, error: '' } : item))
+      prev.map((item, i) =>
+        i === index ? { ...item, isConverting: true, error: '' } : item
+      )
     );
 
     const reader = new FileReader();
@@ -182,28 +277,8 @@ const FileConverter: React.FC = () => {
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0);
-            let mimeType: string;
-            switch (outputFormat) {
-              case 'avif':
-                mimeType = 'image/avif';
-                break;
-              case 'webp':
-                mimeType = 'image/webp';
-                break;
-              case 'jpeg':
-                mimeType = 'image/jpeg';
-                break;
-              case 'bmp':
-                mimeType = 'image/bmp';
-                break;
-              case 'gif':
-                mimeType = 'image/gif';
-                break;
-              case 'png':
-              default:
-                mimeType = 'image/png';
-                break;
-            }
+            const mimeType =
+              extensionToMimeType[outputFormat] || 'image/png';
 
             canvas.toBlob(
               (blob) => {
@@ -220,7 +295,11 @@ const FileConverter: React.FC = () => {
                   setSelectedFiles((prev) =>
                     prev.map((item, i) =>
                       i === index
-                        ? { ...item, error: 'Conversion failed.', isConverting: false }
+                        ? {
+                            ...item,
+                            error: 'Conversion failed.',
+                            isConverting: false,
+                          }
                         : item
                     )
                   );
@@ -233,7 +312,11 @@ const FileConverter: React.FC = () => {
             setSelectedFiles((prev) =>
               prev.map((item, i) =>
                 i === index
-                  ? { ...item, error: 'Failed to get canvas context.', isConverting: false }
+                  ? {
+                      ...item,
+                      error: 'Failed to get canvas context.',
+                      isConverting: false,
+                    }
                   : item
               )
             );
@@ -243,7 +326,11 @@ const FileConverter: React.FC = () => {
           setSelectedFiles((prev) =>
             prev.map((item, i) =>
               i === index
-                ? { ...item, error: 'Failed to load the image.', isConverting: false }
+                ? {
+                    ...item,
+                    error: 'Failed to load the image.',
+                    isConverting: false,
+                  }
                 : item
             )
           );
@@ -253,7 +340,11 @@ const FileConverter: React.FC = () => {
         setSelectedFiles((prev) =>
           prev.map((item, i) =>
             i === index
-              ? { ...item, error: 'Failed to read the file.', isConverting: false }
+              ? {
+                  ...item,
+                  error: 'Failed to read the file.',
+                  isConverting: false,
+                }
               : item
           )
         );
@@ -263,7 +354,11 @@ const FileConverter: React.FC = () => {
       setSelectedFiles((prev) =>
         prev.map((item, i) =>
           i === index
-            ? { ...item, error: 'Error reading the file.', isConverting: false }
+            ? {
+                ...item,
+                error: 'Error reading the file.',
+                isConverting: false,
+              }
             : item
         )
       );
@@ -291,7 +386,7 @@ const FileConverter: React.FC = () => {
     <div className="min-h-screen text-white">
       <section className="min-h-screen flex flex-col items-center text-white p-12">
         <h2 className="text-3xl font-bold mb-6">IMG Converter</h2>
-  
+
         <div className="flex flex-col lg:flex-row w-full max-w-5xl space-y-6 lg:space-y-0 lg:space-x-6">
           {/* Drag and Drop Area */}
           <div
@@ -329,11 +424,14 @@ const FileConverter: React.FC = () => {
               ref={fileInputRef}
             />
           </div>
-  
+
           {/* Output Format Selection and Convert Button */}
           <div className="flex flex-col w-full lg:w-1/2 space-y-4">
             <div className="bg-gray-700 p-6 rounded shadow-md">
-              <label htmlFor="outputFormat" className="block mb-2 text-sm font-medium">
+              <label
+                htmlFor="outputFormat"
+                className="block mb-2 text-sm font-medium"
+              >
                 Select Output Format
               </label>
               <select
@@ -342,17 +440,20 @@ const FileConverter: React.FC = () => {
                 onChange={handleOutputFormatChange}
                 className="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
               >
-                {supportedOutputFormats.map((fmt) => (
-                  <option key={fmt} value={fmt}>
-                    {fmt.toUpperCase()}
+                {outputFormatOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
             </div>
-  
+
             {/* Add Image from URL */}
             <div className="bg-gray-700 p-6 rounded shadow-md flex flex-col">
-              <label htmlFor="imageUrl" className="block mb-2 text-sm font-medium">
+              <label
+                htmlFor="imageUrl"
+                className="block mb-2 text-sm font-medium"
+              >
                 Add Image from URL
               </label>
               <div className="flex">
@@ -374,7 +475,7 @@ const FileConverter: React.FC = () => {
               </div>
               {urlError && <p className="text-red-400 mt-2">{urlError}</p>}
             </div>
-  
+
             {/* Convert Button */}
             {selectedFiles.length > 0 && (
               <button
@@ -395,10 +496,10 @@ const FileConverter: React.FC = () => {
             )}
           </div>
         </div>
-  
+
         {/* Global Error */}
         {globalError && <p className="text-red-400 mb-4">{globalError}</p>}
-  
+
         {/* Selected Files List */}
         {selectedFiles.length > 0 && (
           <div className="w-full max-w-5xl mt-6">
@@ -411,9 +512,17 @@ const FileConverter: React.FC = () => {
                 >
                   <div>
                     <p className="font-medium">{fileData.file.name}</p>
-                    {fileData.error && <p className="text-red-400 text-sm">{fileData.error}</p>}
-                    {fileData.isConverting && <p className="text-yellow-400 text-sm">Converting...</p>}
-                    {fileData.convertedUrl && <p className="text-green-400 text-sm">Conversion Complete</p>}
+                    {fileData.error && (
+                      <p className="text-red-400 text-sm">{fileData.error}</p>
+                    )}
+                    {fileData.isConverting && (
+                      <p className="text-yellow-400 text-sm">Converting...</p>
+                    )}
+                    {fileData.convertedUrl && (
+                      <p className="text-green-400 text-sm">
+                        Conversion Complete
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={() => removeFile(index)}
@@ -441,7 +550,7 @@ const FileConverter: React.FC = () => {
             </ul>
           </div>
         )}
-  
+
         {/* Converted Files Display */}
         {selectedFiles.some((file) => file.convertedUrl) && (
           <div className="w-full max-w-5xl mt-6">
@@ -449,7 +558,10 @@ const FileConverter: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {selectedFiles.map((fileData, index) =>
                 fileData.convertedUrl ? (
-                  <div key={index} className="bg-gray-700 p-4 rounded shadow-md">
+                  <div
+                    key={index}
+                    className="bg-gray-700 p-4 rounded shadow-md"
+                  >
                     <img
                       src={fileData.convertedUrl}
                       alt={`Converted ${fileData.file.name}`}
@@ -458,7 +570,14 @@ const FileConverter: React.FC = () => {
                     />
                     <a
                       href={fileData.convertedUrl}
-                      download={`${fileData.file.name.substring(0, fileData.file.name.lastIndexOf('.'))}_${outputFormat}.${outputFormat}`}
+                      download={`${
+                        fileData.file.name.substring(
+                          0,
+                          fileData.file.name.lastIndexOf('.')
+                        )
+                      }_${outputExtensionMapping[outputFormat] || outputFormat}.${
+                        outputExtensionMapping[outputFormat] || outputFormat
+                      }`}
                       className="inline-flex items-center py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200"
                       style={{ color: 'white' }}
                     >
@@ -475,6 +594,6 @@ const FileConverter: React.FC = () => {
       <Footer />
     </div>
   );
-}  
+};
 
 export default FileConverter;
