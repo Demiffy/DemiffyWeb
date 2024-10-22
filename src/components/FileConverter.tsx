@@ -62,10 +62,6 @@ const FileConverter: React.FC = () => {
     { label: 'SVG', value: 'svg' },
   ];
 
-  const supportedOutputFormats: SupportedFormats[] = outputFormatOptions.map(
-    (option) => option.value as SupportedFormats
-  );
-
   const extensionToMimeType: { [key in SupportedFormats]: string } = {
     avif: 'image/avif',
     webp: 'image/webp',
