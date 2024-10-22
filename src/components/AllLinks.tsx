@@ -6,7 +6,7 @@ const AllLinks = () => {
     <div className="min-h-screen bg-gray-900 text-white flex flex-col justify-center items-center py-16 px-8">
       <div className="container mx-auto">
         <h1 className="text-4xl font-extrabold mb-12 text-gray-200 text-center">
-          Explore the Pages
+          All Links
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <Link
@@ -15,7 +15,7 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Home</h2>
-              <p className="text-gray-400">Go back to the homepage.</p>
+              <p className="text-gray-400">Go back to the homepage</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
@@ -26,7 +26,7 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">About</h2>
-              <p className="text-gray-400">Learn more about us.</p>
+              <p className="text-gray-400">Learn about me</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
@@ -37,7 +37,7 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Place</h2>
-              <p className="text-gray-400">Visit the place page.</p>
+              <p className="text-gray-400">Small r/place replica</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
@@ -48,7 +48,7 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Tetris Game</h2>
-              <p className="text-gray-400">Play Tetris.</p>
+              <p className="text-gray-400">Play Tetris</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
@@ -59,7 +59,7 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Sudoku Game</h2>
-              <p className="text-gray-400">Play Sudoku.</p>
+              <p className="text-gray-400">Play Sudoku</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
@@ -70,7 +70,7 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">2048 Game</h2>
-              <p className="text-gray-400">Play 2048.</p>
+              <p className="text-gray-400">Play 2048</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
@@ -81,7 +81,7 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Sowwy Proto</h2>
-              <p className="text-gray-400">Prototype Sowwy app.</p>
+              <p className="text-gray-400">QwQ</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
@@ -92,7 +92,7 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Car Database</h2>
-              <p className="text-gray-400">Check out the car database.</p>
+              <p className="text-gray-400">Check out the car database</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
@@ -103,7 +103,18 @@ const AllLinks = () => {
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">File Converter</h2>
-              <p className="text-gray-400">Convert your files easily.</p>
+              <p className="text-gray-400">Convert your files easily</p>
+            </div>
+            <ChevronRight className="text-gray-400" size={32} />
+          </Link>
+
+          <Link
+            to="/gif"
+            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+          >
+            <div className="text-left">
+              <h2 className="text-2xl font-semibold">GIF Maker</h2>
+              <p className="text-gray-400">Create GIFs easily</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>

@@ -12,6 +12,7 @@ import SowwyProto from './SowwyProto';
 import CarDatabase from './components/CarDatabase';
 import CarDetails from './components/CarDetails';
 import FileConverter from './components/FileConverter';
+import GifMaker from './components/GifMaker';
 import AllLinks from './components/AllLinks';
 import './App.css';
 
@@ -36,6 +37,7 @@ const AnimatedRoutes = () => {
           <Route path="/cardatabase" element={<CarDatabase />} />
           <Route path="/car/:carId" Component={CarDetails} />
           <Route path="/ic" element={<FileConverter />} />
+          <Route path="/gif" element={<GifMaker />} />
           <Route path="/links" element={<AllLinks />} />
         </Routes>
       </CSSTransition>
