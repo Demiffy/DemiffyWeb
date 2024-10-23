@@ -79,8 +79,24 @@ const skills = [
           { name: "Unity", image: "/unity-icon.png" },
           { name: "C#", image: "/c-icon.png" },
         ]
+      },
+      {
+        title: "RMC - Remote Mouse Control PC",
+        description: "A remote mouse control application that allows users to control their PC from a mobile device.",
+        image: "/rmc1.png",
+        details: "RMC is a remote mouse control application that enables users to control their PC from a mobile device.",
+        additionalImages: [
+          { src: "rmc1.png", title: "Console Debug" },
+        ],
+        buttons: [
+        ],
+        technologies: [
+          { name: "Python", image: "/temp.png" },
+          { name: "React", image: "/react-icon.png" },
+          { name: "JavaScript", image: "/c-icon.png" },
+        ]
       }
-    ];    
+    ];
     
 
   const milestones = [
