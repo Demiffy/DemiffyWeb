@@ -14,6 +14,7 @@ import CarDetails from './components/CarDetails';
 import FileConverter from './components/FileConverter';
 import GifMaker from './components/GifMaker';
 import AllLinks from './components/AllLinks';
+import NotFound from './NotFound';
 import './App.css';
 
 const AnimatedRoutes = () => {
@@ -39,6 +40,8 @@ const AnimatedRoutes = () => {
           <Route path="/ic" element={<FileConverter />} />
           <Route path="/gif" element={<GifMaker />} />
           <Route path="/links" element={<AllLinks />} />
+
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </CSSTransition>
     </TransitionGroup>

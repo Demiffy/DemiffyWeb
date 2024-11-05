@@ -7,10 +7,19 @@
     {
       "source": "/getgrades/(.*)",
       "destination": "https://109.80.40.13:443/getgrades"
-    },
+    }
+  ],
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/"
+      "src": "/(.*)",
+      "dest": "/",
+      "status": 404,
+      "has": [
+        {
+          "type": "host",
+          "value": "(?!demiffy\\.com).*"
+        }
+      ]
     }
   ]
 }
