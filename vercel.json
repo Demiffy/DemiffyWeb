@@ -10,8 +10,20 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/404"
+      "destination": "/index.html"
     }
   ],
-  "cleanUrls": true
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
 }
