@@ -14,6 +14,7 @@ import CarDetails from './components/CarDetails';
 import FileConverter from './components/FileConverter';
 import GifMaker from './components/GifMaker';
 import AllLinks from './components/AllLinks';
+import ImageResizer from './components/ImageResizer';
 import NotFound from './NotFound';
 import './App.css';
 
@@ -36,6 +37,7 @@ const AnimatedRoutes = () => {
           <Route path="/ic" element={<FileConverter />} />
           <Route path="/gif" element={<GifMaker />} />
           <Route path="/links" element={<AllLinks />} />
+          <Route path="/img" element={<ImageResizer />} />
 
           <Route path="/404" element={<NotFound />} />
 
