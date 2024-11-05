@@ -22,11 +22,7 @@ const AnimatedRoutes = () => {
 
   return (
     <TransitionGroup>
-      <CSSTransition
-        key={location.key}
-        classNames="fade"
-        timeout={300}
-      >
+      <CSSTransition key={location.key} classNames="fade" timeout={300}>
         <Routes location={location}>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
@@ -40,6 +36,8 @@ const AnimatedRoutes = () => {
           <Route path="/ic" element={<FileConverter />} />
           <Route path="/gif" element={<GifMaker />} />
           <Route path="/links" element={<AllLinks />} />
+
+          <Route path="/404" element={<NotFound />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
