@@ -1,36 +1,44 @@
 // ImageResizer.tsx
 
 import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
-import { ArrowUpTrayIcon } from '@heroicons/react/24/solid'; // Ensure @heroicons/react is installed
+import { ArrowUpTrayIcon, ArrowsRightLeftIcon, ArrowPathIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
 import Footer from './ui/Footer';
 
-const MAX_PREVIEW_SIZE = 800; // Maximum preview size in pixels
+const MAX_PREVIEW_SIZE = 500;
 
 const ImageResizer: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [resizedImage, setResizedImage] = useState<string | null>(null);
-  const [width, setWidth] = useState<number>(300);
-  const [height, setHeight] = useState<number>(300);
+  const [width, setWidth] = useState<number | null>(null);
+  const [height, setHeight] = useState<number | null>(null);
   const [, setIsResizing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [originalDimensions, setOriginalDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [originalDimensions, setOriginalDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const [lockAspectRatio, setLockAspectRatio] = useState<boolean>(true);
   const [aspectRatio, setAspectRatio] = useState<number>(1);
 
+  const [rotation, setRotation] = useState<number>(0);
+  const [flipH, setFlipH] = useState<boolean>(false);
+  const [flipV, setFlipV] = useState<boolean>(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when a new image is uploaded
   const resetState = () => {
-    setWidth(300);
-    setHeight(300);
+    setWidth(null);
+    setHeight(null);
     setResizedImage(null);
     setOriginalDimensions(null);
     setError('');
     setLockAspectRatio(true);
     setAspectRatio(1);
+    setRotation(0);
+    setFlipH(false);
+    setFlipV(false);
   };
 
-  // Clean up object URLs to prevent memory leaks
   useEffect(() => {
     return () => {
       if (selectedImage) {
@@ -46,7 +54,7 @@ const ImageResizer: React.FC = () => {
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      resetState(); // Reset all states when a new image is uploaded
+      resetState();
 
       if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file.');
@@ -60,8 +68,12 @@ const ImageResizer: React.FC = () => {
       const img = new Image();
       img.src = imageUrl;
       img.onload = () => {
-        setOriginalDimensions({ width: img.width, height: img.height });
-        setAspectRatio(img.width / img.height);
+        const originalWidth = img.width;
+        const originalHeight = img.height;
+        setOriginalDimensions({ width: originalWidth, height: originalHeight });
+        setAspectRatio(originalWidth / originalHeight);
+        setWidth(originalWidth);
+        setHeight(originalHeight);
       };
       img.onerror = () => {
         setError('Failed to load the original image.');
@@ -72,7 +84,7 @@ const ImageResizer: React.FC = () => {
   // Handle width change with aspect ratio lock
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newWidth = Number(e.target.value);
-    if (lockAspectRatio && aspectRatio !== 0) {
+    if (lockAspectRatio && aspectRatio !== 0 && originalDimensions) {
       setWidth(newWidth);
       setHeight(Math.round(newWidth / aspectRatio));
     } else {
@@ -83,7 +95,7 @@ const ImageResizer: React.FC = () => {
   // Handle height change with aspect ratio lock
   const handleHeightChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newHeight = Number(e.target.value);
-    if (lockAspectRatio && aspectRatio !== 0) {
+    if (lockAspectRatio && aspectRatio !== 0 && originalDimensions) {
       setHeight(newHeight);
       setWidth(Math.round(newHeight * aspectRatio));
     } else {
@@ -95,20 +107,20 @@ const ImageResizer: React.FC = () => {
   const handleLockAspectRatioChange = (e: ChangeEvent<HTMLInputElement>) => {
     const isLocked = e.target.checked;
     setLockAspectRatio(isLocked);
-    if (isLocked && aspectRatio !== 0) {
+    if (isLocked && aspectRatio !== 0 && width && originalDimensions) {
       setHeight(Math.round(width / aspectRatio));
     }
   };
 
-  // Automatically resize image when width, height, or selectedImage changes
+  // Automatically resize image when width, height, selectedImage, rotation, flipH, or flipV changes
   useEffect(() => {
-    if (selectedImage) {
+    if (selectedImage && width && height) {
       handleAutoResize();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [width, height, selectedImage]);
+  }, [width, height, selectedImage, rotation, flipH, flipV]);
 
-  // Function to handle automatic resizing
+  // Function to handle automatic resizing and transformations
   const handleAutoResize = () => {
     setIsResizing(true);
     setError('');
@@ -118,12 +130,23 @@ const ImageResizer: React.FC = () => {
     img.src = URL.createObjectURL(selectedImage!);
 
     img.onload = () => {
-      canvas.width = width;
-      canvas.height = height;
+      // Apply rotation and flipping to canvas
+      const radians = (rotation * Math.PI) / 180;
+      const sin = Math.abs(Math.sin(radians));
+      const cos = Math.abs(Math.cos(radians));
+
+      // Calculate new canvas size to accommodate rotation
+      const newWidth = Math.floor(width! * cos + height! * sin);
+      const newHeight = Math.floor(width! * sin + height! * cos);
+      canvas.width = newWidth;
+      canvas.height = newHeight;
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.translate(newWidth / 2, newHeight / 2);
+        ctx.rotate(radians);
+        ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+        ctx.drawImage(img, -width! / 2, -height! / 2, width!, height!);
         const resizedUrl = canvas.toDataURL('image/png');
         setResizedImage(resizedUrl);
         setIsResizing(false);
@@ -157,15 +180,39 @@ const ImageResizer: React.FC = () => {
     fileInputRef.current?.click();
   };
 
+  // Handle rotation to the left (counter-clockwise)
+  const handleRotateLeft = () => {
+    setRotation((prev) => (prev - 90) % 360);
+  };
+
+  // Handle rotation to the right (clockwise)
+  const handleRotateRight = () => {
+    setRotation((prev) => (prev + 90) % 360);
+  };
+
+  // Handle horizontal flip
+  const handleFlipHorizontal = () => {
+    setFlipH((prev) => !prev);
+  };
+
+  // Handle vertical flip
+  const handleFlipVertical = () => {
+    setFlipV((prev) => !prev);
+  };
+
   return (
     <div className="min-h-screen bg-gray-800 text-white flex flex-col pt-12">
       <header className="p-6">
         <h1 className="text-3xl font-bold text-center">Image Resizer</h1>
       </header>
-  
+
       {/* Main Content */}
-      <main className={`flex-grow p-6 ${!selectedImage ? 'flex items-center justify-center' : ''}`}>
-        <div className={`flex ${selectedImage ? 'flex-col lg:flex-row lg:space-x-6' : 'items-center justify-center'}`}>
+      <main className="flex-grow p-6 overflow-auto">
+        <div
+          className={`flex flex-col lg:flex-row lg:space-x-6 ${
+            !selectedImage ? 'items-center justify-center' : ''
+          }`}
+        >
           {/* Upload Area */}
           <div
             onClick={handleUploadAreaClick}
@@ -177,10 +224,14 @@ const ImageResizer: React.FC = () => {
                 fileInputRef.current?.click();
               }
             }}
-            className="flex flex-col items-center justify-center w-full h-64 p-6 border-2 border-dashed rounded-lg transition-colors duration-200 cursor-pointer border-gray-500 bg-gray-700 hover:bg-gray-600"
+            className={`flex flex-col items-center justify-center w-full h-64 p-6 border-2 border-dashed rounded-lg transition-colors duration-200 cursor-pointer border-gray-500 bg-gray-700 hover:bg-gray-600 ${
+              selectedImage ? 'lg:w-1/2' : ''
+            }`}
           >
             <ArrowUpTrayIcon className="h-12 w-12 text-blue-400 mb-4" />
-            <p className="text-center">Drag and drop an image here, or click to select a file.</p>
+            <p className="text-center">
+              Drag and drop an image here, or click to select a file.
+            </p>
             <input
               type="file"
               accept="image/*"
@@ -189,11 +240,11 @@ const ImageResizer: React.FC = () => {
               ref={fileInputRef}
             />
           </div>
-  
+
           {/* Settings and Controls */}
-          {selectedImage && (
-            <div className="w-full lg:w-1/2 mt-6 lg:mt-0 bg-gray-700 p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-semibold mb-4">Resize Settings</h2>
+          {selectedImage && width && height && (
+            <div className="w-full lg:w-1/2 mt-6 lg:mt-0 bg-gray-700 p-6 rounded-lg shadow-md max-h-full overflow-auto">
+              <h2 className="text-2xl font-semibold mb-4">Resize & Transform Settings</h2>
               <div className="space-y-4">
                 {/* Width Input */}
                 <div className="flex items-center">
@@ -209,7 +260,7 @@ const ImageResizer: React.FC = () => {
                     min={1}
                   />
                 </div>
-  
+
                 {/* Height Input */}
                 <div className="flex items-center">
                   <label htmlFor="height" className="w-24 text-sm font-medium">
@@ -224,7 +275,7 @@ const ImageResizer: React.FC = () => {
                     min={1}
                   />
                 </div>
-  
+
                 {/* Lock Aspect Ratio */}
                 <div className="flex items-center">
                   <input
@@ -238,16 +289,61 @@ const ImageResizer: React.FC = () => {
                     Lock Aspect Ratio
                   </label>
                 </div>
+
+                {/* Transformation Controls */}
+                <div className="mt-4">
+                  <h3 className="text-xl font-semibold mb-2">Transformations</h3>
+                  <div className="flex flex-wrap space-x-2">
+                    <button
+                      onClick={handleRotateLeft}
+                      className="flex items-center justify-center py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200 mb-2"
+                      aria-label="Rotate Left"
+                      title="Rotate Left"
+                    >
+                      <ArrowPathIcon className="h-5 w-5 mr-2 transform rotate-180" />
+                      Rotate Left
+                    </button>
+                    <button
+                      onClick={handleRotateRight}
+                      className="flex items-center justify-center py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200 mb-2"
+                      aria-label="Rotate Right"
+                      title="Rotate Right"
+                    >
+                      <ArrowPathIcon className="h-5 w-5 mr-2" />
+                      Rotate Right
+                    </button>
+                    <button
+                      onClick={handleFlipHorizontal}
+                      className="flex items-center justify-center py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors duration-200 mb-2"
+                      aria-label="Flip Horizontal"
+                      title="Flip Horizontal"
+                    >
+                      <ArrowsRightLeftIcon className="h-5 w-5 mr-2" />
+                      Flip H
+                    </button>
+                    <button
+                      onClick={handleFlipVertical}
+                      className="flex items-center justify-center py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors duration-200 mb-2"
+                      aria-label="Flip Vertical"
+                      title="Flip Vertical"
+                    >
+                      <ArrowDownIcon className="h-5 w-5 mr-2" />
+                      Flip V
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
         </div>
-  
+
         {/* Error Message */}
-        {error && <p className="text-red-400 mt-4 text-center lg:text-left">{error}</p>}
-  
+        {error && (
+          <p className="text-red-400 mt-4 text-center lg:text-left">{error}</p>
+        )}
+
         {/* Resized Image Preview */}
-        {resizedImage && (
+        {resizedImage && width && height && (
           <div className="flex flex-col lg:flex-row lg:space-x-6 mt-6">
             {/* Resized Image */}
             <div className="w-full lg:w-1/2 bg-gray-700 p-6 rounded-lg shadow-md flex flex-col items-center">
@@ -255,10 +351,12 @@ const ImageResizer: React.FC = () => {
               <div
                 className="bg-gray-800 p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
                 style={{
-                  width: width > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : width,
-                  height: height > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : height,
-                  maxWidth: MAX_PREVIEW_SIZE,
-                  maxHeight: MAX_PREVIEW_SIZE,
+                  width:
+                    width > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : width,
+                  height:
+                    height > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : height,
+                  maxWidth: '100%',
+                  maxHeight: '60vh',
                 }}
               >
                 <img
@@ -266,7 +364,8 @@ const ImageResizer: React.FC = () => {
                   alt="Resized"
                   style={{
                     width: width > MAX_PREVIEW_SIZE ? '100%' : `${width}px`,
-                    height: height > MAX_PREVIEW_SIZE ? '100%' : `${height}px`,
+                    height:
+                      height > MAX_PREVIEW_SIZE ? '100%' : `${height}px`,
                     objectFit: 'contain',
                   }}
                 />
@@ -282,7 +381,7 @@ const ImageResizer: React.FC = () => {
                 Download Image
               </button>
             </div>
-  
+
             {/* Original Image Preview */}
             {selectedImage && originalDimensions && (
               <div className="w-full lg:w-1/2 bg-gray-700 p-6 rounded-lg shadow-md flex flex-col items-center mt-6 lg:mt-0">
@@ -290,24 +389,37 @@ const ImageResizer: React.FC = () => {
                 <div
                   className="bg-gray-800 p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
                   style={{
-                    width: originalDimensions.width > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : originalDimensions.width,
-                    height: originalDimensions.height > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : originalDimensions.height,
-                    maxWidth: MAX_PREVIEW_SIZE,
-                    maxHeight: MAX_PREVIEW_SIZE,
+                    width:
+                      originalDimensions.width > MAX_PREVIEW_SIZE
+                        ? MAX_PREVIEW_SIZE
+                        : originalDimensions.width,
+                    height:
+                      originalDimensions.height > MAX_PREVIEW_SIZE
+                        ? MAX_PREVIEW_SIZE
+                        : originalDimensions.height,
+                    maxWidth: '100%',
+                    maxHeight: '60vh',
                   }}
                 >
                   <img
                     src={URL.createObjectURL(selectedImage)}
                     alt="Original"
                     style={{
-                      width: originalDimensions.width > MAX_PREVIEW_SIZE ? '100%' : `${originalDimensions.width}px`,
-                      height: originalDimensions.height > MAX_PREVIEW_SIZE ? '100%' : `${originalDimensions.height}px`,
+                      width:
+                        originalDimensions.width > MAX_PREVIEW_SIZE
+                          ? '100%'
+                          : `${originalDimensions.width}px`,
+                      height:
+                        originalDimensions.height > MAX_PREVIEW_SIZE
+                          ? '100%'
+                          : `${originalDimensions.height}px`,
                       objectFit: 'contain',
                     }}
                   />
                 </div>
                 <p className="mt-2 text-sm">
-                  Dimensions: {originalDimensions.width}px &times; {originalDimensions.height}px
+                  Dimensions: {originalDimensions.width}px &times;{' '}
+                  {originalDimensions.height}px
                 </p>
               </div>
             )}
@@ -316,7 +428,7 @@ const ImageResizer: React.FC = () => {
       </main>
       <Footer />
     </div>
-  );  
+  );
 };
 
 export default ImageResizer;
