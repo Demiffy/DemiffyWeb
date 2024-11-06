@@ -16,7 +16,7 @@ interface CarCardProps {
 
 const CarCard: React.FC<CarCardProps> = ({ car }) => {
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-400/50 transition-all duration-300 transform hover:-translate-y-1">
+    <div className="bg-gray-900 rounded-lg overflow-hidden shadow-lg hover:shadow-cyan-400/50 transition-all duration-300 transform hover:-translate-y-1">
       <img src={car.image} alt={car.name} className="w-full h-48 object-cover" />
       <div className="p-4">
         <h2 className="text-xl font-semibold mb-2">{car.name}</h2>

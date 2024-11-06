@@ -29,7 +29,7 @@ export default function CarDatabase() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-900 text-white pt-16">
+    <div className="min-h-screen flex flex-col text-white pt-16">
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 flex-grow">
         {/* Search Bar */}
