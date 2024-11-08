@@ -22,7 +22,7 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
         <h2 className="text-xl font-semibold mb-2">{car.name}</h2>
         <p className="text-cyan-400 mb-4">Price: {car.price}</p>
         <p className="text-gray-400 mb-4">Production: {car.productionStart} - {car.productionEnd}</p>
-        <Link to={`/car/${car.id}`}>
+        <Link to={`/cdata/cid/${car.id}`}>
           <button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center justify-center">
             View Details
             <ChevronRight className="ml-2" size={18} />

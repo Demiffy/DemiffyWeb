@@ -87,7 +87,7 @@ const AllLinks = () => {
           </Link>
 
           <Link
-            to="/cardatabase"
+            to="/cdata"
             className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
           >
             <div className="text-left">
@@ -115,6 +115,17 @@ const AllLinks = () => {
             <div className="text-left">
               <h2 className="text-2xl font-semibold">GIF Maker</h2>
               <p className="text-gray-400">Create GIFs easily</p>
+            </div>
+            <ChevronRight className="text-gray-400" size={32} />
+          </Link>
+
+          <Link
+            to="/img"
+            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+          >
+            <div className="text-left">
+              <h2 className="text-2xl font-semibold">Image Resizer & Rotater</h2>
+              <p className="text-gray-400">Resize and rotate images easily</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>

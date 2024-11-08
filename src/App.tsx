@@ -32,8 +32,8 @@ const AnimatedRoutes = () => {
           <Route path="/games/sudoku" element={<Sudoku />} />
           <Route path="/games/2048" element={<TwoThousandFortyEightGame />} />
           <Route path="/proto/sowwy" element={<SowwyProto />} />
-          <Route path="/cardatabase" element={<CarDatabase />} />
-          <Route path="/car/:carId" Component={CarDetails} />
+          <Route path="/cdata" element={<CarDatabase />} />
+          <Route path="/cdata/cid/:carId" Component={CarDetails} />
           <Route path="/ic" element={<FileConverter />} />
           <Route path="/gif" element={<GifMaker />} />
           <Route path="/links" element={<AllLinks />} />

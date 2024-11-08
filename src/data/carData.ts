@@ -25,9 +25,11 @@ export interface CarData {
       url: string;
     }[];
   }
+
+  
   
   export const corvetteC5Data: CarData = {
-    id: 1,
+    id: 119972004,
     name: "Chevrolet Corvette C5",
     price: "€18,000 - €30,000",
     images: [
@@ -132,7 +134,7 @@ export interface CarData {
   };
 
   export const lancerEvoXData: CarData = {
-    id: 2,
+    id: 220082012,
     name: "Mitsubishi Lancer Evolution X",
     price: "€35,000 - €45,000",
     images: [
@@ -206,5 +208,75 @@ export interface CarData {
     ],
   };
   
+  export const ferrari348Data: CarData = {
+    id: 319891993,
+    name: "Ferrari 348",
+    price: "€50,000 - €90,000",
+    images: [
+        "/carImages/ferrari348/348front.png"
+    ],
+    description:
+      "The Ferrari 348, produced from 1989 to 1995, is a mid-engine V8 sports car known for its sharp handling and distinctive pop-up headlights. The 348 features a 3.4L V8 engine, rear-wheel drive, and the classic Ferrari styling with side strakes reminiscent of the Testarossa.",
+    features: {
+      1989: ["3.4L V8 engine", "5-speed manual transmission", "Pop-up headlights"],
+      1990: ["Improved suspension system", "Revised interior", "Iconic Ferrari side strakes"],
+      1991: ["Optional ABS brakes", "Enhanced aerodynamics", "Upgraded wheels"],
+      1992: ["Motronic 2.7 engine management", "Increased horsepower", "Improved cooling"],
+      1993: ["Speciale edition with weight reduction", "Performance suspension", "Enhanced braking system"],
+    },
+    modelYears: {
+      1989: {
+        power: "300 PS @ 7,200 rpm",
+        torque: "324 Nm @ 4,200 rpm",
+        acceleration: "5.6 seconds (0-100 km/h)",
+        topSpeed: "275 km/h",
+        fuelEconomy: "12.9 L/100 km (combined)",
+        weight: "1,393 kg",
+      },
+      1990: {
+        power: "300 PS @ 7,200 rpm",
+        torque: "324 Nm @ 4,200 rpm",
+        acceleration: "5.6 seconds (0-100 km/h)",
+        topSpeed: "275 km/h",
+        fuelEconomy: "12.9 L/100 km (combined)",
+        weight: "1,393 kg",
+      },
+      1991: {
+        power: "300 PS @ 7,200 rpm",
+        torque: "324 Nm @ 4,200 rpm",
+        acceleration: "5.6 seconds (0-100 km/h)",
+        topSpeed: "275 km/h",
+        fuelEconomy: "12.9 L/100 km (combined)",
+        weight: "1,393 kg",
+      },
+      1992: {
+        power: "320 PS @ 7,200 rpm",
+        torque: "324 Nm @ 4,200 rpm",
+        acceleration: "5.4 seconds (0-100 km/h)",
+        topSpeed: "278 km/h",
+        fuelEconomy: "12.9 L/100 km (combined)",
+        weight: "1,393 kg",
+      },
+      1993: {
+        power: "320 PS @ 7,200 rpm",
+        torque: "324 Nm @ 4,200 rpm",
+        acceleration: "5.4 seconds (0-100 km/h)",
+        topSpeed: "278 km/h",
+        fuelEconomy: "12.9 L/100 km (combined)",
+        weight: "1,348 kg",
+      },
+    },
+    commonIssues: {
+      1989: ["Electrical system issues", "Cooling system problems", "Suspension wear"],
+      1990: ["Electrical system issues", "Clutch wear", "Oil leaks"],
+      1991: ["Cooling system problems", "Rust on body panels", "Engine oil consumption"],
+      1992: ["Transmission sync issues", "Cooling system issues", "Oil consumption"],
+      1993: ["Rust on body panels", "Suspension wear", "Electrical system issues"],
+    },
+    purchaseLinks: [
+      { name: "AutoScout24", url: "https://www.autoscout24.com/lst/ferrari/348" },
+      { name: "Mobile.de", url: "https://suchen.mobile.de/fahrzeuge/search.html?dam=false&isSearchRequest=true&ms=%3B%3B%3BFerrari+348&s=Car&sb=rel&vc=Car" },
+    ],
+};
   
-  export const carData: CarData[] = [corvetteC5Data, lancerEvoXData];
+export const carData: CarData[] = [corvetteC5Data, lancerEvoXData, ferrari348Data];

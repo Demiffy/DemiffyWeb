@@ -57,7 +57,7 @@ export default function CarDetails() {
     <div className="min-h-screen flex flex-col bg-gray-900 text-white pt-16 pb-8">
       {/* Back to Cars Link */}
       <div className="container mx-auto px-4 py-4">
-        <Link to="/cardatabase" className="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center">
+        <Link to="/cdata" className="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center">
           <ArrowLeft className="inline-block mr-2" />
           Back to Cars
         </Link>
