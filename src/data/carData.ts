@@ -26,8 +26,6 @@ export interface CarData {
     }[];
   }
 
-  
-  
   export const corvetteC5Data: CarData = {
     id: 119972004,
     name: "Chevrolet Corvette C5",
@@ -278,5 +276,451 @@ export interface CarData {
       { name: "Mobile.de", url: "https://suchen.mobile.de/fahrzeuge/search.html?dam=false&isSearchRequest=true&ms=%3B%3B%3BFerrari+348&s=Car&sb=rel&vc=Car" },
     ],
 };
+
+export const golf8TSIData: CarData = {
+  id: 420102034,
+  name: "Volkswagen Golf 8 TSI 1.0",
+  price: "€20,000 - €30,000",
+  images: [
+    "/carImages/golf8TSI/front.jpg",
+  ],
+  description:
+    "The Volkswagen Golf 8 TSI 1.0 is a compact hatchback that combines efficiency, performance, and modern technology. Powered by a turbocharged 1.0L TSI engine, it offers a balanced driving experience with excellent fuel economy and responsive handling. The Golf 8 features a sleek exterior design, a comfortable and tech-equipped interior, and advanced safety features, making it a popular choice in the compact car segment.",
+  features: {
+    2019: [
+      "Turbocharged 1.0L TSI engine",
+      "5-speed manual or 7-speed DSG transmission",
+      "LED headlights",
+      "Digital cockpit",
+    ],
+    2020: [
+      "Added Apple CarPlay and Android Auto compatibility",
+      "Enhanced infotainment system with larger touchscreen",
+      "Adaptive Cruise Control (optional)",
+    ],
+    2021: [
+      "Volkswagen Car-Net integration",
+      "Wireless charging pad",
+      "Upgraded interior materials",
+      "Blind Spot Monitoring",
+    ],
+    2022: [
+      "Introduction of Sportline trim",
+      "Improved suspension for better handling",
+      "Panoramic sunroof option",
+      "LED matrix headlights",
+    ],
+    2023: [
+      "Enhanced driver assistance systems",
+      "Upgraded sound system options",
+      "Wireless smartphone integration",
+      "Eco mode for better fuel efficiency",
+    ],
+    2024: [
+      "Hybrid variant introduction",
+      "Augmented reality head-up display",
+      "Advanced connectivity features",
+      "Sustainably sourced interior materials",
+    ],
+  },
+  modelYears: {
+    2019: {
+      power: "115 PS @ 4,800 rpm",
+      torque: "200 Nm @ 1,500 - 4,000 rpm",
+      acceleration: "9.0 seconds (0-100 km/h)",
+      topSpeed: "204 km/h",
+      fuelEconomy: "5.0 L/100 km (combined)",
+      weight: "1,265 kg",
+    },
+    2020: {
+      power: "115 PS @ 4,800 rpm",
+      torque: "200 Nm @ 1,500 - 4,000 rpm",
+      acceleration: "9.0 seconds (0-100 km/h)",
+      topSpeed: "204 km/h",
+      fuelEconomy: "5.0 L/100 km (combined)",
+      weight: "1,275 kg",
+    },
+    2021: {
+      power: "115 PS @ 4,800 rpm",
+      torque: "200 Nm @ 1,500 - 4,000 rpm",
+      acceleration: "9.0 seconds (0-100 km/h)",
+      topSpeed: "204 km/h",
+      fuelEconomy: "5.0 L/100 km (combined)",
+      weight: "1,280 kg",
+    },
+    2022: {
+      power: "115 PS @ 4,800 rpm",
+      torque: "200 Nm @ 1,500 - 4,000 rpm",
+      acceleration: "9.0 seconds (0-100 km/h)",
+      topSpeed: "204 km/h",
+      fuelEconomy: "4.9 L/100 km (combined)",
+      weight: "1,290 kg",
+    },
+    2023: {
+      power: "115 PS @ 4,800 rpm",
+      torque: "200 Nm @ 1,500 - 4,000 rpm",
+      acceleration: "8.8 seconds (0-100 km/h)",
+      topSpeed: "206 km/h",
+      fuelEconomy: "4.8 L/100 km (combined)",
+      weight: "1,295 kg",
+    },
+    2024: {
+      power: "125 PS @ 5,000 rpm",
+      torque: "210 Nm @ 1,500 - 4,500 rpm",
+      acceleration: "8.5 seconds (0-100 km/h)",
+      topSpeed: "208 km/h",
+      fuelEconomy: "4.7 L/100 km (combined)",
+      weight: "1,300 kg",
+    },
+  },
+  commonIssues: {
+    2019: [
+      "Minor software glitches in infotainment system",
+      "Occasional wind noise at high speeds",
+      "Premature wear of brake pads",
+    ],
+    2020: [
+      "Issues with adaptive cruise control sensor",
+      "Intermittent connectivity problems with Car-Net",
+      "Minor leaks in the sunroof seals",
+    ],
+    2021: [
+      "Faulty blind spot monitoring sensors",
+      "Electrical issues with interior lighting",
+      "Clutch wear in manual transmissions",
+    ],
+    2022: [
+      "Suspension noise from Sportline trim",
+      "Software updates required for augmented reality display",
+      "Turbocharger efficiency drops over time",
+    ],
+    2023: [
+      "Battery drain issues in hybrid models",
+      "Inconsistent performance of advanced driver assistance systems",
+      "Air conditioning system malfunctions",
+    ],
+    2024: [
+      "Issues with augmented reality head-up display calibration",
+      "Connectivity drops in wireless smartphone integration",
+      "Premature wear of sustainably sourced interior materials",
+    ],
+  },
+  purchaseLinks: [
+    { name: "AutoScout24", url: "https://www.autoscout24.com/lst/volkswagen/golf-8-tsi-1.0" },
+    { name: "Mobile.de", url: "https://suchen.mobile.de/fahrzeuge/search.html?dam=false&isSearchRequest=true&ms=;;;Volkswagen+Golf+8+TSI+1.0&s=Car&sb=rel&vc=Car" },
+    { name: "Volkswagen Official", url: "https://www.volkswagen.de/de/modelle/golf/golf-8.html" },
+  ],
+};
+
+export const hondaNsxData: CarData = {
+  id: 520203045,
+  name: "Honda NSX",
+  price: "€60,000 - €120,000",
+  images: [
+    "/carImages/hondaNSX/front.jpg",
+  ],
+  description:
+    "The Honda NSX, produced from 1990 to 2005, is a legendary mid-engine sports car renowned for its exceptional handling, reliability, and innovative engineering. Developed with input from Formula 1 driver Ayrton Senna, the NSX features an aluminum monocoque chassis, a high-revving V6 engine, and a driver-centric interior. Its blend of performance, everyday usability, and iconic design has made it a beloved classic among enthusiasts.",
+  features: {
+    1990: [
+      "Mid-engine 3.0L V6 engine",
+      "6-speed manual or 5-speed automatic transmission",
+      "Aluminum monocoque chassis",
+      "Driver-centric cockpit",
+    ],
+    1991: [
+      "Improved suspension tuning",
+      "Enhanced brake system",
+      "Optional leather interior",
+    ],
+    1992: [
+      "Introduction of the Type S model",
+      "Revised aerodynamic elements",
+      "Upgraded sound insulation",
+    ],
+    1993: [
+      "Increased engine power",
+      "Advanced traction control system",
+      "Upgraded infotainment system",
+    ],
+    1994: [
+      "Limited Edition models released",
+      "Enhanced safety features",
+      "Improved cooling system",
+    ],
+    1995: [
+      "Special Edition color options",
+      "Upgraded interior materials",
+      "Advanced aerodynamics package",
+    ],
+    1996: [
+      "Introduction of the Type R model",
+      "Performance suspension upgrades",
+      "Lightweight alloy wheels",
+    ],
+    1997: [
+      "Enhanced engine management system",
+      "Improved fuel efficiency",
+      "Advanced electronic stability control",
+    ],
+    1998: [
+      "Revised exhaust system for better sound",
+      "Upgraded brake calipers",
+      "Enhanced aerodynamics for high-speed stability",
+    ],
+    1999: [
+      "Introduction of the Anniversary Edition",
+      "Upgraded interior technology",
+      "Advanced emission control systems",
+    ],
+    2000: [
+      "Facelift with updated exterior styling",
+      "Improved infotainment interface",
+      "Enhanced safety features",
+    ],
+    2001: [
+      "Introduction of the Hybrid variant",
+      "Advanced hybrid powertrain",
+      "Improved fuel economy",
+    ],
+    2002: [
+      "Limited production run for final models",
+      "Exclusive color options",
+      "Enhanced performance tuning",
+    ],
+    2003: [
+      "Final Edition released",
+      "Special badging and trim",
+      "Commemorative interior features",
+    ],
+    2004: [
+      "Last production year with exclusive features",
+      "Enhanced reliability improvements",
+      "Final engine tuning for optimal performance",
+    ],
+    2005: [
+      "Final model year with all enhancements",
+      "Collector’s edition features",
+      "Comprehensive quality checks",
+    ],
+  },
+  modelYears: {
+    1990: {
+      power: "270 PS @ 7,000 rpm",
+      torque: "283 Nm @ 5,200 rpm",
+      acceleration: "5.5 seconds (0-100 km/h)",
+      topSpeed: "285 km/h",
+      fuelEconomy: "12.0 L/100 km (combined)",
+      weight: "1,370 kg",
+    },
+    1991: {
+      power: "275 PS @ 7,200 rpm",
+      torque: "290 Nm @ 5,300 rpm",
+      acceleration: "5.4 seconds (0-100 km/h)",
+      topSpeed: "287 km/h",
+      fuelEconomy: "11.8 L/100 km (combined)",
+      weight: "1,375 kg",
+    },
+    1992: {
+      power: "280 PS @ 7,200 rpm",
+      torque: "295 Nm @ 5,400 rpm",
+      acceleration: "5.3 seconds (0-100 km/h)",
+      topSpeed: "289 km/h",
+      fuelEconomy: "11.6 L/100 km (combined)",
+      weight: "1,380 kg",
+    },
+    1993: {
+      power: "290 PS @ 7,500 rpm",
+      torque: "300 Nm @ 5,500 rpm",
+      acceleration: "5.1 seconds (0-100 km/h)",
+      topSpeed: "291 km/h",
+      fuelEconomy: "11.4 L/100 km (combined)",
+      weight: "1,385 kg",
+    },
+    1994: {
+      power: "295 PS @ 7,600 rpm",
+      torque: "305 Nm @ 5,600 rpm",
+      acceleration: "5.0 seconds (0-100 km/h)",
+      topSpeed: "293 km/h",
+      fuelEconomy: "11.2 L/100 km (combined)",
+      weight: "1,390 kg",
+    },
+    1995: {
+      power: "300 PS @ 7,700 rpm",
+      torque: "310 Nm @ 5,700 rpm",
+      acceleration: "4.9 seconds (0-100 km/h)",
+      topSpeed: "295 km/h",
+      fuelEconomy: "11.0 L/100 km (combined)",
+      weight: "1,395 kg",
+    },
+    1996: {
+      power: "305 PS @ 7,800 rpm",
+      torque: "315 Nm @ 5,800 rpm",
+      acceleration: "4.8 seconds (0-100 km/h)",
+      topSpeed: "297 km/h",
+      fuelEconomy: "10.9 L/100 km (combined)",
+      weight: "1,400 kg",
+    },
+    1997: {
+      power: "310 PS @ 7,900 rpm",
+      torque: "320 Nm @ 5,900 rpm",
+      acceleration: "4.7 seconds (0-100 km/h)",
+      topSpeed: "299 km/h",
+      fuelEconomy: "10.8 L/100 km (combined)",
+      weight: "1,405 kg",
+    },
+    1998: {
+      power: "315 PS @ 8,000 rpm",
+      torque: "325 Nm @ 6,000 rpm",
+      acceleration: "4.6 seconds (0-100 km/h)",
+      topSpeed: "301 km/h",
+      fuelEconomy: "10.7 L/100 km (combined)",
+      weight: "1,410 kg",
+    },
+    1999: {
+      power: "320 PS @ 8,100 rpm",
+      torque: "330 Nm @ 6,100 rpm",
+      acceleration: "4.5 seconds (0-100 km/h)",
+      topSpeed: "303 km/h",
+      fuelEconomy: "10.6 L/100 km (combined)",
+      weight: "1,415 kg",
+    },
+    2000: {
+      power: "325 PS @ 8,200 rpm",
+      torque: "335 Nm @ 6,200 rpm",
+      acceleration: "4.4 seconds (0-100 km/h)",
+      topSpeed: "305 km/h",
+      fuelEconomy: "10.5 L/100 km (combined)",
+      weight: "1,420 kg",
+    },
+    2001: {
+      power: "330 PS @ 8,300 rpm",
+      torque: "340 Nm @ 6,300 rpm",
+      acceleration: "4.3 seconds (0-100 km/h)",
+      topSpeed: "307 km/h",
+      fuelEconomy: "10.4 L/100 km (combined)",
+      weight: "1,425 kg",
+    },
+    2002: {
+      power: "335 PS @ 8,400 rpm",
+      torque: "345 Nm @ 6,400 rpm",
+      acceleration: "4.2 seconds (0-100 km/h)",
+      topSpeed: "309 km/h",
+      fuelEconomy: "10.3 L/100 km (combined)",
+      weight: "1,430 kg",
+    },
+    2003: {
+      power: "340 PS @ 8,500 rpm",
+      torque: "350 Nm @ 6,500 rpm",
+      acceleration: "4.1 seconds (0-100 km/h)",
+      topSpeed: "311 km/h",
+      fuelEconomy: "10.2 L/100 km (combined)",
+      weight: "1,435 kg",
+    },
+    2004: {
+      power: "345 PS @ 8,600 rpm",
+      torque: "355 Nm @ 6,600 rpm",
+      acceleration: "4.0 seconds (0-100 km/h)",
+      topSpeed: "313 km/h",
+      fuelEconomy: "10.1 L/100 km (combined)",
+      weight: "1,440 kg",
+    },
+    2005: {
+      power: "350 PS @ 8,700 rpm",
+      torque: "360 Nm @ 6,700 rpm",
+      acceleration: "3.9 seconds (0-100 km/h)",
+      topSpeed: "315 km/h",
+      fuelEconomy: "10.0 L/100 km (combined)",
+      weight: "1,445 kg",
+    },
+  },
+  commonIssues: {
+    1990: [
+      "Electrical system glitches",
+      "Cooling system leaks",
+      "Suspension wear",
+    ],
+    1991: [
+      "Clutch wear in manual transmissions",
+      "Oil leaks from engine seals",
+      "Brake pad wear",
+    ],
+    1992: [
+      "Turbocharger issues in Type S models",
+      "Electrical wiring problems",
+      "Suspension noise",
+    ],
+    1993: [
+      "Traction control system malfunctions",
+      "Infotainment system software bugs",
+      "Exhaust system leaks",
+    ],
+    1994: [
+      "Brake system corrosion",
+      "Interior trim wear",
+      "Cooling fan failures",
+    ],
+    1995: [
+      "Aerodynamics package installation issues",
+      "Electrical component failures",
+      "Steering system wear",
+    ],
+    1996: [
+      "Performance suspension failures",
+      "Alloy wheel damage",
+      "Transmission fluid leaks",
+    ],
+    1997: [
+      "Engine management system errors",
+      "Fuel efficiency drops",
+      "Electronic stability control issues",
+    ],
+    1998: [
+      "Exhaust system degradation",
+      "Brake caliper failures",
+      "Aerodynamic component loosening",
+    ],
+    1999: [
+      "Interior technology malfunctions",
+      "Emission control system failures",
+      "Engine overheating issues",
+    ],
+    2000: [
+      "Exterior facelift component issues",
+      "Infotainment interface bugs",
+      "Safety feature malfunctions",
+    ],
+    2001: [
+      "Hybrid powertrain reliability issues",
+      "Battery performance degradation",
+      "Fuel economy inconsistencies",
+    ],
+    2002: [
+      "Limited Edition model component failures",
+      "Performance tuning inconsistencies",
+      "Interior material wear",
+    ],
+    2003: [
+      "Final Edition special badging issues",
+      "Trim component failures",
+      "Commemorative feature malfunctions",
+    ],
+    2004: [
+      "Reliability improvements not fully effective",
+      "Final engine tuning issues",
+      "Collector’s edition feature wear",
+    ],
+    2005: [
+      "Collector’s edition component failures",
+      "Overall wear and tear from usage",
+      "Final quality check oversights",
+    ],
+  },
+  purchaseLinks: [
+    { name: "AutoScout24", url: "https://www.autoscout24.com/lst/honda/nsx" },
+    { name: "Mobile.de", url: "https://suchen.mobile.de/fahrzeuge/search.html?dam=false&isSearchRequest=true&ms=;;;Honda+NSX&s=Car&sb=rel&vc=Car" },
+    { name: "Honda Official", url: "https://www.honda.de/nsx" },
+  ],
+};
   
-export const carData: CarData[] = [corvetteC5Data, lancerEvoXData, ferrari348Data];
+export const carData: CarData[] = [corvetteC5Data, lancerEvoXData, ferrari348Data, golf8TSIData, hondaNsxData];

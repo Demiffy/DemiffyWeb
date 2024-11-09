@@ -13,6 +13,10 @@ export default function CarDatabase() {
     setSavedCars(saved);
   }, []);
 
+  const scrollToTop = () => {
+    window.scrollTo(0, 0);
+  };
+  
   const filteredCars = carData.filter((car: CarData) => {
     const term = searchTerm.toLowerCase();
 
@@ -36,11 +40,11 @@ export default function CarDatabase() {
         <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
   
         {/* Car List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           {filteredCars.map((car: CarData) => {
             const firstModelYearKey = Math.min(...Object.keys(car.modelYears).map(year => parseInt(year)));
             const lastModelYearKey = Math.max(...Object.keys(car.modelYears).map(year => parseInt(year)));
-  
+
             return (
               <CarCard
                 key={car.id}
@@ -52,6 +56,7 @@ export default function CarDatabase() {
                   productionStart: firstModelYearKey,
                   productionEnd: lastModelYearKey,
                 }}
+                onClick={scrollToTop}
               />
             );
           })}
