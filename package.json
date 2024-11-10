@@ -39,6 +39,7 @@
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "@types/axios": "^0.14.0",
+    "@types/chrome": "^0.0.280",
     "@types/classnames": "^2.3.1",
     "@types/dompurify": "^3.0.5",
     "@types/node": "^22.7.5",

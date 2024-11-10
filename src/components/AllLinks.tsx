@@ -129,6 +129,17 @@ const AllLinks = () => {
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>
+
+          <Link
+            to="/vette"
+            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+          >
+            <div className="text-left">
+              <h2 className="text-2xl font-semibold">Vette C5s</h2>
+              <p className="text-gray-400">Check out some Vette C5s</p>
+            </div>
+            <ChevronRight className="text-gray-400" size={32} />
+          </Link>
         </div>
       </div>
     </div>
