@@ -16,6 +16,7 @@ import GifMaker from './components/GifMaker';
 import AllLinks from './components/AllLinks';
 import ImageResizer from './components/ImageResizer';
 import VetteBase from './components/VetteBase';
+import Fnaf from './components/fnaf';
 import NotFound from './NotFound';
 import './App.css';
 
@@ -40,6 +41,7 @@ const AnimatedRoutes = () => {
           <Route path="/links" element={<AllLinks />} />
           <Route path="/img" element={<ImageResizer />} />
           <Route path="/vette" element={<VetteBase />} />
+          <Route path="/fnaf" element={<Fnaf />} />
           <Route path="/404" element={<NotFound />} />
 
           <Route path="*" element={<NotFound />} />
