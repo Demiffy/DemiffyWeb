@@ -77,45 +77,45 @@ const Databasetest: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4">Add Data</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="key" className="block text-sm font-medium mb-1">
-                Key:
-              </label>
-              <input
+                <label htmlFor="name" className="block text-sm font-medium mb-1">
+                Name:
+                </label>
+                <input
                 type="text"
-                id="key"
-                name="key"
-                value={formData.key || ''}
+                id="name"
+                name="name"
+                value={formData.name || ''}
                 onChange={handleInputChange}
                 className="w-full p-3 bg-gray-600 text-white rounded-lg"
-                placeholder="Enter key"
+                placeholder="Enter name"
                 required
-              />
+                />
             </div>
             <div>
-              <label htmlFor="value" className="block text-sm font-medium mb-1">
-                Value:
-              </label>
-              <input
+                <label htmlFor="message" className="block text-sm font-medium mb-1">
+                Message:
+                </label>
+                <input
                 type="text"
-                id="value"
-                name="value"
-                value={formData.value || ''}
+                id="message"
+                name="message"
+                value={formData.message || ''}
                 onChange={handleInputChange}
                 className="w-full p-3 bg-gray-600 text-white rounded-lg"
-                placeholder="Enter value"
+                placeholder="Enter message"
                 required
-              />
+                />
             </div>
             <button
-              type="submit"
-              className={`w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 ${
+                type="submit"
+                className={`w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 ${
                 loading ? 'cursor-not-allowed opacity-70' : ''
-              }`}
-              disabled={loading}
+                }`}
+                disabled={loading}
             >
-              {loading ? 'Saving...' : 'Save Data'}
+                {loading ? 'Saving...' : 'Save Data'}
             </button>
-          </form>
+            </form>
           {error && <p className="text-red-400 mt-4">{error}</p>}
           {successMessage && <p className="text-green-400 mt-4">{successMessage}</p>}
         </section>
@@ -131,22 +131,22 @@ const Databasetest: React.FC = () => {
             <p>No data found.</p>
           ) : (
             <table className="w-full border-collapse border border-gray-600">
-              <thead>
+            <thead>
                 <tr>
-                  <th className="border border-gray-600 p-3">ID</th>
-                  <th className="border border-gray-600 p-3">Key</th>
-                  <th className="border border-gray-600 p-3">Value</th>
+                <th className="border border-gray-600 p-3">ID</th>
+                <th className="border border-gray-600 p-3">Name</th>
+                <th className="border border-gray-600 p-3">Message</th>
                 </tr>
-              </thead>
-              <tbody>
+            </thead>
+            <tbody>
                 {tableData.map((row, index) => (
-                  <tr key={index} className="even:bg-gray-800">
+                <tr key={index} className="even:bg-gray-800">
                     <td className="border border-gray-600 p-3">{row.id}</td>
-                    <td className="border border-gray-600 p-3">{row.key}</td>
-                    <td className="border border-gray-600 p-3">{row.value}</td>
-                  </tr>
+                    <td className="border border-gray-600 p-3">{row.name}</td>
+                    <td className="border border-gray-600 p-3">{row.message}</td>
+                </tr>
                 ))}
-              </tbody>
+            </tbody>
             </table>
           )}
         </section>
