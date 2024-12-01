@@ -9,10 +9,6 @@
       "destination": "https://109.80.40.13:443/getgrades"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
