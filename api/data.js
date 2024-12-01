@@ -1,4 +1,4 @@
-import { db } from '../src/firebaseConfig'; // Import the Firebase Realtime Database
+import { db } from '../firebaseConfig';
 import { ref, set, get, child } from "firebase/database";
 
 export default async function handler(req, res) {
