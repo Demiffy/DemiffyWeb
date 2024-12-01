@@ -12,6 +12,7 @@
   "dependencies": {
     "@heroicons/react": "^2.1.5",
     "@radix-ui/react-slot": "^1.1.0",
+    "@supabase/supabase-js": "^2.46.2",
     "@types/gif.js": "^0.2.5",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@vercel/node": "^3.2.23",
