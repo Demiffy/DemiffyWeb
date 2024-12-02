@@ -12,7 +12,7 @@ const Databasetest: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/database', {
+      const response = await fetch('/api/firebaseHandler', {
         method: 'GET',
       });
       if (!response.ok) {
@@ -34,7 +34,7 @@ const Databasetest: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      const response = await fetch('/api/database', {
+      const response = await fetch('/api/firebaseHandler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
