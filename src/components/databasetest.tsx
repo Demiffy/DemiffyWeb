@@ -66,112 +66,91 @@ const Databasetest: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      <header className="bg-gray-800 p-6 shadow-md">
-        <h1 className="text-4xl font-bold text-center text-blue-400">
-          Supabase Database Manager
-        </h1>
+    <div className="min-h-screen bg-gray-800 text-white flex flex-col pt-12">
+      <header className="p-6">
+        <h1 className="text-3xl font-bold text-center">Supabase Database Test</h1>
       </header>
 
-      <main className="flex-grow p-6 container mx-auto">
-        {/* Form for Adding Data */}
-        <section className="bg-gray-800 p-8 rounded-lg shadow-lg mb-10">
-          <h2 className="text-2xl font-bold mb-6 text-blue-300">Add New Data</h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex flex-col">
-              <label
-                htmlFor="name"
-                className="mb-2 text-sm font-medium text-gray-300"
-              >
+      <main className="flex-grow p-6">
+        {/* Form for adding data */}
+        <section className="bg-gray-700 p-6 rounded-lg shadow-md mb-6">
+          <h2 className="text-xl font-semibold mb-4">Add Data</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <label htmlFor="name" className="block text-sm font-medium mb-1">
                 Name:
-              </label>
-              <input
+                </label>
+                <input
                 type="text"
                 id="name"
                 name="name"
                 value={formData.name || ''}
                 onChange={handleInputChange}
-                className="p-3 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-3 bg-gray-600 text-white rounded-lg"
                 placeholder="Enter name"
                 required
-              />
+                />
             </div>
-            <div className="flex flex-col">
-              <label
-                htmlFor="message"
-                className="mb-2 text-sm font-medium text-gray-300"
-              >
+            <div>
+                <label htmlFor="message" className="block text-sm font-medium mb-1">
                 Message:
-              </label>
-              <input
+                </label>
+                <input
                 type="text"
                 id="message"
                 name="message"
                 value={formData.message || ''}
                 onChange={handleInputChange}
-                className="p-3 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-3 bg-gray-600 text-white rounded-lg"
                 placeholder="Enter message"
                 required
-              />
+                />
             </div>
             <button
-              type="submit"
-              className={`w-full py-3 bg-blue-600 rounded-lg text-white font-semibold hover:bg-blue-700 transition-colors ${
+                type="submit"
+                className={`w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 ${
                 loading ? 'cursor-not-allowed opacity-70' : ''
-              }`}
-              disabled={loading}
+                }`}
+                disabled={loading}
             >
-              {loading ? 'Saving...' : 'Save Data'}
+                {loading ? 'Saving...' : 'Save Data'}
             </button>
-          </form>
+            </form>
           {error && <p className="text-red-400 mt-4">{error}</p>}
           {successMessage && <p className="text-green-400 mt-4">{successMessage}</p>}
         </section>
 
-        {/* Display Table Data */}
-        <section className="bg-gray-800 p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold mb-6 text-blue-300">Stored Data</h2>
+        {/* Display table data */}
+        <section className="bg-gray-700 p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Stored Data</h2>
           {loading ? (
-            <p className="text-gray-400">Loading data...</p>
+            <p>Loading data...</p>
           ) : error ? (
             <p className="text-red-400">{error}</p>
           ) : tableData.length === 0 ? (
-            <p className="text-gray-400">No data found.</p>
+            <p>No data found.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-700">
-                    <th className="p-4 text-blue-300 font-semibold">ID</th>
-                    <th className="p-4 text-blue-300 font-semibold">Name</th>
-                    <th className="p-4 text-blue-300 font-semibold">Message</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableData.map((row, index) => (
-                    <tr
-                      key={index}
-                      className={`${
-                        index % 2 === 0 ? 'bg-gray-700' : 'bg-gray-800'
-                      } hover:bg-gray-600`}
-                    >
-                      <td className="p-4">{row.id}</td>
-                      <td className="p-4">{row.name}</td>
-                      <td className="p-4">{row.message}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <table className="w-full border-collapse border border-gray-600">
+            <thead>
+                <tr>
+                <th className="border border-gray-600 p-3">ID</th>
+                <th className="border border-gray-600 p-3">Name</th>
+                <th className="border border-gray-600 p-3">Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {tableData.map((row, index) => (
+                <tr key={index} className="even:bg-gray-800">
+                    <td className="border border-gray-600 p-3">{row.id}</td>
+                    <td className="border border-gray-600 p-3">{row.name}</td>
+                    <td className="border border-gray-600 p-3">{row.message}</td>
+                </tr>
+                ))}
+            </tbody>
+            </table>
           )}
         </section>
       </main>
-
-      <footer className="bg-gray-800 p-6 text-center">
-        <p className="text-gray-400 text-sm">
-          Powered by Supabase | Modern UI with TailwindCSS
-        </p>
-      </footer>
     </div>
   );
 };
