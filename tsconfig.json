@@ -13,10 +13,11 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
-    "noEmit": false,
+    "noEmit": true,
     "outDir": "./dist",
     "rootDir": ".",
-    "isolatedModules": true
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true
   },
   "include": [
     "src/**/*.ts",
