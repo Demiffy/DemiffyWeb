@@ -4,9 +4,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyC2dL0omog11u9TtXP5HKidiBiUVIkiyXA",
+  apiKey: process.env.PUBLIC_FIREBASE_API_KEY,
   authDomain: "demiffycom.firebaseapp.com",
-  databaseURL: "https://demiffycom-default-rtdb.europe-west1.firebasedatabase.app",
+  databaseURL: process.env.PUBLIC_FIREBASE_DATABASE_URL,
   projectId: "demiffycom",
   storageBucket: "demiffycom.firebasestorage.app",
   messagingSenderId: "423608998435",
