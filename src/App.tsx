@@ -18,7 +18,7 @@ import ImageResizer from './components/ImageResizer';
 import VetteBase from './components/VetteBase';
 import Fnaf from './components/fnaf';
 import DatabaseTest from './components/databasetest';
-import DiscordUserPage from './components/FetchDiscordUserPage';
+import DiscordUser from './components/DiscordUser';
 import NotFound from './NotFound';
 import './App.css';
 
@@ -44,7 +44,7 @@ const AnimatedRoutes = () => {
           <Route path="/img" element={<ImageResizer />} />
           <Route path="/vette" element={<VetteBase />} />
           <Route path="/fnaf" element={<Fnaf />} />
-          <Route path="/discord" element={<DiscordUserPage />} />
+          <Route path="/discord" element={<DiscordUser />} />
           <Route path="/dbtest" element={<DatabaseTest />} />
           <Route path="/404" element={<NotFound />} />
 

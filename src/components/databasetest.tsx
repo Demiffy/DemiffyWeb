@@ -68,19 +68,18 @@ const Databasetest: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-800 text-white flex flex-col pt-12">
       <header className="p-6">
-        <h1 className="text-3xl font-bold text-center">Supabase Database Test</h1>
+        <h1 className="text-3xl font-bold text-center">Firebase Database Test</h1>
       </header>
 
       <main className="flex-grow p-6">
-        {/* Form for adding data */}
         <section className="bg-gray-700 p-6 rounded-lg shadow-md mb-6">
           <h2 className="text-xl font-semibold mb-4">Add Data</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-                <label htmlFor="name" className="block text-sm font-medium mb-1">
+              <label htmlFor="name" className="block text-sm font-medium mb-1">
                 Name:
-                </label>
-                <input
+              </label>
+              <input
                 type="text"
                 id="name"
                 name="name"
@@ -89,13 +88,13 @@ const Databasetest: React.FC = () => {
                 className="w-full p-3 bg-gray-600 text-white rounded-lg"
                 placeholder="Enter name"
                 required
-                />
+              />
             </div>
             <div>
-                <label htmlFor="message" className="block text-sm font-medium mb-1">
+              <label htmlFor="message" className="block text-sm font-medium mb-1">
                 Message:
-                </label>
-                <input
+              </label>
+              <input
                 type="text"
                 id="message"
                 name="message"
@@ -104,23 +103,22 @@ const Databasetest: React.FC = () => {
                 className="w-full p-3 bg-gray-600 text-white rounded-lg"
                 placeholder="Enter message"
                 required
-                />
+              />
             </div>
             <button
-                type="submit"
-                className={`w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 ${
+              type="submit"
+              className={`w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 ${
                 loading ? 'cursor-not-allowed opacity-70' : ''
-                }`}
-                disabled={loading}
+              }`}
+              disabled={loading}
             >
-                {loading ? 'Saving...' : 'Save Data'}
+              {loading ? 'Saving...' : 'Save Data'}
             </button>
-            </form>
+          </form>
           {error && <p className="text-red-400 mt-4">{error}</p>}
           {successMessage && <p className="text-green-400 mt-4">{successMessage}</p>}
         </section>
 
-        {/* Display table data */}
         <section className="bg-gray-700 p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Stored Data</h2>
           {loading ? (
@@ -131,22 +129,22 @@ const Databasetest: React.FC = () => {
             <p>No data found.</p>
           ) : (
             <table className="w-full border-collapse border border-gray-600">
-            <thead>
+              <thead>
                 <tr>
-                <th className="border border-gray-600 p-3">ID</th>
-                <th className="border border-gray-600 p-3">Name</th>
-                <th className="border border-gray-600 p-3">Message</th>
+                  <th className="border border-gray-600 p-3">ID</th>
+                  <th className="border border-gray-600 p-3">Name</th>
+                  <th className="border border-gray-600 p-3">Message</th>
                 </tr>
-            </thead>
-            <tbody>
-                {tableData.map((row, index) => (
-                <tr key={index} className="even:bg-gray-800">
+              </thead>
+              <tbody>
+                {tableData.map((row) => (
+                  <tr key={row.id} className="even:bg-gray-800">
                     <td className="border border-gray-600 p-3">{row.id}</td>
                     <td className="border border-gray-600 p-3">{row.name}</td>
                     <td className="border border-gray-600 p-3">{row.message}</td>
-                </tr>
+                  </tr>
                 ))}
-            </tbody>
+              </tbody>
             </table>
           )}
         </section>

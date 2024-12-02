@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Footer from './ui/Footer';
 import { ArrowPathIcon } from '@heroicons/react/24/solid';
 
-const FetchDiscordUserPage: React.FC = () => {
+const DiscordUser: React.FC = () => {
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,4 +145,4 @@ const FetchDiscordUserPage: React.FC = () => {
   );
 };
 
-export default FetchDiscordUserPage;
+export default DiscordUser;
