@@ -1,5 +1,4 @@
 // api/fetchDiscordUser.mts
-
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import axios from 'axios';
 
@@ -26,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
-    const { id, username, discriminator, avatar } = response.data;
+    const { id, username, discriminator = '0', avatar = null } = response.data;
 
     const avatarUrl = avatar
       ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=1024`
@@ -36,7 +35,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json({
       user_id: id,
-      user_name: `${username}#${discriminator}`,
+      user_name: username,
+      discriminator,
       avatar_url: avatarUrl,
       created_at: createdAt,
     });

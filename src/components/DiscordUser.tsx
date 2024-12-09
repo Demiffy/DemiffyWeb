@@ -7,10 +7,11 @@ const DiscordUser: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [userData, setUserData] = useState<{
-    id: string;
-    username: string;
+    user_id: string;
+    user_name: string;
     discriminator: string;
-    avatar: string | null;
+    avatar_url: string | null;
+    created_at: string;
   } | null>(null);
 
   const handleFetchUser = async () => {
@@ -62,58 +63,46 @@ const DiscordUser: React.FC = () => {
               'Fetch User'
             )}
           </button>
-          {error && (
-            <p className="text-red-400 text-center">{error}</p>
-          )}
+          {error && <p className="text-red-400 text-center">{error}</p>}
           {userData && (
             <div className="bg-gray-700 rounded-lg shadow-lg p-6">
               <div className="flex items-center space-x-4">
-                {/* User Avatar */}
-                {userData.avatar ? (
+                {userData.avatar_url ? (
                   <img
-                    src={`https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`}
-                    alt={`${userData.username}'s avatar`}
+                    src={userData.avatar_url}
+                    alt={`${userData.user_name}'s avatar`}
                     className="w-20 h-20 rounded-full"
                   />
                 ) : (
                   <div className="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center text-gray-300">
-                    <span className="text-2xl font-bold">
-                      {userData.username[0]}
-                    </span>
+                    <span className="text-2xl font-bold">{userData.user_name[0]}</span>
                   </div>
                 )}
-                {/* User Info */}
                 <div>
                   <h2 className="text-xl font-semibold">
-                    {userData.username}
+                    {userData.user_name}
                     <span className="text-gray-400">#{userData.discriminator}</span>
                   </h2>
-                  <p className="text-sm text-gray-400">
-                    User ID: {userData.id}
-                  </p>
+                  <p className="text-sm text-gray-400">User ID: {userData.user_id}</p>
                 </div>
               </div>
-
-              {/* Profile Details */}
               <div className="mt-6 bg-gray-800 p-4 rounded-lg">
-                <h3 className="text-lg font-bold mb-2 text-gray-200">
-                  Profile Details
-                </h3>
+                <h3 className="text-lg font-bold mb-2 text-gray-200">Profile Details</h3>
                 <ul className="space-y-2 text-gray-300">
                   <li>
-                    <strong>Username:</strong> {userData.username}
+                    <strong>Username:</strong> {userData.user_name}
                   </li>
                   <li>
                     <strong>Discriminator:</strong> #{userData.discriminator}
                   </li>
                   <li>
-                    <strong>User ID:</strong> {userData.id}
+                    <strong>User ID:</strong> {userData.user_id}
                   </li>
-                  {userData.avatar && (
+                  {userData.avatar_url && (
                     <li>
                       <strong>Avatar:</strong>{' '}
                       <a
-                        href={`https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`}
+                        href={userData.avatar_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:underline"
@@ -122,13 +111,14 @@ const DiscordUser: React.FC = () => {
                       </a>
                     </li>
                   )}
+                  <li>
+                    <strong>Created At:</strong> {userData.created_at}
+                  </li>
                 </ul>
               </div>
-
-              {/* Actions */}
               <div className="mt-4 flex space-x-4">
                 <a
-                  href={`https://discord.com/users/${userData.id}`}
+                  href={`https://discord.com/users/${userData.user_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors duration-200"
