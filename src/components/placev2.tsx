@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set, remove } from 'firebase/database';
+import SidePanel from './ui/SidePanel';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -39,6 +40,7 @@ const PlaceV2: React.FC = () => {
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number } | null>(null);
   const [mouseCoords, setMouseCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
 
   // Zoom limits
   const MIN_SCALE = 0.4;
@@ -102,14 +104,15 @@ const PlaceV2: React.FC = () => {
     const unsubscribe = onValue(canvasReference, (snapshot) => {
       const data = snapshot.val();
       const canvasData = data ? Object.values(data) : [];
-      drawCanvas(canvasData);
+      drawCanvas(canvasData, hoveredPixel);
     });
-
+  
     return () => unsubscribe();
-  }, [offset, scale]);
+  }, [offset, scale, hoveredPixel]);  
 
   // Draw the canvas
-  const drawCanvas = useCallback((canvasData: any[]) => {
+  const drawCanvas = useCallback(
+    (canvasData: any[], hoveredPixel?: { x: number; y: number } | null) => {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -129,6 +132,29 @@ const PlaceV2: React.FC = () => {
           ctx.fillStyle = colors[pixel.color];
           ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
         });
+        
+        // Highlight hovered pixel
+        if (hoveredPixel) {
+          const highlightX = hoveredPixel.x * pixelSize;
+          const highlightY = hoveredPixel.y * pixelSize;
+        
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+          ctx.fillRect(
+            highlightX,
+            highlightY,
+            adjustedPixelSize,
+            adjustedPixelSize
+          );
+        
+          ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+          ctx.lineWidth = 2 / scale;
+          ctx.strokeRect(
+            highlightX + 1 / scale,
+            highlightY + 1 / scale,
+            adjustedPixelSize - 2 / scale,
+            adjustedPixelSize - 2 / scale
+          );
+        }
   
         // Lines > 1.1 zoom
         if (scale > 1.1) {
@@ -215,6 +241,10 @@ const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>)
   const canvasY = (y - offset.y) / scale;
   setMouseCoords({ x: canvasX, y: canvasY });
 
+  const pixelX = Math.floor(canvasX / pixelSize);
+  const pixelY = Math.floor(canvasY / pixelSize);
+  setHoveredPixel({ x: pixelX, y: pixelY });
+
   if (isPanning && lastMousePos) {
     const deltaX = event.clientX - lastMousePos.x;
     const deltaY = event.clientY - lastMousePos.y;
@@ -232,7 +262,6 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
     setLastMousePos(null);
   }
 };
-
 
   // Handle zooming
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -300,6 +329,8 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
 
   return (
     <div className="h-screen bg-gray-900 text-white">
+      {/* Side Panel */}
+      <SidePanel />
       {/* Main Canvas Area */}
       <div className="relative w-full h-full overflow-hidden">
         <canvas
@@ -311,6 +342,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
           }`}
           style={{
             backgroundColor: colors[31],
+            imageRendering: 'pixelated',
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -335,7 +367,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
                   className={`color-square w-11 h-11 rounded border transition-all ${
                     index === selectedColor
                       ? 'border-blue-500 border-4 shadow-lg shadow-blue-300 scale-110'
-                      : 'border-gray-300 hover:border-gray-400 hover:scale-110 hover:shadow-md hover:shadow-gray-500'
+                      : 'border-gray-300 hover:border-gray-400 hover:scale-110 hover:shadow-md hover:shadow-gray-500 cursor-pointer'
                   }`}
                   style={{ backgroundColor: color, boxShadow: index === selectedColor ? '0px 0px 10px 2px rgba(59, 130, 246, 0.8)' : 'none' }}
                   onClick={() => setSelectedColor(index)}

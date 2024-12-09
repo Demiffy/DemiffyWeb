@@ -463,3 +463,15 @@ body {
 .animate-pop {
   animation: pop 0.2s ease forwards;
 }
+
+.side-panel {
+  transform: translateX(-100%);
+}
+
+.side-panel.open {
+  transform: translateX(0);
+}
+
+.side-panel.closed {
+  transform: translateX(-100%);
+}
