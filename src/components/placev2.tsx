@@ -1,4 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, onValue, set } from 'firebase/database';
+
+const firebaseConfig = {
+  apiKey: process.env.PUBLIC_FIREBASE_API_KEY,
+  authDomain: "demiffycom.firebaseapp.com",
+  databaseURL: process.env.PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: "demiffycom",
+  storageBucket: "demiffycom.firebasestorage.app",
+  messagingSenderId: "423608998435",
+  appId: "1:423608998435:web:1ee3cc6b9408777fbdaf96",
+  measurementId: "G-9DVS3F5QST",
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 const colors = [
   '#000000', '#111111', '#222222', '#333333', '#444444', '#555555', '#666666', '#777777',
@@ -14,24 +31,21 @@ const pixelSize = 20;
 const PlaceV2: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [selectedColor, setSelectedColor] = useState<number>(15);
-  const [canvasData, setCanvasData] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchCanvas = async () => {
-      try {
-        const response = await fetch('/api/placedb');
-        const data = await response.json();
-        setCanvasData(data);
-      } catch (error) {
-        console.error('Failed to fetch canvas:', error);
+    const canvasRef = ref(db, 'canvas');
+    const unsubscribe = onValue(canvasRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const canvas = Object.values(data);
+        drawCanvas(canvas);
       }
-    };
+    });
 
-    fetchCanvas();
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    // Draw the canvas whenever the data changes
+  const drawCanvas = (canvasData: any[]) => {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -39,13 +53,13 @@ const PlaceV2: React.FC = () => {
         ctx.fillStyle = colors[15];
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Draw each pixel
+        // Draw pixels
         canvasData.forEach((pixel) => {
           ctx.fillStyle = colors[pixel.color];
           ctx.fillRect(pixel.x * pixelSize, pixel.y * pixelSize, pixelSize, pixelSize);
         });
 
-        // Draw grid lines for better visualization
+        // Draw grid lines
         ctx.strokeStyle = '#CCCCCC';
         for (let x = 0; x <= canvasWidth; x += pixelSize) {
           ctx.beginPath();
@@ -61,7 +75,7 @@ const PlaceV2: React.FC = () => {
         }
       }
     }
-  }, [canvasData]);
+  };
 
   const handleCanvasClick = async (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
     const canvas = canvasRef.current;
@@ -72,26 +86,16 @@ const PlaceV2: React.FC = () => {
     const y = Math.floor((event.clientY - rect.top) / pixelSize);
 
     try {
-      const response = await fetch('/api/placedb', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ x, y, color: selectedColor }),
-      });
+      const pixelRef = ref(db, `canvas/${x}_${y}`);
+      await set(pixelRef, { x, y, color: selectedColor });
 
-      if (!response.ok) {
-        const error = await response.json();
-        alert(error.error || 'Failed to place pixel.');
-        return;
-      }
-
-      setCanvasData((prev) => [...prev, { x, y, color: selectedColor }]);
     } catch (error) {
       console.error('Failed to place pixel:', error);
     }
   };
 
   return (
-    <div className="min-h-screen text-white flex flex-col items-center py-14">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center py-8">
       <h1 className="text-2xl font-bold mb-4">Place V2</h1>
 
       {/* Color Palette */}
@@ -116,7 +120,7 @@ const PlaceV2: React.FC = () => {
       />
 
       {/* Instructions */}
-      <p className="mt-4 text-gray-400">Click on the canvas to place a pixel.</p>
+      <p className="mt-4 text-gray-400">Click on the canvas to place a pixel. Updates are real-time!</p>
     </div>
   );
 };
