@@ -1,7 +1,7 @@
 // PlaceV2.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, set, remove } from 'firebase/database';
+import { getDatabase, ref, onValue, set } from 'firebase/database';
 import SidePanel from './ui/SidePanel';
 
 // Firebase configuration
@@ -33,6 +33,7 @@ const pixelSize = 20;
 
 const PlaceV2: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [user, setUser] = useState<string | null>(null);
 
   const [selectedColor, setSelectedColor] = useState<number>(31);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -45,6 +46,11 @@ const PlaceV2: React.FC = () => {
   // Zoom limits
   const MIN_SCALE = 0.4;
   const MAX_SCALE = 5;
+
+  // Handle sign-in from the SidePanel
+  const handleSignIn = (username: string) => {
+    setUser(username);
+  };
 
   // FPS Tracking
   const [fps, setFps] = useState<number>(0);
@@ -191,26 +197,27 @@ const PlaceV2: React.FC = () => {
 
   // Handle placing/removing a pixel
   const handleCanvasInteraction = async (x: number, y: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  if (!user) {
+    alert("Please sign in to place pixels!");
+    return;
+  }
 
-    const adjustedX = (x - offset.x) / scale;
-    const adjustedY = (y - offset.y) / scale;
+  const canvas = canvasRef.current;
+  if (!canvas) return;
 
-    const pixelX = Math.floor(adjustedX / pixelSize);
-    const pixelY = Math.floor(adjustedY / pixelSize);
+  const adjustedX = (x - offset.x) / scale;
+  const adjustedY = (y - offset.y) / scale;
 
-    try {
-      const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
-      if (selectedColor === 31) {
-        await remove(pixelRef);
-      } else {
-        await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor });
-      }
-    } catch (error) {
-      console.error('Failed to place pixel:', error);
-    }
-  };
+  const pixelX = Math.floor(adjustedX / pixelSize);
+  const pixelY = Math.floor(adjustedY / pixelSize);
+
+  try {
+    const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
+    await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: user });
+  } catch (error) {
+    console.error("Failed to place pixel:", error);
+  }
+};
 
   // Event handler mouse down
 const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
@@ -330,7 +337,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
   return (
     <div className="h-screen bg-gray-900 text-white">
       {/* Side Panel */}
-      <SidePanel />
+      <SidePanel onSignIn={handleSignIn} />
       {/* Main Canvas Area */}
       <div className="relative w-full h-full overflow-hidden">
         <canvas
