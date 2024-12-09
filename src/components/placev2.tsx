@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set } from 'firebase/database';
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.PUBLIC_FIREBASE_API_KEY,
   authDomain: "demiffycom.firebaseapp.com",
-  databaseURL: process.env.PUBLIC_FIREBASE_DATABASE_URL,
+  databaseURL: "https://demiffycom-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "demiffycom",
   storageBucket: "demiffycom.firebasestorage.app",
   messagingSenderId: "423608998435",
@@ -33,13 +34,11 @@ const PlaceV2: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState<number>(15);
 
   useEffect(() => {
-    const canvasRef = ref(db, 'canvas');
-    const unsubscribe = onValue(canvasRef, (snapshot) => {
+    const canvasReference = ref(db, 'canvas');
+    const unsubscribe = onValue(canvasReference, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        const canvas = Object.values(data);
-        drawCanvas(canvas);
-      }
+      const canvas = data ? Object.values(data) : [];
+      drawCanvas(canvas);
     });
 
     return () => unsubscribe();
@@ -53,8 +52,8 @@ const PlaceV2: React.FC = () => {
         ctx.fillStyle = colors[15];
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Draw pixels
-        canvasData.forEach((pixel) => {
+        // Draw each pixel
+        canvasData.forEach((pixel: any) => {
           ctx.fillStyle = colors[pixel.color];
           ctx.fillRect(pixel.x * pixelSize, pixel.y * pixelSize, pixelSize, pixelSize);
         });

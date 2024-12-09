@@ -6,7 +6,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 const firebaseConfig = {
   apiKey: process.env.PUBLIC_FIREBASE_API_KEY,
   authDomain: "demiffycom.firebaseapp.com",
-  databaseURL: process.env.PUBLIC_FIREBASE_DATABASE_URL,
+  databaseURL: "https://demiffycom-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "demiffycom",
   storageBucket: "demiffycom.firebasestorage.app",
   messagingSenderId: "423608998435",
@@ -17,14 +17,13 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
 const canvasRef = ref(db, 'canvas');
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     const { x, y, color } = req.body;
 
-    // Validate the pixel data
+    // Validate input
     if (
       typeof x !== 'number' ||
       typeof y !== 'number' ||
@@ -37,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       const pixelRef = ref(db, `canvas/${x}_${y}`);
-      await set(pixelRef, { x, y, color, timestamp: new Date().toISOString() });
+      await set(pixelRef, { x, y, color });
 
       res.status(200).json({ message: 'Pixel placed successfully.' });
     } catch (error: any) {
@@ -48,9 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const snapshot = await get(canvasRef);
       const data = snapshot.exists() ? snapshot.val() : {};
-
-      const canvas = Object.values(data);
-      res.status(200).json(canvas);
+      res.status(200).json(data);
     } catch (error: any) {
       console.error('Error fetching canvas data:', error);
       res.status(500).json({ error: error.message });
