@@ -11,6 +11,7 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
   );
   const [pixelsPlaced, setPixelsPlaced] = useState(0);
   const [totalPixels, setTotalPixels] = useState(0);
+  const [role, setRole] = useState("Guest");
   const [alertMessage, setAlertMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const db = getDatabase();
 
@@ -87,11 +88,12 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
   
   const handleSignIn = async () => {
     if (!username.trim()) {
-      alert("Please enter a valid name!");
+      customAlert("Please enter a valid name!", "error");
       return;
     }
 
-    const userRef = ref(db, `users/${username}`);
+    const normalizedUsername = username.toLowerCase();
+    const userRef = ref(db, `users/${normalizedUsername}`);
     const snapshot = await get(userRef);
 
     if (!snapshot.exists()) {
@@ -103,7 +105,7 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
         });
       } catch (error) {
         console.error("Error setting user data:", error);
-        alert("Failed to sign in. Please try again.");
+        customAlert("Failed to sign in. Please try again.", "error");
         return;
       }
     }
@@ -112,14 +114,16 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
 
     if (userData) {
       setTimeOnPage(userData.timeOnPage || 0);
-      setProfilePicture(userData.pfpurl || "https://cdn-icons-png.flaticon.com/512/1177/1177568.png");
+      setProfilePicture(userData.pfpurl || "https://demiffy.com/defaultuser.png");
+      setRole(userData.role || "Guest");
     } else {
-      setProfilePicture("https://cdn-icons-png.flaticon.com/512/1177/1177568.png");
+      setProfilePicture("https://demiffy.com/defaultuser.png");
+      setRole("Guest");
     }
 
     setIsSignedIn(true);
-    onSignIn(username);
-  };
+    onSignIn(normalizedUsername);
+};
 
   // Track total pixels and user pixels
   useEffect(() => {
@@ -201,49 +205,51 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
   };
 
   const handleUpdateUsername = async (newUsername: string) => {
-    if (!newUsername.trim()) {
-      customAlert("Please enter a valid username!", "error");
-      setUsername(username);
-      return;
+    const normalizedNewUsername = newUsername.trim().toLowerCase();
+
+    if (!normalizedNewUsername) {
+        customAlert("Please enter a valid username!", "error");
+        setUsername(username);
+        return;
     }
-  
-    if (newUsername === username) {
-      return;
+
+    if (normalizedNewUsername === username.toLowerCase()) {
+        return;
     }
-  
+
     try {
-      const newUserRef = ref(db, `users/${newUsername}`);
-      const newUserSnapshot = await get(newUserRef);
-  
-      if (newUserSnapshot.exists()) {
-        customAlert("This username is already taken. Please choose another.", "error");
-        setUsername(username);
-        return;
-      }
-  
-      const currentUserRef = ref(db, `users/${username}`);
-      const currentUserData = (await get(currentUserRef)).val();
-  
-      if (!currentUserData) {
-        customAlert("No user data found to update!", "error");
-        setUsername(username);
-        return;
-      }
-  
-      const { pixelsPlaced, ...newUserData } = currentUserData;
-  
-      await set(newUserRef, { ...newUserData });
-      await set(currentUserRef, null);
-  
-      setUsername(newUsername);
-      onSignIn(newUsername);
-      customAlert("New username set!", "info");
+        const newUserRef = ref(db, `users/${normalizedNewUsername}`);
+        const newUserSnapshot = await get(newUserRef);
+
+        if (newUserSnapshot.exists()) {
+            customAlert("This username is already taken. Please choose another.", "error");
+            setUsername(username);
+            return;
+        }
+
+        const currentUserRef = ref(db, `users/${username.toLowerCase()}`);
+        const currentUserData = (await get(currentUserRef)).val();
+
+        if (!currentUserData) {
+            customAlert("No user data found to update!", "error");
+            setUsername(username);
+            return;
+        }
+
+        const { pixelsPlaced, ...newUserData } = currentUserData;
+
+        await set(newUserRef, { ...newUserData });
+        await set(currentUserRef, null);
+
+        setUsername(newUsername);
+        onSignIn(normalizedNewUsername);
+        customAlert("New username set!", "info");
     } catch (error) {
-      console.error("Failed to update username:", error);
-      customAlert("An error occurred while updating your username. Please try again.", "error");
-      setUsername(username);
+        console.error("Failed to update username:", error);
+        customAlert("An error occurred while updating your username. Please try again.", "error");
+        setUsername(username);
     }
-  };
+};
   
   return (
     <div
@@ -288,7 +294,7 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
                 }}
               />
               <h2 className="text-lg font-bold">{username}</h2>
-              <p className="text-sm text-blue-300">Guest</p>
+              <p className="text-sm text-blue-300">{role}</p>
               <p className="text-sm mt-2 text-gray-400">{formatTimeOnPage(timeOnPage)}</p>
             </div>
 
