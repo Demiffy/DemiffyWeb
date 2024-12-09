@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, set } from 'firebase/database';
+import { getDatabase, ref, onValue, set, remove } from 'firebase/database';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -19,10 +19,12 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const colors = [
-  '#000000', '#111111', '#222222', '#333333', '#444444', '#555555', '#666666', '#777777',
-  '#888888', '#999999', '#AAAAAA', '#BBBBBB', '#CCCCCC', '#DDDDDD', '#EEEEEE', '#FFFFFF',
-  '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#800000', '#808000',
-  '#008000', '#800080', '#808080', '#C0C0C0', '#FFA500', '#A52A2A', '#8A2BE2', '#5F9EA0',
+  '#6d001a', '#be0039', '#ff4500', '#ffa800', '#ffd635', '#fff8b8',
+  '#00a368', '#00cc78', '#7eed56', '#00756f', '#009eaa', '#00ccc0',
+  '#2450a4', '#3690ea', '#51e9f4', '#493ac1', '#6a5cff', '#94b3ff',
+  '#811e9f', '#b44ac0', '#e4abff', '#de107f', '#ff3881', '#ff99aa',
+  '#6d482f', '#9c6926', '#ffb470', '#000000', '#515252', '#898d90',
+  '#d4d7d9', '#ffffff',
 ];
 
 const canvasWidth = 800;
@@ -31,7 +33,7 @@ const pixelSize = 20;
 
 const PlaceV2: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [selectedColor, setSelectedColor] = useState<number>(15);
+  const [selectedColor, setSelectedColor] = useState<number>(31);
 
   useEffect(() => {
     const canvasReference = ref(db, 'canvas');
@@ -49,7 +51,7 @@ const PlaceV2: React.FC = () => {
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.fillStyle = colors[15];
+        ctx.fillStyle = colors[31];
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
         // Draw each pixel
@@ -86,8 +88,11 @@ const PlaceV2: React.FC = () => {
 
     try {
       const pixelRef = ref(db, `canvas/${x}_${y}`);
-      await set(pixelRef, { x, y, color: selectedColor });
-
+      if (selectedColor === 31) {
+        await remove(pixelRef);
+      } else {
+        await set(pixelRef, { x, y, color: selectedColor });
+      }
     } catch (error) {
       console.error('Failed to place pixel:', error);
     }
@@ -98,12 +103,12 @@ const PlaceV2: React.FC = () => {
       <h1 className="text-2xl font-bold mb-4">Place V2</h1>
 
       {/* Color Palette */}
-      <div className="flex space-x-2 mb-4">
+      <div className="flex flex-wrap justify-center mb-4">
         {colors.map((color, index) => (
           <button
             key={index}
             style={{ backgroundColor: color }}
-            className={`w-8 h-8 rounded ${index === selectedColor ? 'ring-2 ring-blue-500' : ''}`}
+            className={`w-8 h-8 rounded m-1 ${index === selectedColor ? 'ring-2 ring-blue-500' : ''}`}
             onClick={() => setSelectedColor(index)}
           />
         ))}
@@ -119,7 +124,10 @@ const PlaceV2: React.FC = () => {
       />
 
       {/* Instructions */}
-      <p className="mt-4 text-gray-400">Click on the canvas to place a pixel. Updates are real-time!</p>
+      <p className="mt-4 text-gray-400">
+        Click on the canvas to place a pixel. Use white to delete a pixel.
+        Updates are real-time!
+      </p>
     </div>
   );
 };
