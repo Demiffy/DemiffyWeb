@@ -11,6 +11,9 @@ const DiscordUser: React.FC = () => {
     user_name: string;
     discriminator: string;
     avatar_url: string | null;
+    banner_url: string | null;
+    banner_color: string | null;
+    accent_color: number | null;
     created_at: string;
   } | null>(null);
 
@@ -65,29 +68,46 @@ const DiscordUser: React.FC = () => {
           </button>
           {error && <p className="text-red-400 text-center">{error}</p>}
           {userData && (
-            <div className="bg-gray-700 rounded-lg shadow-lg p-6">
-              <div className="flex items-center space-x-4">
+            <div
+              className="rounded-lg shadow-lg overflow-hidden"
+              style={{
+                backgroundColor: userData.banner_color || userData.accent_color
+                  ? `#${userData.banner_color?.replace('#', '') || userData.accent_color?.toString(16)}`
+                  : '#4a5568',
+              }}
+            >
+              {/* Banner */}
+              {userData.banner_url ? (
+                <div
+                  className="h-32 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${userData.banner_url})` }}
+                ></div>
+              ) : (
+                <div className="h-32"></div>
+              )}
+
+              {/* Profile Section */}
+              <div className="bg-gray-700 p-6 text-center relative">
                 {userData.avatar_url ? (
                   <img
                     src={userData.avatar_url}
                     alt={`${userData.user_name}'s avatar`}
-                    className="w-20 h-20 rounded-full"
+                    className="w-24 h-24 rounded-full mx-auto border-4 border-gray-800 -mt-12"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center text-gray-300">
-                    <span className="text-2xl font-bold">{userData.user_name[0]}</span>
+                  <div className="w-24 h-24 rounded-full mx-auto border-4 border-gray-800 bg-gray-600 flex items-center justify-center text-gray-300 -mt-12">
+                    <span className="text-3xl font-bold">{userData.user_name[0]}</span>
                   </div>
                 )}
-                <div>
-                  <h2 className="text-xl font-semibold">
-                    {userData.user_name}
-                    <span className="text-gray-400">#{userData.discriminator}</span>
-                  </h2>
-                  <p className="text-sm text-gray-400">User ID: {userData.user_id}</p>
-                </div>
+                <h2 className="text-2xl font-bold mt-4">
+                  {userData.user_name}
+                  <span className="text-gray-400">#{userData.discriminator}</span>
+                </h2>
+                <p className="text-sm text-gray-400">User ID: {userData.user_id}</p>
               </div>
-              <div className="mt-6 bg-gray-800 p-4 rounded-lg">
-                <h3 className="text-lg font-bold mb-2 text-gray-200">Profile Details</h3>
+
+              {/* Profile Details */}
+              <div className="bg-gray-800 p-6">
                 <ul className="space-y-2 text-gray-300">
                   <li>
                     <strong>Username:</strong> {userData.user_name}
@@ -98,30 +118,37 @@ const DiscordUser: React.FC = () => {
                   <li>
                     <strong>User ID:</strong> {userData.user_id}
                   </li>
-                  {userData.avatar_url && (
-                    <li>
-                      <strong>Avatar:</strong>{' '}
-                      <a
-                        href={userData.avatar_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        View Avatar
-                      </a>
-                    </li>
-                  )}
                   <li>
                     <strong>Created At:</strong> {userData.created_at}
                   </li>
+                  {userData.banner_color && (
+                    <li>
+                      <strong>Banner Color:</strong>{' '}
+                      <span
+                        className="inline-block w-6 h-6 rounded-full"
+                        style={{ backgroundColor: userData.banner_color }}
+                      ></span>
+                      <span className="ml-2">{userData.banner_color}</span>
+                    </li>
+                  )}
+                  {userData.accent_color && (
+                    <li>
+                      <strong>Accent Color:</strong>{' '}
+                      <span
+                        className="inline-block w-6 h-6 rounded-full"
+                        style={{ backgroundColor: `#${userData.accent_color.toString(16)}` }}
+                      ></span>
+                      <span className="ml-2">#{userData.accent_color.toString(16)}</span>
+                    </li>
+                  )}
                 </ul>
               </div>
-              <div className="mt-4 flex space-x-4">
+              <div className="bg-gray-700 p-4 flex justify-center space-x-4">
                 <a
                   href={`https://discord.com/users/${userData.user_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
                   View Profile on Discord
                 </a>

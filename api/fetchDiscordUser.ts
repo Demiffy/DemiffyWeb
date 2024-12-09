@@ -5,8 +5,8 @@ import axios from 'axios';
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
 function calculateCreatedAt(userId: string): string {
-  const discordEpoch = 1420070400000; // Discord epoch start
-  const timestamp = BigInt(userId) >> 22n; // Extract timestamp bits
+  const discordEpoch = 1420070400000;
+  const timestamp = BigInt(userId) >> 22n;
   const createdAt = new Date(Number(timestamp) + discordEpoch);
   return createdAt.toUTCString();
 }
@@ -69,8 +69,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       system,
       mfa_enabled,
       locale,
-      verified, // Requires OAuth2 scope
-      email, // Requires OAuth2 scope
+      verified,
+      email,
       flags,
       premium_type,
       created_at: createdAt,
