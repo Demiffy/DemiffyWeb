@@ -225,11 +225,8 @@ const PlaceV2: React.FC = () => {
     const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
     await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: user });
 
-    // Show a custom popup for 5 seconds
-    customAlert(`Pixel placed at (${pixelX}, ${pixelY})!`, "success");
-
     setTimeout(() => {
-      setHoveredPixel(null); // Clear highlight after timeout
+      setHoveredPixel(null);
     }, 5000);
   } catch (error) {
     console.error("Failed to place pixel:", error);
