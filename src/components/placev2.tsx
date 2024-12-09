@@ -42,6 +42,8 @@ const PlaceV2: React.FC = () => {
   const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number } | null>(null);
   const [mouseCoords, setMouseCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
+  const [alertMessage, setAlertMessage] = useState<{ text: string; type: "success" | "error" | "info" | "tip" } | null>(null);
+
 
   // Zoom limits
   const MIN_SCALE = 0.4;
@@ -51,6 +53,11 @@ const PlaceV2: React.FC = () => {
   const handleSignIn = (username: string) => {
     setUser(username);
   };
+
+  const customAlert = (text: string, type: "success" | "error" | "info" | "tip") => {
+    setAlertMessage({ text, type });
+    setTimeout(() => setAlertMessage(null), 7000);
+  };   
 
   // FPS Tracking
   const [fps, setFps] = useState<number>(0);
@@ -197,8 +204,11 @@ const PlaceV2: React.FC = () => {
 
   // Handle placing/removing a pixel
   const handleCanvasInteraction = async (x: number, y: number) => {
-  if (!user) {
-    alert("Please sign in to place pixels!");
+  if (!user) {  
+    customAlert(
+      "💡 Tip: Move your mouse to the left edge of the screen to open the side panel. Sign in to get started!",
+      "tip"
+    );
     return;
   }
 
@@ -214,8 +224,16 @@ const PlaceV2: React.FC = () => {
   try {
     const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
     await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: user });
+
+    // Show a custom popup for 5 seconds
+    customAlert(`Pixel placed at (${pixelX}, ${pixelY})!`, "success");
+
+    setTimeout(() => {
+      setHoveredPixel(null); // Clear highlight after timeout
+    }, 5000);
   } catch (error) {
     console.error("Failed to place pixel:", error);
+    customAlert("Failed to place pixel. Try again!", "error");
   }
 };
 
@@ -336,6 +354,31 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
 
   return (
     <div className="h-screen bg-gray-900 text-white">
+
+      {/* Alert Popup */}
+      {alertMessage && (
+      <div
+        className={`fixed top-4 left-1/2 transform -translate-x-1/2 p-4 max-w-lg text-center rounded-lg shadow-lg z-50 ${
+          alertMessage.type === "success"
+            ? "bg-green-500 text-white"
+            : alertMessage.type === "error"
+            ? "bg-red-500 text-white"
+            : alertMessage.type === "info"
+            ? "bg-blue-500 text-white"
+            : "bg-yellow-200 text-black"
+        }`}
+        style={{
+          animation: "fadeIn 0.5s, fadeOut 0.5s 6.5s",
+          fontSize: alertMessage.type === "tip" ? "1.2rem" : "1rem",
+          border: alertMessage.type === "tip" ? "2px dashed black" : "none",
+        }}
+      >
+        <p style={{ fontWeight: alertMessage.type === "tip" ? "bold" : "normal" }}>
+          {alertMessage.text}
+        </p>
+      </div>
+    )}
+
       {/* Side Panel */}
       <SidePanel onSignIn={handleSignIn} />
       {/* Main Canvas Area */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getDatabase, ref, set, get, update, onValue } from "firebase/database";
 
 const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
@@ -6,6 +6,7 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
   const [username, setUsername] = useState("");
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [timeOnPage, setTimeOnPage] = useState(0);
+  const timeOnPageRef = useRef(0);
   const [profilePicture, setProfilePicture] = useState(
     "https://demiffy.com/defaultuser.png"
   );
@@ -21,32 +22,33 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
     setTimeout(() => setAlertMessage(null), 3000);
   };
 
-  // Track time spent on the page
-  useEffect(() => {
-    let localInterval: NodeJS.Timeout | null = null;
-    let pushInterval: NodeJS.Timeout | null = null;
-
-    if (isSignedIn) {
-      localInterval = setInterval(() => {
-        setTimeOnPage((prev) => prev + 1);
-      }, 1000);
-
-      pushInterval = setInterval(() => {
-        const userRef = ref(db, `users/${username}`);
-        setTimeOnPage((prev) => {
-          update(userRef, { timeOnPage: prev }).catch((error) => {
-            console.error("Failed to update timeOnPage:", error);
-          });
-          return prev;
-        });
-      }, 60000);
-    }
-
-    return () => {
-      if (localInterval) clearInterval(localInterval);
-      if (pushInterval) clearInterval(pushInterval);
-    };
-  }, [isSignedIn, username, db]);
+    // Track time spent on the page
+    useEffect(() => {
+        let localInterval: NodeJS.Timeout | null = null;
+        let pushInterval: NodeJS.Timeout | null = null;
+      
+        if (isSignedIn) {
+          const userRef = ref(db, `users/${username.toLowerCase()}`);
+      
+          localInterval = setInterval(() => {
+            timeOnPageRef.current += 1;
+            setTimeOnPage((prev) => prev + 1);
+          }, 1000);
+      
+          pushInterval = setInterval(async () => {
+            try {
+              await update(userRef, { timeOnPage: timeOnPageRef.current });
+            } catch (error) {
+              console.error("Failed to update timeOnPage:", error);
+            }
+          }, 60000);
+        }
+      
+        return () => {
+          if (localInterval) clearInterval(localInterval);
+          if (pushInterval) clearInterval(pushInterval);
+        };
+      }, [isSignedIn, username, db]);
 
   // Detect mouse position
   useEffect(() => {
@@ -91,11 +93,11 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
       customAlert("Please enter a valid name!", "error");
       return;
     }
-
+  
     const normalizedUsername = username.toLowerCase();
     const userRef = ref(db, `users/${normalizedUsername}`);
     const snapshot = await get(userRef);
-
+  
     if (!snapshot.exists()) {
       try {
         await set(userRef, {
@@ -109,44 +111,48 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
         return;
       }
     }
-
-    const userData: Record<string, any> | null = snapshot.exists() ? snapshot.val() : null;
-
+  
+    const userData: Record<string, any> | null = snapshot.val();
+  
     if (userData) {
+      timeOnPageRef.current = userData.timeOnPage || 0;
       setTimeOnPage(userData.timeOnPage || 0);
       setProfilePicture(userData.pfpurl || "https://demiffy.com/defaultuser.png");
       setRole(userData.role || "Guest");
     } else {
+      timeOnPageRef.current = 0;
+      setTimeOnPage(0);
       setProfilePicture("https://demiffy.com/defaultuser.png");
       setRole("Guest");
     }
-
+  
     setIsSignedIn(true);
     onSignIn(normalizedUsername);
-};
+  };
 
   // Track total pixels and user pixels
   useEffect(() => {
     const canvasRef = ref(db, "canvas");
-
+  
     const unsubscribe = onValue(canvasRef, (snapshot) => {
       const data: Record<string, any> | null = snapshot.val();
       if (data) {
         setTotalPixels(Object.keys(data).length);
-
+  
         const userPixels = Object.values(data).filter(
-          (pixel: any) => pixel.placedBy === username
+          (pixel: any) => pixel.placedBy === username.toLowerCase() // Normalize username
         ).length;
-
+  
         setPixelsPlaced(userPixels);
       } else {
         setTotalPixels(0);
         setPixelsPlaced(0);
       }
     });
-
+  
     return () => unsubscribe();
   }, [db, username]);
+  
 
   const handleDeleteAllPixels = async () => {
     if (!isSignedIn) {
