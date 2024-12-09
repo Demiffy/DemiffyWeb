@@ -156,7 +156,6 @@ const PlaceV2: React.FC = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
     const adjustedX = (x - offset.x) / scale;
     const adjustedY = (y - offset.y) / scale;
 
