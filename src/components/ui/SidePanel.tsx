@@ -99,7 +99,7 @@ const SidePanel = ({ onSignIn }: { onSignIn: (username: string) => void }) => {
         await set(userRef, {
           role: "Guest",
           timeOnPage: 0,
-          pfpurl: "https://cdn-icons-png.flaticon.com/512/1177/1177568.png",
+          pfpurl: "https://demiffy.com/defaultuser.png",
         });
       } catch (error) {
         console.error("Error setting user data:", error);
