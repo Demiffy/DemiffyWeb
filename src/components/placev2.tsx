@@ -19,7 +19,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Define the color palette
 const colors = [
   '#6d001a', '#be0039', '#ff4500', '#ffa800', '#ffd635', '#fff8b8',
   '#00a368', '#00cc78', '#7eed56', '#00756f', '#009eaa', '#00ccc0',
@@ -34,25 +33,43 @@ const pixelSize = 20;
 const PlaceV2: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // State for selected color
   const [selectedColor, setSelectedColor] = useState<number>(31);
-
-  // State for panning and zooming
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [scale, setScale] = useState<number>(1);
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number } | null>(null);
-
-  // State for mouse coordinates
   const [mouseCoords, setMouseCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Zoom limits
-  const MIN_SCALE = 0.5;
-  const MAX_SCALE = 3;
+  const MIN_SCALE = 0.4;
+  const MAX_SCALE = 5;
+
+  // FPS Tracking
+  const [fps, setFps] = useState<number>(0);
+  useEffect(() => {
+    let frameCount = 0;
+    let lastTime = performance.now();
+
+    const updateFps = () => {
+      frameCount++;
+      const currentTime = performance.now();
+      const delta = currentTime - lastTime;
+
+      if (delta >= 1000) {
+        setFps(frameCount);
+        frameCount = 0;
+        lastTime = currentTime;
+      }
+
+      requestAnimationFrame(updateFps);
+    };
+
+    updateFps();
+  }, []);
 
   // State for viewport size
   const [viewport, setViewport] = useState({
-    width: window.innerWidth - 100,
+    width: window.innerWidth,
     height: window.innerHeight,
   });
 
@@ -60,7 +77,7 @@ const PlaceV2: React.FC = () => {
   useEffect(() => {
     const updateViewport = () => {
       setViewport({
-        width: window.innerWidth - 100,
+        width: window.innerWidth,
         height: window.innerHeight,
       });
     };
@@ -91,67 +108,62 @@ const PlaceV2: React.FC = () => {
     return () => unsubscribe();
   }, [offset, scale]);
 
-  // Function to draw the canvas
+  // Draw the canvas
   const drawCanvas = useCallback((canvasData: any[]) => {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.imageSmoothingEnabled = false;
-
-        // Clear the visible area
         ctx.clearRect(0, 0, viewport.width, viewport.height);
-
-        // Apply transformations: translate and scale
+  
         ctx.save();
         ctx.translate(offset.x, offset.y);
         ctx.scale(scale, scale);
 
-        // Draw grid lines (optional)
-        ctx.strokeStyle = '#CCCCCC';
-        ctx.lineWidth = 0.5 / scale;
-
-        // Determine visible range based on panning and scaling
-        const startX = Math.floor((-offset.x / scale) / pixelSize) - 1;
-        const endX = Math.floor((viewport.width - offset.x) / scale / pixelSize) + 1;
-        const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
-        const endY = Math.floor((viewport.height - offset.y) / scale / pixelSize) + 1;
-
-        // Draw vertical grid lines
-        for (let x = startX; x <= endX; x++) {
-          const posX = x * pixelSize;
-          ctx.beginPath();
-          ctx.moveTo(posX, startY * pixelSize);
-          ctx.lineTo(posX, endY * pixelSize);
-          ctx.stroke();
-        }
-
-        // Draw horizontal grid lines
-        for (let y = startY; y <= endY; y++) {
-          const posY = y * pixelSize;
-          ctx.beginPath();
-          ctx.moveTo(startX * pixelSize, posY);
-          ctx.lineTo(endX * pixelSize, posY);
-          ctx.stroke();
-        }
-
-        // Draw each pixel within the visible range
+        const adjustedPixelSize = pixelSize + (scale < 1 ? 1 / scale : 0);
+  
         canvasData.forEach((pixel: any) => {
+          const x = pixel.x * pixelSize;
+          const y = pixel.y * pixelSize;
           ctx.fillStyle = colors[pixel.color];
-          ctx.fillRect(pixel.x * pixelSize, pixel.y * pixelSize, pixelSize, pixelSize);
+          ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
         });
-
-        // Draw a large black block at the center (0,0)
-        const blockSize = 20;
-        ctx.fillStyle = 'black';
-        ctx.fillRect(-blockSize / 2, -blockSize / 2, blockSize, blockSize);
-
+  
+        // Lines > 1.1 zoom
+        if (scale > 1.1) {
+          ctx.strokeStyle = '#CCCCCC';
+          ctx.lineWidth = 0.5 / scale;
+  
+          const startX = Math.floor((-offset.x / scale) / pixelSize) - 1;
+          const endX = Math.floor((viewport.width - offset.x) / scale / pixelSize) + 1;
+          const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
+          const endY = Math.floor((viewport.height - offset.y) / scale / pixelSize) + 1;
+  
+          for (let x = startX; x <= endX; x++) {
+            const posX = x * pixelSize;
+            ctx.beginPath();
+            ctx.moveTo(posX, startY * pixelSize);
+            ctx.lineTo(posX, endY * pixelSize);
+            ctx.stroke();
+          }
+  
+          for (let y = startY; y <= endY; y++) {
+            const posY = y * pixelSize;
+            ctx.beginPath();
+            ctx.moveTo(startX * pixelSize, posY);
+            ctx.lineTo(endX * pixelSize, posY);
+            ctx.stroke();
+          }
+        }
+  
         ctx.restore();
       }
     }
-  }, [offset, scale, viewport.height, viewport.width]);
+  }, [offset, scale, viewport.height, viewport.width, pixelSize]);
+  
 
-  // Function to handle placing/removing a pixel
+  // Handle placing/removing a pixel
   const handleCanvasInteraction = async (x: number, y: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -174,53 +186,53 @@ const PlaceV2: React.FC = () => {
     }
   };
 
-  // Event handler for mouse down
-  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-    if (event.button === 1) {
-      event.preventDefault();
-      setIsPanning(true);
-      setLastMousePos({ x: event.clientX, y: event.clientY });
-    } else if (event.button === 0) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      handleCanvasInteraction(x, y);
-    }
-  };
-
-  // Event handler for mouse move
-  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+  // Event handler mouse down
+const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+  if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
+    event.preventDefault();
+    setIsPanning(true);
+    setLastMousePos({ x: event.clientX, y: event.clientY });
+  } else if (event.button === 0 && !event.ctrlKey) {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
+    handleCanvasInteraction(x, y);
+  }
+};
 
-    // Calculate mouse position relative to the canvas and account for offset and scale
-    const canvasX = (x - offset.x) / scale;
-    const canvasY = (y - offset.y) / scale;
-    setMouseCoords({ x: canvasX, y: canvasY });
+// Event handler mouse move
+const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+  const canvas = canvasRef.current;
+  if (!canvas) return;
 
-    if (isPanning && lastMousePos) {
-      const deltaX = event.clientX - lastMousePos.x;
-      const deltaY = event.clientY - lastMousePos.y;
-      setOffset((prev) => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
-      setLastMousePos({ x: event.clientX, y: event.clientY });
-    } else if (event.buttons === 1) {
-      handleCanvasInteraction(x, y);
-    }
-  };
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
 
-  // Event handler for mouse up
-  const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-    if (event.button === 1) {
-      setIsPanning(false);
-      setLastMousePos(null);
-    }
-  };
+  const canvasX = (x - offset.x) / scale;
+  const canvasY = (y - offset.y) / scale;
+  setMouseCoords({ x: canvasX, y: canvasY });
+
+  if (isPanning && lastMousePos) {
+    const deltaX = event.clientX - lastMousePos.x;
+    const deltaY = event.clientY - lastMousePos.y;
+    setOffset((prev) => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
+    setLastMousePos({ x: event.clientX, y: event.clientY });
+  } else if (event.buttons === 1 && !event.ctrlKey) {
+    handleCanvasInteraction(x, y);
+  }
+};
+
+// Event handler mouse up
+const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+  if ((event.button === 0 && isPanning) || event.button === 1) {
+    setIsPanning(false);
+    setLastMousePos(null);
+  }
+};
+
 
   // Handle zooming
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -245,13 +257,10 @@ const PlaceV2: React.FC = () => {
       newScale = scale / zoomFactor;
     }
 
-    // Clamp the new scale
     newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
 
-    // Calculate the scale ratio
     const scaleRatio = newScale / scale;
 
-    // Adjust the offset to keep the mouse position stable
     const newOffsetX = mouseX - scaleRatio * (mouseX - offset.x);
     const newOffsetY = mouseY - scaleRatio * (mouseY - offset.y);
 
@@ -290,29 +299,14 @@ const PlaceV2: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
-      {/* Sidebar for Color Palette */}
-      <div className="w-24 bg-gray-800 flex flex-col items-center p-2 space-y-2">
-        <h1 className="text-lg font-bold mb-4">Colors</h1>
-        {colors.map((color, index) => (
-          <button
-            key={index}
-            style={{ backgroundColor: color }}
-            className={`w-8 h-8 rounded border ${
-              index === selectedColor ? 'border-blue-500' : 'border-transparent'
-            }`}
-            onClick={() => setSelectedColor(index)}
-          />
-        ))}
-      </div>
-
+    <div className="h-screen bg-gray-900 text-white">
       {/* Main Canvas Area */}
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative w-full h-full overflow-hidden">
         <canvas
           ref={canvasRef}
           width={viewport.width}
           height={viewport.height}
-          className={`absolute top-0 left-0 ${
+          className={`absolute top-0 left-0 w-full h-full ${
             isPanning ? 'cursor-grabbing' : 'cursor-crosshair'
           }`}
           style={{
@@ -321,35 +315,54 @@ const PlaceV2: React.FC = () => {
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={() => { setIsPanning(false); setLastMousePos(null); }}
+          onMouseLeave={() => {
+            setIsPanning(false);
+            setLastMousePos(null);
+          }}
         />
-
-        {/* Coordinate and Zoom Display */}
-        <div className="absolute bottom-4 right-4 bg-white bg-opacity-75 p-2 rounded shadow text-black text-sm">
-          <p>
-            <strong>Coordinates:</strong> X: {mouseCoords.x.toFixed(2)}, Y: {mouseCoords.y.toFixed(2)}
-          </p>
-          <p>
-            <strong>Zoom:</strong> {scale.toFixed(2)}x
-          </p>
-          <p>Middle mouse button to pan. Scroll to zoom.</p>
+  
+        {/* Overlay Color Palette */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-fit shadow-lg">
+          <div
+            className="grid grid-flow-col auto-cols-max gap-2 justify-center items-center"
+          >
+            {colors.map((color, index) => (
+              <div
+                key={index}
+                className="flex justify-center items-center"
+              >
+                <div
+                  className={`color-square w-11 h-11 rounded border transition-all ${
+                    index === selectedColor
+                      ? 'border-blue-500 border-4 shadow-lg shadow-blue-300 scale-110'
+                      : 'border-gray-300 hover:border-gray-400 hover:scale-110 hover:shadow-md hover:shadow-gray-500'
+                  }`}
+                  style={{ backgroundColor: color, boxShadow: index === selectedColor ? '0px 0px 10px 2px rgba(59, 130, 246, 0.8)' : 'none' }}
+                  onClick={() => setSelectedColor(index)}
+                  aria-label={`Select color ${color}`}
+                />
+              </div>
+            ))}
+          </div>
         </div>
-
-        {/* Instructions */}
-        <div className="absolute bottom-4 left-24 right-4 text-center text-gray-400">
-          <p>
-            <strong>Instructions:</strong>
-            <br />
-            - Click or drag with the left mouse button to place pixels.
-            <br />
-            - Hold the middle mouse button (scroll wheel) and drag to pan around the canvas.
-            <br />
-            - Use white color to delete pixels. Updates are real-time!
+  
+        {/* Coordinate and Zoom Display */}
+        <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md">
+          <p className="flex items-center">
+            <span className="font-bold mr-1">Coordinates:</span> 
+            <span>X: {mouseCoords.x.toFixed(2)}, Y: {mouseCoords.y.toFixed(2)}</span>
+          </p>
+          <p className="flex items-center">
+            <span className="font-bold mr-1">Zoom:</span> 
+            <span>{scale.toFixed(2)}x</span>
+          </p>
+          <p className="flex items-center">
+            <span className="font-bold mr-1">FPS:</span> 
+            <span>{fps}</span>
           </p>
         </div>
       </div>
     </div>
   );
-};
-
+}
 export default PlaceV2;
