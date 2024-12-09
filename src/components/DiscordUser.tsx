@@ -107,7 +107,7 @@ const DiscordUser: React.FC = () => {
               </div>
 
               {/* Profile Details */}
-              <div className="bg-gray-800 p-6">
+              <div className="bg-gray-700 p-6">
                 <ul className="space-y-2 text-gray-300">
                   <li>
                     <strong>Username:</strong> {userData.user_name}
