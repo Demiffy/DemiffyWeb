@@ -89,21 +89,26 @@ const SidePanel = ({
     };
   }, [db, userData.username, isSignedIn]);
   
-  // Detect mouse position
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      if (event.clientX <= 50) {
-        setIsOpen(true);
-      } else if (event.clientX > 240) {
-        setIsOpen(false);
-      }
-    };
+// Detect mouse position
+useEffect(() => {
+  const handleMouseMove = (event: MouseEvent) => {
+    if (!isSignedIn) {
+      setIsOpen(false);
+      return;
+    }
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-    };
-  }, []);
+    if (event.clientX <= 50) {
+      setIsOpen(true);
+    } else if (event.clientX > 240) {
+      setIsOpen(false);
+    }
+  };
+
+  window.addEventListener("mousemove", handleMouseMove);
+  return () => {
+    window.removeEventListener("mousemove", handleMouseMove);
+  };
+}, [isSignedIn]);
 
   // Track total pixels and user pixels
   useEffect(() => {

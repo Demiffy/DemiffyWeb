@@ -54,7 +54,7 @@ const PlaceV2: React.FC = () => {
 
 
   // Zoom limits
-  const MIN_SCALE = 0.4;
+  const MIN_SCALE = 0.1;
   const MAX_SCALE = 5;
 
   // Handle sign-in from the SidePanel
@@ -454,7 +454,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
           </div>
         </div>
       )}
-      
+
       {/* Alert Popup */}
       {alertMessage && (
       <div
