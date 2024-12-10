@@ -401,9 +401,12 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
         />
   
         {/* Overlay Color Palette */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-fit shadow-lg">
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-full shadow-lg">
           <div
-            className="grid grid-flow-col auto-cols-max gap-2 justify-center items-center"
+            className="grid grid-cols-[repeat(auto-fit,_minmax(2.5rem,_1fr))] gap-2 justify-center items-center"
+            style={{
+              maxWidth: "90vw",
+            }}
           >
             {colors.map((color, index) => (
               <div
