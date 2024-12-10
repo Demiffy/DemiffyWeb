@@ -1,7 +1,7 @@
 // PlaceV2.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, set } from 'firebase/database';
+import { getDatabase, ref, onValue, set, get, update, remove } from 'firebase/database';
 import SidePanel from './ui/SidePanel';
 
 // Firebase configuration
@@ -33,7 +33,6 @@ const pixelSize = 20;
 
 const PlaceV2: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [user, setUser] = useState<string | null>(null);
 
   const [selectedColor, setSelectedColor] = useState<number>(31);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -43,6 +42,15 @@ const PlaceV2: React.FC = () => {
   const [mouseCoords, setMouseCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
   const [alertMessage, setAlertMessage] = useState<{ text: string; type: "success" | "error" | "info" | "tip" } | null>(null);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [username, setUsername] = useState('');
+
+  const [userData, setUserData] = useState({
+    username: "",
+    role: "Guest",
+    timeOnPage: 0,
+    pfpurl: "https://demiffy.com/defaultuser.png",
+  });
 
 
   // Zoom limits
@@ -50,8 +58,36 @@ const PlaceV2: React.FC = () => {
   const MAX_SCALE = 5;
 
   // Handle sign-in from the SidePanel
-  const handleSignIn = (username: string) => {
-    setUser(username);
+  const handleSignIn = async () => {
+    if (!username.trim()) {
+      customAlert("Please enter a valid name!", "error");
+      return;
+    }
+  
+    const normalizedUsername = username.toLowerCase();
+    const userRef = ref(db, `users/${normalizedUsername}`);
+    const snapshot = await get(userRef);
+  
+    let newUserData = {
+      role: "Guest",
+      timeOnPage: 0,
+      pfpurl: "https://demiffy.com/defaultuser.png",
+    };
+
+    if (!snapshot.exists()) {
+      try {
+        await set(userRef, newUserData);
+      } catch (error) {
+        console.error("Error setting user data:", error);
+        customAlert("Failed to sign in. Please try again.", "error");
+        return;
+      }
+    } else {
+      newUserData = snapshot.val();
+    }
+
+    setUserData({ ...newUserData, username: normalizedUsername });
+    setIsSignedIn(true);
   };
 
   const customAlert = (text: string, type: "success" | "error" | "info" | "tip") => {
@@ -204,7 +240,7 @@ const PlaceV2: React.FC = () => {
 
   // Handle placing/removing a pixel
   const handleCanvasInteraction = async (x: number, y: number) => {
-  if (!user) {  
+  if (!username) {  
     customAlert(
       "💡 Tip: Move your mouse to the left edge of the screen to open the side panel. Sign in to get started!",
       "tip"
@@ -223,7 +259,7 @@ const PlaceV2: React.FC = () => {
 
   try {
     const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
-    await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: user });
+    await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: username });
 
     setTimeout(() => {
       setHoveredPixel(null);
@@ -349,9 +385,76 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
     };
   }, []);
 
+  // Function to handle username updates from SidePanel
+  const handleUpdateUsername = async (newUsername: string) => {
+    const normalizedNewUsername = newUsername.trim().toLowerCase();
+
+    if (!normalizedNewUsername) {
+        customAlert("Please enter a valid username!", "error");
+        return;
+    }
+
+    if (normalizedNewUsername === userData.username.toLowerCase()) {
+        customAlert("This is already your username!", "info");
+        return;
+    }
+
+    try {
+        const currentUserRef = ref(db, `users/${userData.username}`);
+        const newUserRef = ref(db, `users/${normalizedNewUsername}`);
+
+        const newUserSnapshot = await get(newUserRef);
+        if (newUserSnapshot.exists()) {
+            customAlert("This username is already taken. Please choose another.", "error");
+            return;
+        }
+
+        const currentUserSnapshot = await get(currentUserRef);
+        if (!currentUserSnapshot.exists()) {
+            customAlert("No user data found to update!", "error");
+            return;
+        }
+
+        const { username, ...currentUserData } = currentUserSnapshot.val();
+
+        await update(newUserRef, currentUserData);
+        await remove(currentUserRef);
+
+        setUserData((prev) => ({
+            ...prev,
+            username: normalizedNewUsername,
+        }));
+        customAlert("Username updated successfully!", "success");
+    } catch (error) {
+        console.error("Failed to update username:", error);
+        customAlert("An error occurred while updating your username. Please try again.", "error");
+    }
+};
+
   return (
     <div className="h-screen bg-gray-900 text-white">
 
+      {!isSignedIn && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
+            <h3 className="text-lg font-semibold mb-4">Sign In</h3>
+            <input
+              type="text"
+              placeholder="Enter your name"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-2 rounded bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+            />
+            <button
+              onClick={handleSignIn}
+              className="w-full py-2 rounded bg-blue-700 hover:bg-blue-600 text-white font-bold"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Alert Popup */}
       {alertMessage && (
       <div
@@ -377,7 +480,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
     )}
 
       {/* Side Panel */}
-      <SidePanel onSignIn={handleSignIn} />
+      <SidePanel userData={userData} onSignIn={handleSignIn} isSignedIn={isSignedIn} onUpdateUsername={handleUpdateUsername}/>
       {/* Main Canvas Area */}
       <div className="relative w-full h-full overflow-hidden">
         <canvas
