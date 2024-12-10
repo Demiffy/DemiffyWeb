@@ -95,6 +95,26 @@ const skills = [
           { name: "React", image: "/react-icon.png" },
           { name: "JavaScript", image: "/c-icon.png" },
         ]
+      },
+      {
+        title: "PlaceV2",
+        description: "A collaborative pixel art canvas where users can create, edit, and share their pixel art creations in real time.",
+        image: "/placev2.png",
+        details: "PlaceV2 allows users to interact with a shared canvas to place and remove pixels. Featuring real-time collaboration, zooming, and customizable colors, this project emphasizes user engagement and creative expression.",
+        additionalImages: [
+          { src: "/placev2.png", title: "Collaborative Canvas" },
+          { src: "/placeholder.png", title: "Custom Color Palette" },
+          { src: "/placeholder.png", title: "Real-time Updates" }
+        ],
+        buttons: [
+          { label: "Live Demo", onClick: () => window.open('https://demiffy.com/placev2', '_blank') },
+          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/DemiffyWeb', '_blank') }
+        ],
+        technologies: [
+          { name: "React", image: "/react-icon.png" },
+          { name: "Firebase", image: "/firebase-icon.png" },
+          { name: "TypeScript", image: "/typescript-icon.png" }
+        ]
       }
     ];
     
