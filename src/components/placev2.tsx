@@ -35,6 +35,7 @@ const PlaceV2: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [selectedColor, setSelectedColor] = useState<number>(31);
+  const [isEraserSelected, setIsEraserSelected] = useState(false);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [scale, setScale] = useState<number>(1);
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -162,116 +163,125 @@ const PlaceV2: React.FC = () => {
   // Draw the canvas
   const drawCanvas = useCallback(
     (canvasData: any[], hoveredPixel?: { x: number; y: number } | null) => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.imageSmoothingEnabled = false;
-        ctx.clearRect(0, 0, viewport.width, viewport.height);
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.clearRect(0, 0, viewport.width, viewport.height);
   
-        ctx.save();
-        ctx.translate(offset.x, offset.y);
-        ctx.scale(scale, scale);
-
-        const adjustedPixelSize = pixelSize + (scale < 1 ? 1 / scale : 0);
+          ctx.save();
+          ctx.translate(offset.x, offset.y);
+          ctx.scale(scale, scale);
   
-        canvasData.forEach((pixel: any) => {
-          const x = pixel.x * pixelSize;
-          const y = pixel.y * pixelSize;
-          ctx.fillStyle = colors[pixel.color];
-          ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
-        });
-        
-        // Highlight hovered pixel
-        if (hoveredPixel) {
-          const highlightX = hoveredPixel.x * pixelSize;
-          const highlightY = hoveredPixel.y * pixelSize;
-        
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
-          ctx.fillRect(
-            highlightX,
-            highlightY,
-            adjustedPixelSize,
-            adjustedPixelSize
-          );
-        
-          ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
-          ctx.lineWidth = 2 / scale;
-          ctx.strokeRect(
-            highlightX + 1 / scale,
-            highlightY + 1 / scale,
-            adjustedPixelSize - 2 / scale,
-            adjustedPixelSize - 2 / scale
-          );
-        }
+          const adjustedPixelSize = pixelSize + (scale < 1 ? 1 / scale : 0);
   
-        // Lines > 1.1 zoom
-        if (scale > 1.1) {
-          ctx.strokeStyle = '#CCCCCC';
-          ctx.lineWidth = 0.5 / scale;
+          canvasData.forEach((pixel: any) => {
+            if (pixel.color === -1) return;
   
-          const startX = Math.floor((-offset.x / scale) / pixelSize) - 1;
-          const endX = Math.floor((viewport.width - offset.x) / scale / pixelSize) + 1;
-          const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
-          const endY = Math.floor((viewport.height - offset.y) / scale / pixelSize) + 1;
+            const x = pixel.x * pixelSize;
+            const y = pixel.y * pixelSize;
+            ctx.fillStyle = colors[pixel.color];
+            ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
+          });
   
-          for (let x = startX; x <= endX; x++) {
-            const posX = x * pixelSize;
-            ctx.beginPath();
-            ctx.moveTo(posX, startY * pixelSize);
-            ctx.lineTo(posX, endY * pixelSize);
-            ctx.stroke();
+          // Highlight hovered pixel
+          if (hoveredPixel) {
+            const highlightX = hoveredPixel.x * pixelSize;
+            const highlightY = hoveredPixel.y * pixelSize;
+  
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+            ctx.fillRect(
+              highlightX,
+              highlightY,
+              adjustedPixelSize,
+              adjustedPixelSize
+            );
+  
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+            ctx.lineWidth = 2 / scale;
+            ctx.strokeRect(
+              highlightX + 1 / scale,
+              highlightY + 1 / scale,
+              adjustedPixelSize - 2 / scale,
+              adjustedPixelSize - 2 / scale
+            );
           }
   
-          for (let y = startY; y <= endY; y++) {
-            const posY = y * pixelSize;
-            ctx.beginPath();
-            ctx.moveTo(startX * pixelSize, posY);
-            ctx.lineTo(endX * pixelSize, posY);
-            ctx.stroke();
-          }
-        }
+          // Lines > 1.1 zoom
+          if (scale > 1.1) {
+            ctx.strokeStyle = '#CCCCCC';
+            ctx.lineWidth = 0.5 / scale;
   
-        ctx.restore();
+            const startX = Math.floor((-offset.x / scale) / pixelSize) - 1;
+            const endX = Math.floor((viewport.width - offset.x) / scale / pixelSize) + 1;
+            const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
+            const endY = Math.floor((viewport.height - offset.y) / scale / pixelSize) + 1;
+  
+            for (let x = startX; x <= endX; x++) {
+              const posX = x * pixelSize;
+              ctx.beginPath();
+              ctx.moveTo(posX, startY * pixelSize);
+              ctx.lineTo(posX, endY * pixelSize);
+              ctx.stroke();
+            }
+  
+            for (let y = startY; y <= endY; y++) {
+              const posY = y * pixelSize;
+              ctx.beginPath();
+              ctx.moveTo(startX * pixelSize, posY);
+              ctx.lineTo(endX * pixelSize, posY);
+              ctx.stroke();
+            }
+          }
+  
+          ctx.restore();
+        }
       }
-    }
-  }, [offset, scale, viewport.height, viewport.width, pixelSize]);
+    },
+    [offset, scale, viewport.height, viewport.width, pixelSize]
+  );
   
-
   // Handle placing/removing a pixel
   const handleCanvasInteraction = async (x: number, y: number) => {
-  if (!username) {  
-    customAlert(
-      "💡 Tip: Move your mouse to the left edge of the screen to open the side panel. Sign in to get started!",
-      "tip"
-    );
-    return;
-  }
-
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-
-  const adjustedX = (x - offset.x) / scale;
-  const adjustedY = (y - offset.y) / scale;
-
-  const pixelX = Math.floor(adjustedX / pixelSize);
-  const pixelY = Math.floor(adjustedY / pixelSize);
-
-  try {
+    if (!username) {
+      customAlert(
+        "Why did you use Inspect Element to remove the Sign In Form? Please sign in to place pixels.",
+        "tip"
+      );
+      return;
+    }
+  
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+  
+    const adjustedX = (x - offset.x) / scale;
+    const adjustedY = (y - offset.y) / scale;
+  
+    const pixelX = Math.floor(adjustedX / pixelSize);
+    const pixelY = Math.floor(adjustedY / pixelSize);
+  
     const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
-    await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: username });
-
-    setTimeout(() => {
-      setHoveredPixel(null);
-    }, 5000);
-  } catch (error) {
-    console.error("Failed to place pixel:", error);
-    customAlert("Failed to place pixel. Try again!", "error");
-  }
-};
+  
+    try {
+      if (isEraserSelected) {
+        await remove(pixelRef);
+      } else if (selectedColor === 31) {
+        await set(pixelRef, { x: pixelX, y: pixelY, color: -1, placedBy: username });
+      } else {
+        await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: username });
+      }
+      setTimeout(() => {
+        setHoveredPixel(null);
+      }, 5000);
+    } catch (error) {
+      console.error("Failed to update pixel:", error);
+      customAlert("Failed to update pixel. Try again!", "error");
+    }
+  };
 
   // Event handler mouse down
-const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
   if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
     event.preventDefault();
     setIsPanning(true);
@@ -431,123 +441,160 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
     }
 };
 
-  return (
-    <div className="h-screen bg-gray-900 text-white">
+return (
+  <div className="h-screen bg-gray-900 text-white">
 
-      {!isSignedIn && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
-            <h3 className="text-lg font-semibold mb-4">Sign In</h3>
-            <input
-              type="text"
-              placeholder="Enter your name"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-2 rounded bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-            />
-            <button
-              onClick={handleSignIn}
-              className="w-full py-2 rounded bg-blue-700 hover:bg-blue-600 text-white font-bold"
-            >
-              Sign In
-            </button>
-          </div>
+    {!isSignedIn && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
+          <h3 className="text-lg font-semibold mb-4">Sign In</h3>
+          <input
+            type="text"
+            placeholder="Enter your name"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full p-2 rounded bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+          />
+          <button
+            onClick={handleSignIn}
+            className="w-full py-2 rounded bg-blue-700 hover:bg-blue-600 text-white font-bold"
+          >
+            Sign In
+          </button>
         </div>
-      )}
+      </div>
+    )}
 
-      {/* Alert Popup */}
-      {alertMessage && (
+    {/* Alert Popup */}
+    {alertMessage && (
       <div
         className={`fixed top-4 left-1/2 transform -translate-x-1/2 p-4 max-w-lg text-center rounded-lg shadow-lg z-50 ${
           alertMessage.type === "success"
             ? "bg-green-500 text-white"
             : alertMessage.type === "error"
             ? "bg-red-500 text-white"
-            : alertMessage.type === "info"
-            ? "bg-blue-500 text-white"
-            : "bg-yellow-200 text-black"
+            : "bg-blue-500 text-white"
         }`}
         style={{
           animation: "fadeIn 0.5s, fadeOut 0.5s 6.5s",
-          fontSize: alertMessage.type === "tip" ? "1.2rem" : "1rem",
-          border: alertMessage.type === "tip" ? "2px dashed black" : "none",
         }}
       >
-        <p style={{ fontWeight: alertMessage.type === "tip" ? "bold" : "normal" }}>
-          {alertMessage.text}
-        </p>
+        <p>{alertMessage.text}</p>
       </div>
     )}
 
-      {/* Side Panel */}
-      <SidePanel userData={userData} onSignIn={handleSignIn} isSignedIn={isSignedIn} onUpdateUsername={handleUpdateUsername}/>
-      {/* Main Canvas Area */}
-      <div className="relative w-full h-full overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          width={viewport.width}
-          height={viewport.height}
-          className={`absolute top-0 left-0 w-full h-full ${
-            isPanning ? 'cursor-grabbing' : 'cursor-crosshair'
-          }`}
+    {/* Side Panel */}
+    <SidePanel
+      userData={userData}
+      onSignIn={handleSignIn}
+      isSignedIn={isSignedIn}
+      onUpdateUsername={handleUpdateUsername}
+    />
+
+    {/* Main Canvas Area */}
+    <div className="relative w-full h-full overflow-hidden">
+      <canvas
+        ref={canvasRef}
+        width={viewport.width}
+        height={viewport.height}
+        className={`absolute top-0 left-0 w-full h-full ${
+          isPanning ? "cursor-grabbing" : "cursor-crosshair"
+        }`}
+        style={{
+          backgroundColor: colors[31],
+          imageRendering: "pixelated",
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={() => {
+          setIsPanning(false);
+          setLastMousePos(null);
+        }}
+      />
+
+      {/* Overlay Color Palette */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-full shadow-lg">
+        <div
+          className="grid grid-cols-[repeat(auto-fit,_minmax(2.5rem,_1fr))] gap-2 justify-center items-center"
           style={{
-            backgroundColor: colors[31],
-            imageRendering: 'pixelated',
+            maxWidth: "90vw",
           }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={() => {
-            setIsPanning(false);
-            setLastMousePos(null);
-          }}
-        />
-  
-        {/* Overlay Color Palette */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-full shadow-lg">
-          <div
-            className="grid grid-cols-[repeat(auto-fit,_minmax(2.5rem,_1fr))] gap-2 justify-center items-center"
-            style={{
-              maxWidth: "90vw",
-            }}
-          >
-            {colors.map((color, index) => (
+        >
+          {colors.map((color, index) => (
+            <div key={index} className="flex justify-center items-center">
               <div
-                key={index}
-                className="flex justify-center items-center"
-              >
-                <div
-                  className={`color-square w-11 h-11 rounded border transition-all ${
+                className={`color-square w-11 h-10 rounded border transition-all ${
+                  index === selectedColor && !isEraserSelected
+                    ? "border-blue-500 border-4 shadow-lg shadow-blue-300 scale-110"
+                    : "border-gray-300 hover:border-gray-400 hover:scale-110 hover:shadow-md hover:shadow-gray-500 cursor-pointer"
+                }`}
+                style={{
+                  backgroundColor: color,
+                  boxShadow:
                     index === selectedColor
-                      ? 'border-blue-500 border-4 shadow-lg shadow-blue-300 scale-110'
-                      : 'border-gray-300 hover:border-gray-400 hover:scale-110 hover:shadow-md hover:shadow-gray-500 cursor-pointer'
-                  }`}
-                  style={{ backgroundColor: color, boxShadow: index === selectedColor ? '0px 0px 10px 2px rgba(59, 130, 246, 0.8)' : 'none' }}
-                  onClick={() => setSelectedColor(index)}
-                  aria-label={`Select color ${color}`}
-                />
-              </div>
-            ))}
+                      ? "0px 0px 10px 2px rgba(59, 130, 246, 0.8)"
+                      : "none",
+                }}
+                onClick={() => {
+                  setSelectedColor(index);
+                  setIsEraserSelected(false);
+                }}
+                aria-label={`Select color ${color}`}
+              />
+            </div>
+          ))}
+
+          {/* Eraser Icon */}
+          <div className="flex justify-center items-center">
+            <div
+              className={`color-square w-11 h-11 rounded border transition-all ${
+                isEraserSelected
+                  ? "border-red-500 border-4 shadow-lg shadow-red-300 scale-110"
+                  : "border-gray-300 hover:border-gray-400 hover:scale-110 hover:shadow-md hover:shadow-gray-500 cursor-pointer"
+              }`}
+              style={{
+                backgroundColor: "transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onClick={() => setIsEraserSelected(true)}
+              aria-label="Eraser"
+            >
+              <span
+                style={{
+                  fontSize: "1.5rem",
+                  color: isEraserSelected ? "red" : "gray",
+                }}
+              >
+                🧹
+              </span>
+            </div>
           </div>
         </div>
-  
-        {/* Coordinate and Zoom Display */}
-        <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md">
-          <p className="flex items-center">
-            <span className="font-bold mr-1">Coordinates:</span> 
-            <span>X: {mouseCoords.x.toFixed(2)}, Y: {mouseCoords.y.toFixed(2)}</span>
-          </p>
-          <p className="flex items-center">
-            <span className="font-bold mr-1">Zoom:</span> 
-            <span>{scale.toFixed(2)}x</span>
-          </p>
-          <p className="flex items-center">
-            <span className="font-bold mr-1">FPS:</span> 
-            <span>{fps}</span>
-          </p>
-        </div>
+      </div>
+
+      {/* Coordinate and Zoom Display */}
+      <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md">
+        <p className="flex items-center">
+          <span className="font-bold mr-1">Coordinates:</span>
+          <span>
+            X: {Math.floor(mouseCoords.x / pixelSize)}, Y: {Math.floor(mouseCoords.y / pixelSize)}
+          </span>
+        </p>
+        <p className="flex items-center">
+          <span className="font-bold mr-1">Zoom:</span>
+          <span>{scale.toFixed(2)}x</span>
+        </p>
+        <p className="flex items-center">
+          <span className="font-bold mr-1">FPS:</span>
+          <span>{fps}</span>
+        </p>
       </div>
     </div>
-  );
-}
+  </div>
+);
+};
+
 export default PlaceV2;

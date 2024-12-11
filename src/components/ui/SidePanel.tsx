@@ -311,6 +311,9 @@ useEffect(() => {
               }}
             />
           </div>
+          <button className="w-full py-2 rounded bg-blue-700 hover:bg-blue-600 text-white font-bold">
+            Show Achievements
+          </button>
         </div>
       </div>
     </div>
