@@ -45,6 +45,7 @@ const PlaceV2: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState<{ text: string; type: "success" | "error" | "info" | "tip" } | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [username, setUsername] = useState('');
+  const lastPixelPosition = useRef<{ x: number; y: number } | null>(null);
 
   const [userData, setUserData] = useState({
     username: "",
@@ -264,10 +265,22 @@ useEffect(() => {
     },
     [offset, scale, viewport.height, viewport.width, pixelSize]
   );
+
+  const updateCursorPosition = async (pixelX: number, pixelY: number) => {
+    if (!isSignedIn || !userData.username) return;
+  
+    const userCursorRef = ref(db, `users/${userData.username}/cursor`);
+    
+    try {
+      await set(userCursorRef, { x: pixelX, y: pixelY });
+    } catch (error) {
+      console.error("Failed to update cursor position in Firebase:", error);
+    }
+  };  
   
   // Handle placing/removing a pixel
   const handleCanvasInteraction = async (x: number, y: number) => {
-    if (!username) {
+    if (!userData.username) {
       customAlert(
         "Why did you use Inspect Element to remove the Sign In Form? Please sign in to place pixels.",
         "tip"
@@ -290,9 +303,9 @@ useEffect(() => {
       if (isEraserSelected) {
         await remove(pixelRef);
       } else if (selectedColor === 31) {
-        await set(pixelRef, { x: pixelX, y: pixelY, color: -1, placedBy: username });
+        await set(pixelRef, { x: pixelX, y: pixelY, color: -1, placedBy: userData.username });
       } else {
-        await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: username });
+        await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: userData.username });
       }
       setTimeout(() => {
         setHoveredPixel(null);
@@ -301,7 +314,7 @@ useEffect(() => {
       console.error("Failed to update pixel:", error);
       customAlert("Failed to update pixel. Try again!", "error");
     }
-  };
+  };  
 
   // Event handler mouse down
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
@@ -343,6 +356,11 @@ const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>)
     setLastMousePos({ x: event.clientX, y: event.clientY });
   } else if (event.buttons === 1 && !event.ctrlKey) {
     handleCanvasInteraction(x, y);
+  }
+
+  if (!lastPixelPosition.current || lastPixelPosition.current.x !== pixelX || lastPixelPosition.current.y !== pixelY) {
+    lastPixelPosition.current = { x: pixelX, y: pixelY };
+    updateCursorPosition(pixelX, pixelY);
   }
 };
 
