@@ -45,7 +45,15 @@ const PlaceV2: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState<{ text: string; type: "success" | "error" | "info" | "tip" } | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [username, setUsername] = useState('');
+  const [onlinePlayers, setOnlinePlayers] = useState<number>(0);
   const lastPixelPosition = useRef<{ x: number; y: number } | null>(null);
+  const [isPixelInfoEnabled, setIsPixelInfoEnabled] = useState(false);
+  const [hoveredPixelInfo, setHoveredPixelInfo] = useState<{
+    x: number;
+    y: number;
+    placedBy: string;
+    color: number;
+  } | null>(null);
 
   const [userData, setUserData] = useState({
     username: "",
@@ -53,7 +61,16 @@ const PlaceV2: React.FC = () => {
     timeOnPage: 0,
     pfpurl: "https://demiffy.com/defaultuser.png",
   });
-
+  
+  const fetchPixelInfo = async (x: number, y: number) => {
+    const pixelRef = ref(db, `canvas/${x}_${y}`);
+    const snapshot = await get(pixelRef);
+    if (snapshot.exists()) {
+      setHoveredPixelInfo({ x, y, ...snapshot.val() });
+    } else {
+      setHoveredPixelInfo(null);
+    }
+  };
 
   // Zoom limits
   const MIN_SCALE = 0.1;
@@ -185,86 +202,88 @@ useEffect(() => {
   }, [offset, scale, hoveredPixel]);  
 
   // Draw the canvas
-  const drawCanvas = useCallback(
-    (canvasData: any[], hoveredPixel?: { x: number; y: number } | null) => {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.imageSmoothingEnabled = false;
-          ctx.clearRect(0, 0, viewport.width, viewport.height);
-  
-          ctx.save();
-          ctx.translate(offset.x, offset.y);
-          ctx.scale(scale, scale);
-  
-          const adjustedPixelSize = pixelSize + (scale < 1 ? 1 / scale : 0);
-  
-          canvasData.forEach((pixel: any) => {
-            if (pixel.color === -1) return;
-  
-            const x = pixel.x * pixelSize;
-            const y = pixel.y * pixelSize;
-            ctx.fillStyle = colors[pixel.color];
-            ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
-          });
-  
-          // Highlight hovered pixel
-          if (hoveredPixel) {
-            const highlightX = hoveredPixel.x * pixelSize;
-            const highlightY = hoveredPixel.y * pixelSize;
-  
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
-            ctx.fillRect(
-              highlightX,
-              highlightY,
-              adjustedPixelSize,
-              adjustedPixelSize
-            );
-  
-            ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
-            ctx.lineWidth = 2 / scale;
-            ctx.strokeRect(
-              highlightX + 1 / scale,
-              highlightY + 1 / scale,
-              adjustedPixelSize - 2 / scale,
-              adjustedPixelSize - 2 / scale
-            );
-          }
-  
-          // Lines > 1.1 zoom
-          if (scale > 1.1) {
-            ctx.strokeStyle = '#CCCCCC';
-            ctx.lineWidth = 0.5 / scale;
-  
-            const startX = Math.floor((-offset.x / scale) / pixelSize) - 1;
-            const endX = Math.floor((viewport.width - offset.x) / scale / pixelSize) + 1;
-            const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
-            const endY = Math.floor((viewport.height - offset.y) / scale / pixelSize) + 1;
-  
-            for (let x = startX; x <= endX; x++) {
-              const posX = x * pixelSize;
-              ctx.beginPath();
-              ctx.moveTo(posX, startY * pixelSize);
-              ctx.lineTo(posX, endY * pixelSize);
-              ctx.stroke();
-            }
-  
-            for (let y = startY; y <= endY; y++) {
-              const posY = y * pixelSize;
-              ctx.beginPath();
-              ctx.moveTo(startX * pixelSize, posY);
-              ctx.lineTo(endX * pixelSize, posY);
-              ctx.stroke();
-            }
-          }
-  
-          ctx.restore();
+const drawCanvas = useCallback(
+  (canvasData: any[], hoveredPixel?: { x: number; y: number } | null) => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, viewport.width, viewport.height);
+
+        ctx.save();
+        ctx.translate(offset.x, offset.y);
+        ctx.scale(scale, scale);
+
+        const adjustedPixelSize = pixelSize + (scale < 1 ? 1 / scale : 0);
+
+        canvasData.forEach((pixel: any) => {
+          if (pixel.color === -1) return;
+
+          const x = pixel.x * pixelSize;
+          const y = pixel.y * pixelSize;
+          ctx.fillStyle = colors[pixel.color];
+          ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
+        });
+
+        // Highlight hovered pixel
+        if (hoveredPixel) {
+          const highlightX = hoveredPixel.x * pixelSize;
+          const highlightY = hoveredPixel.y * pixelSize;
+
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+          ctx.fillRect(
+            highlightX,
+            highlightY,
+            adjustedPixelSize,
+            adjustedPixelSize
+          );
+
+          ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+          ctx.lineWidth = 2 / scale;
+          ctx.strokeRect(
+            highlightX + 1 / scale,
+            highlightY + 1 / scale,
+            adjustedPixelSize - 2 / scale,
+            adjustedPixelSize - 2 / scale
+          );
         }
+
+        // Lines > 1 zoom
+        if (scale > 1) {
+          ctx.strokeStyle = '#CCCCCC';
+          ctx.lineWidth = 0.5 / scale;
+
+          const startX = Math.floor((-offset.x / scale) / pixelSize) - 1;
+          const endX = Math.floor((viewport.width - offset.x) / scale / pixelSize) + 1;
+          const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
+          const endY = Math.floor((viewport.height - offset.y) / scale / pixelSize) + 1;
+
+          for (let x = startX; x <= endX; x++) {
+            const posX = x * pixelSize;
+            ctx.beginPath();
+            ctx.moveTo(posX, startY * pixelSize);
+            ctx.lineTo(posX, endY * pixelSize);
+            ctx.stroke();
+          }
+
+          for (let y = startY; y <= endY; y++) {
+            const posY = y * pixelSize;
+            ctx.beginPath();
+            ctx.moveTo(startX * pixelSize, posY);
+            ctx.lineTo(endX * pixelSize, posY);
+            ctx.stroke();
+          }
+        } else {
+          setHoveredPixelInfo(null);
+        }
+
+        ctx.restore();
       }
-    },
-    [offset, scale, viewport.height, viewport.width, pixelSize]
-  );
+    }
+  },
+  [offset, scale, viewport.height, viewport.width, pixelSize]
+);
 
   const updateCursorPosition = async (pixelX: number, pixelY: number) => {
     if (!isSignedIn || !userData.username) return;
@@ -343,25 +362,36 @@ const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>)
 
   const canvasX = (x - offset.x) / scale;
   const canvasY = (y - offset.y) / scale;
-  setMouseCoords({ x: canvasX, y: canvasY });
 
   const pixelX = Math.floor(canvasX / pixelSize);
   const pixelY = Math.floor(canvasY / pixelSize);
+
+  setMouseCoords({ x: canvasX, y: canvasY });
   setHoveredPixel({ x: pixelX, y: pixelY });
+
+  if (isPixelInfoEnabled) {
+    fetchPixelInfo(pixelX, pixelY);
+  }
+
+  if (
+    lastPixelPosition.current?.x !== pixelX ||
+    lastPixelPosition.current?.y !== pixelY
+  ) {
+    lastPixelPosition.current = { x: pixelX, y: pixelY };
+    updateCursorPosition(pixelX, pixelY);
+  }
 
   if (isPanning && lastMousePos) {
     const deltaX = event.clientX - lastMousePos.x;
     const deltaY = event.clientY - lastMousePos.y;
     setOffset((prev) => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
     setLastMousePos({ x: event.clientX, y: event.clientY });
-  } else if (event.buttons === 1 && !event.ctrlKey) {
-    handleCanvasInteraction(x, y);
   }
+};
 
-  if (!lastPixelPosition.current || lastPixelPosition.current.x !== pixelX || lastPixelPosition.current.y !== pixelY) {
-    lastPixelPosition.current = { x: pixelX, y: pixelY };
-    updateCursorPosition(pixelX, pixelY);
-  }
+const handleMouseLeave = () => {
+  setHoveredPixel(null);
+  setHoveredPixelInfo(null);
 };
 
 // Event handler mouse up
@@ -487,7 +517,24 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
       console.error("Failed to update username:", error);
       customAlert("An error occurred while updating your username. Please try again.", "error");
     }
-  };  
+  };
+
+  useEffect(() => {
+    const usersRef = ref(db, "users");
+    const unsubscribe = onValue(usersRef, (snapshot) => {
+      const users = snapshot.val();
+      if (users) {
+        const onlineCount = Object.values(users).filter(
+          (user: any) => user.online === true
+        ).length;
+        setOnlinePlayers(onlineCount);
+      } else {
+        setOnlinePlayers(0);
+      }
+    });
+  
+    return () => unsubscribe();
+  }, []);
 
 return (
   <div className="h-screen bg-gray-900 text-white">
@@ -537,6 +584,8 @@ return (
       onSignIn={handleSignIn}
       isSignedIn={isSignedIn}
       onUpdateUsername={handleUpdateUsername}
+      onTogglePixelInfo={() => setIsPixelInfoEnabled((prev) => !prev)}
+      isPixelInfoEnabled={isPixelInfoEnabled}
     />
 
     {/* Main Canvas Area */}
@@ -555,11 +604,42 @@ return (
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
-          setIsPanning(false);
-          setLastMousePos(null);
-        }}
+        onMouseLeave={handleMouseLeave}
       />
+
+      {/* Pixel Info Tooltip */}
+      {hoveredPixelInfo && (
+      <div
+        className="absolute bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 text-sm backdrop-blur-md"
+        style={{
+          left: `${
+            (hoveredPixel!.x + 0.5) * pixelSize * scale + offset.x
+          }px`,
+          top: `${
+            (hoveredPixel!.y + 0.5) * pixelSize * scale + offset.y - 120
+          }px`,
+          transform: "translate(-50%, -50%)",
+          maxWidth: "260px",
+        }}
+      >
+        <h4 className="text-base font-bold mb-2">Pixel Info</h4>
+        <p className="mb-1">
+          <strong>Placed By:</strong> {hoveredPixelInfo.placedBy}
+        </p>
+        <p className="mb-1 flex items-center">
+          <strong>Color:</strong>
+          <span
+            className="inline-block ml-2 w-4 h-4 rounded"
+            style={{
+              backgroundColor: colors[hoveredPixelInfo.color],
+            }}
+          ></span>
+        </p>
+        <p>
+          <strong>Coordinates:</strong> ({hoveredPixelInfo.x}, {hoveredPixelInfo.y})
+        </p>
+      </div>
+    )}
 
       {/* Overlay Color Palette */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-full shadow-lg">
@@ -621,6 +701,14 @@ return (
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Online Players Display */}
+      <div className="absolute bottom-10 right-6 bg-opacity-70 p-2 rounded-lg text-white text-xs backdrop-blur-md">
+        <p className="flex items-center">
+          <span className="font-bold mr-1">Online:</span>
+          <span>{onlinePlayers}</span>
+        </p>
       </div>
 
       {/* Coordinate and Zoom Display */}

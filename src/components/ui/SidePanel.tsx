@@ -5,6 +5,8 @@ const SidePanel = ({
   userData,
   isSignedIn,
   onUpdateUsername,
+  onTogglePixelInfo,
+  isPixelInfoEnabled,
 }: {
   userData: {
     username: string;
@@ -15,6 +17,8 @@ const SidePanel = ({
   onSignIn: (username: string) => void;
   isSignedIn: boolean;
   onUpdateUsername: (newUsername: string) => void;
+  onTogglePixelInfo: () => void;
+  isPixelInfoEnabled: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { username, role, pfpurl } = userData;
@@ -271,6 +275,27 @@ useEffect(() => {
               {alertMessage.text}
             </div>
           )}
+
+          {/* Pixel Info Toggle */}
+          <div className="mb-4">
+            <label
+              htmlFor="togglePixelInfo"
+              className="block text-sm text-gray-400 mb-1"
+            >
+              Pixel Info:
+            </label>
+            <button
+              id="togglePixelInfo"
+              onClick={onTogglePixelInfo}
+              className={`w-full py-2 rounded ${
+                isPixelInfoEnabled
+                  ? "bg-blue-600 hover:bg-blue-500"
+                  : "bg-gray-600 hover:bg-gray-500"
+              } text-white font-bold`}
+            >
+              {isPixelInfoEnabled ? "Disable Pixel Info" : "Enable Pixel Info"}
+            </button>
+          </div>
           <div className="mb-4">
             <label
               htmlFor="name"
@@ -312,7 +337,7 @@ useEffect(() => {
             />
           </div>
           <button className="w-full py-2 rounded bg-blue-700 hover:bg-blue-600 text-white font-bold">
-            Show Achievements
+            Achievements
           </button>
         </div>
       </div>
