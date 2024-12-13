@@ -29,6 +29,19 @@ const colors = [
   '#d4d7d9', '#ffffff',
 ];
 
+const userColors = [
+  '#FF5733', // Bright Red
+  '#FF8D1A', // Orange
+  '#FFC300', // Yellow
+  '#DAF7A6', // Light Green
+  '#33FF57', // Bright Green
+  '#8DFF1A', // Lime
+  '#FF33FF', // Magenta
+  '#A633FF', // Purple
+  '#FF338D', // Pink
+  '#FFC3A6', // Peach
+];
+
 const pixelSize = 20;
 
 const PlaceV2: React.FC = () => {
@@ -61,45 +74,53 @@ const PlaceV2: React.FC = () => {
 
   // Handle sign-in from the SidePanel
   const handleSignIn = async () => {
-  if (!username.trim()) {
-    customAlert("Please enter a valid name!", "error");
-    return;
-  }
-
-  const normalizedUsername = username.toLowerCase();
-  const userRef = ref(db, `users/${normalizedUsername}`);
-  const snapshot = await get(userRef);
-
-  let newUserData = {
-    role: "Guest",
-    timeOnPage: 0,
-    pfpurl: "https://demiffy.com/defaultuser.png",
-  };
-
-  if (!snapshot.exists()) {
-    try {
-      await set(userRef, newUserData);
-    } catch (error) {
-      console.error("Error setting user data:", error);
-      customAlert("Failed to sign in. Please try again.", "error");
+    if (!username.trim()) {
+      customAlert("Please enter a valid name!", "error");
       return;
     }
-  } else {
-    newUserData = snapshot.val();
-  }
-
-  setUserData({ ...newUserData, username: normalizedUsername });
-
-  const userOnlineRef = ref(db, `users/${normalizedUsername}/online`);
-  try {
-    await set(userOnlineRef, true);
-    onDisconnect(userOnlineRef).set(false);
-  } catch (error) {
-    console.error("Error setting user online status:", error);
-  }
-
-  setIsSignedIn(true);
-};
+  
+    const normalizedUsername = username.toLowerCase();
+    const userRef = ref(db, `users/${normalizedUsername}`);
+    const snapshot = await get(userRef);
+  
+    const randomColorIndex = Math.floor(Math.random() * userColors.length);
+  
+    let newUserData = {
+      role: "Guest",
+      timeOnPage: 0,
+      pfpurl: "https://demiffy.com/defaultuser.png",
+      color: randomColorIndex,
+    };
+  
+    if (!snapshot.exists()) {
+      try {
+        await set(userRef, newUserData);
+      } catch (error) {
+        console.error("Error setting user data:", error);
+        customAlert("Failed to sign in. Please try again.", "error");
+        return;
+      }
+    } else {
+      const existingUserData = snapshot.val();
+      newUserData = {
+        ...existingUserData,
+        color: randomColorIndex,
+      };
+      await update(userRef, { color: randomColorIndex });
+    }
+  
+    setUserData({ ...newUserData, username: normalizedUsername });
+  
+    const userOnlineRef = ref(db, `users/${normalizedUsername}/online`);
+    try {
+      await set(userOnlineRef, true);
+      onDisconnect(userOnlineRef).set(false);
+    } catch (error) {
+      console.error("Error setting user online status:", error);
+    }
+  
+    setIsSignedIn(true);
+  };  
 
 useEffect(() => {
   const handleUnload = () => {
