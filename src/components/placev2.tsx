@@ -1,7 +1,7 @@
 // PlaceV2.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, set, get, update, remove } from 'firebase/database';
+import { getDatabase, ref, onValue, set, get, update, remove, onDisconnect } from 'firebase/database';
 import SidePanel from './ui/SidePanel';
 
 // Firebase configuration
@@ -60,36 +60,59 @@ const PlaceV2: React.FC = () => {
 
   // Handle sign-in from the SidePanel
   const handleSignIn = async () => {
-    if (!username.trim()) {
-      customAlert("Please enter a valid name!", "error");
+  if (!username.trim()) {
+    customAlert("Please enter a valid name!", "error");
+    return;
+  }
+
+  const normalizedUsername = username.toLowerCase();
+  const userRef = ref(db, `users/${normalizedUsername}`);
+  const snapshot = await get(userRef);
+
+  let newUserData = {
+    role: "Guest",
+    timeOnPage: 0,
+    pfpurl: "https://demiffy.com/defaultuser.png",
+  };
+
+  if (!snapshot.exists()) {
+    try {
+      await set(userRef, newUserData);
+    } catch (error) {
+      console.error("Error setting user data:", error);
+      customAlert("Failed to sign in. Please try again.", "error");
       return;
     }
-  
-    const normalizedUsername = username.toLowerCase();
-    const userRef = ref(db, `users/${normalizedUsername}`);
-    const snapshot = await get(userRef);
-  
-    let newUserData = {
-      role: "Guest",
-      timeOnPage: 0,
-      pfpurl: "https://demiffy.com/defaultuser.png",
-    };
+  } else {
+    newUserData = snapshot.val();
+  }
 
-    if (!snapshot.exists()) {
-      try {
-        await set(userRef, newUserData);
-      } catch (error) {
-        console.error("Error setting user data:", error);
-        customAlert("Failed to sign in. Please try again.", "error");
-        return;
-      }
-    } else {
-      newUserData = snapshot.val();
+  setUserData({ ...newUserData, username: normalizedUsername });
+
+  const userOnlineRef = ref(db, `users/${normalizedUsername}/online`);
+  try {
+    await set(userOnlineRef, true);
+    onDisconnect(userOnlineRef).set(false);
+  } catch (error) {
+    console.error("Error setting user online status:", error);
+  }
+
+  setIsSignedIn(true);
+};
+
+useEffect(() => {
+  const handleUnload = () => {
+    if (isSignedIn && userData.username) {
+      const userOnlineRef = ref(db, `users/${userData.username}/online`);
+      set(userOnlineRef, false);
     }
-
-    setUserData({ ...newUserData, username: normalizedUsername });
-    setIsSignedIn(true);
   };
+
+  window.addEventListener("beforeunload", handleUnload);
+  return () => {
+    window.removeEventListener("beforeunload", handleUnload);
+  };
+}, [isSignedIn, userData.username]);
 
   const customAlert = (text: string, type: "success" | "error" | "info" | "tip") => {
     setAlertMessage({ text, type });
@@ -398,48 +421,55 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
   // Function to handle username updates from SidePanel
   const handleUpdateUsername = async (newUsername: string) => {
     const normalizedNewUsername = newUsername.trim().toLowerCase();
-
+  
     if (!normalizedNewUsername) {
-        customAlert("Please enter a valid username!", "error");
-        return;
+      customAlert("Please enter a valid username!", "error");
+      return;
     }
-
+  
     if (normalizedNewUsername === userData.username.toLowerCase()) {
-        customAlert("This is already your username!", "info");
-        return;
+      customAlert("This is already your username!", "info");
+      return;
     }
-
+  
     try {
-        const currentUserRef = ref(db, `users/${userData.username}`);
-        const newUserRef = ref(db, `users/${normalizedNewUsername}`);
-
-        const newUserSnapshot = await get(newUserRef);
-        if (newUserSnapshot.exists()) {
-            customAlert("This username is already taken. Please choose another.", "error");
-            return;
-        }
-
-        const currentUserSnapshot = await get(currentUserRef);
-        if (!currentUserSnapshot.exists()) {
-            customAlert("No user data found to update!", "error");
-            return;
-        }
-
-        const { username, ...currentUserData } = currentUserSnapshot.val();
-
-        await update(newUserRef, currentUserData);
-        await remove(currentUserRef);
-
-        setUserData((prev) => ({
-            ...prev,
-            username: normalizedNewUsername,
-        }));
-        customAlert("Username updated successfully!", "success");
+      const currentUserRef = ref(db, `users/${userData.username}`);
+      const newUserRef = ref(db, `users/${normalizedNewUsername}`);
+  
+      const newUserSnapshot = await get(newUserRef);
+      if (newUserSnapshot.exists()) {
+        customAlert("This username is already taken. Please choose another.", "error");
+        return;
+      }
+  
+      const currentUserSnapshot = await get(currentUserRef);
+      if (!currentUserSnapshot.exists()) {
+        customAlert("No user data found to update!", "error");
+        return;
+      }
+  
+      const oldOnlineRef = ref(db, `users/${userData.username}/online`);
+      await onDisconnect(oldOnlineRef).cancel();
+  
+      const { username, ...currentUserData } = currentUserSnapshot.val();
+  
+      await update(newUserRef, currentUserData);
+      await remove(currentUserRef);
+  
+      const newOnlineRef = ref(db, `users/${normalizedNewUsername}/online`);
+      await set(newOnlineRef, true);
+      onDisconnect(newOnlineRef).set(false);
+  
+      setUserData((prev) => ({
+        ...prev,
+        username: normalizedNewUsername,
+      }));
+      customAlert("Username updated successfully!", "success");
     } catch (error) {
-        console.error("Failed to update username:", error);
-        customAlert("An error occurred while updating your username. Please try again.", "error");
+      console.error("Failed to update username:", error);
+      customAlert("An error occurred while updating your username. Please try again.", "error");
     }
-};
+  };  
 
 return (
   <div className="h-screen bg-gray-900 text-white">
