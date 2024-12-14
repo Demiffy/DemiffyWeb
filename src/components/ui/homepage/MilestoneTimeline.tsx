@@ -42,7 +42,7 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-sky-400">{milestone.title}</h3>
                     <p className="text-sky-300 text-sm">{milestone.date}</p>
-                    <p className="text-gray-300 mt-2">{milestone.description}</p>
+                    <p className="text-gray-300 mt-2 text-lg">{milestone.description}</p>
                   </div>
 
                   {/* Display image if available */}
