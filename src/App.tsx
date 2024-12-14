@@ -20,7 +20,7 @@ import VetteBase from './components/VetteBase';
 import Fnaf from './components/fnaf';
 import DatabaseTest from './components/databasetest';
 import DiscordUser from './components/DiscordUser';
-import NotFound from '../404Page';
+import NotFound from '../NotFound';
 import './App.css';
 
 const AnimatedRoutes = () => {
