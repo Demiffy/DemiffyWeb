@@ -25,12 +25,15 @@ const skills = [
         title: "KybernaIS Made Better / UI-UX KybernaIS Redo",
         description: "A UI/UX redesign of KybernaIS to enhance user experience and optimize workflow.",
         image: "/ksbmain.png",
-        details: "This project focuses on redesigning the UI/UX of KybernaIS to improve its usability and performance. The new design brings a fresh, modern interface with intuitive navigation for users in the educational sector.",
+        details: "This project focuses on redesigning the UI/UX of KybernaIS to improve its usability and performance. The new design brings a fresh, modern interface with intuitive navigation for users in the educational sector. The UI-UX redesign is not publicly available, its purely a prototype.",
         additionalImages: [
           { src: "/ksb1.png", title: "Clear Design" },
           { src: "/ksb2.png", title: "Selection of Themes" },
           { src: "/ksb3.png", title: "More Modern Styles" },
-          { src: "/ksb4.png", title: "Built-in Grade Predictor" }
+          { src: "/ksb4.png", title: "Built-in Grade Predictor" },
+          { src: "/sbislogin.png", title: "UI-IX Redesign - Login" },
+          { src: "/sbisdashboard.png", title: "UI-IX Redesign - Dashboard" },
+          { src: "/sbisgrades.png", title: "UI-IX Redesign - Grades" },
         ],
         buttons: [
           { label: "View on Chrome Extension Store", onClick: () => window.open('https://chromewebstore.google.com/detail/kybernais-made-better/plehhebncnogcplmmgnliaipgbmoohdf', '_blank') },
@@ -41,19 +44,6 @@ const skills = [
           { name: "CSS3", image: "/css3-icon.png" },
           { name: "JavaScript", image: "/js-icon.png" },
           { name: "C#", image: "/c-icon.png" }
-        ]
-      },
-      {
-        title: "Cloud Storage (Private)",
-        description: "A private cloud storage system designed to store files securely and efficiently.",
-        image: "/csd.png",
-        details: "This project involves creating a cloud storage platform with a focus on privacy and security. Users can upload, manage, and retrieve files with enhanced encryption to ensure data protection.",
-        additionalImages: [
-          { src: "/placeholder.png", title: "Login Screen" },
-          { src: "/placeholder.png", title: "File Management Interface" }
-        ],
-        buttons: [
-          { label: "Live Demo", onClick: () => window.open('https://demiffy.com', '_blank') }
         ]
       },
       {
@@ -72,8 +62,7 @@ const skills = [
           { src: "placeholder.png", title: "Staff Management Interface" }
         ],
         buttons: [
-          { label: "Play Now", onClick: () => window.open('https://nothing.com/project-horizon-control', '_blank') },
-          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/project-horizon-control', '_blank') }
+          { label: "GitHub Repo (Private)", onClick: () => window.open('https://github.com/Demiffy/project-horizon-control', '_blank') }
         ],
         technologies: [
           { name: "Unity", image: "/unity-icon.png" },
@@ -91,9 +80,9 @@ const skills = [
         buttons: [
         ],
         technologies: [
-          { name: "Python", image: "/temp.png" },
+          { name: "Python", image: "/python-icon.png" },
           { name: "React", image: "/react-icon.png" },
-          { name: "JavaScript", image: "/c-icon.png" },
+          { name: "C#", image: "/c-icon.png" },
         ]
       },
       {
@@ -102,12 +91,10 @@ const skills = [
         image: "/placev2.png",
         details: "PlaceV2 allows users to interact with a shared canvas to place and remove pixels. Featuring real-time collaboration, zooming, and customizable colors, this project emphasizes user engagement and creative expression.",
         additionalImages: [
-          { src: "/placev2.png", title: "Collaborative Canvas" },
-          { src: "/placeholder.png", title: "Custom Color Palette" },
-          { src: "/placeholder.png", title: "Real-time Updates" }
+          { src: "/placev2.png", title: "Fully working Canvas" }
         ],
         buttons: [
-          { label: "Live Demo", onClick: () => window.open('https://demiffy.com/placev2', '_blank') },
+          { label: "Website", onClick: () => window.open('https://demiffy.com/place', '_blank') },
           { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/DemiffyWeb', '_blank') }
         ],
         technologies: [

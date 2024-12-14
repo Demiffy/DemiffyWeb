@@ -4,7 +4,8 @@ import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import Navbar from './components/ui/Navbar';
 import About from './About';
 import Home from './Home';
-import Place from './Place';
+import PlaceRetired from './Place';
+import Placev2 from './components/placev2';
 import Tetris from './Tetris';
 import Sudoku from './components/Sudoku';
 import TwoThousandFortyEightGame from './components/2048Game';
@@ -19,8 +20,6 @@ import VetteBase from './components/VetteBase';
 import Fnaf from './components/fnaf';
 import DatabaseTest from './components/databasetest';
 import DiscordUser from './components/DiscordUser';
-import Placev2 from './components/placev2';
-import Canvas2 from './components/canvas';
 import NotFound from './NotFound';
 import './App.css';
 
@@ -33,7 +32,8 @@ const AnimatedRoutes = () => {
         <Routes location={location}>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
-          <Route path="/place" element={<Place />} />
+          <Route path="/placeretired" element={<PlaceRetired />} />
+          <Route path="/place" element={<Placev2 />} />
           <Route path="/games/tetris" element={<Tetris />} />
           <Route path="/games/sudoku" element={<Sudoku />} />
           <Route path="/games/2048" element={<TwoThousandFortyEightGame />} />
@@ -48,8 +48,6 @@ const AnimatedRoutes = () => {
           <Route path="/fnaf" element={<Fnaf />} />
           <Route path="/discord" element={<DiscordUser />} />
           <Route path="/dbtest" element={<DatabaseTest />} />
-          <Route path="/placev2" element={<Placev2 />} />
-          <Route path="/canvas" element={<Canvas2 />} />
           <Route path="/404" element={<NotFound />} />
 
           <Route path="*" element={<NotFound />} />
