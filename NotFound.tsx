@@ -34,7 +34,7 @@ const NotFound = () => {
         </div>
 
         {/* 404 Section */}
-        <div className="text-center">
+        <div className="text-center p-8">
           <h1 className="text-9xl font-bold text-red-600 drop-shadow-md">
             404
           </h1>
