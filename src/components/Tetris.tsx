@@ -1,11 +1,11 @@
 // src/TetrisGame.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Cell from './components/ui/Cell';
-import NextPieceDisplay from './components/ui/NextPieceDisplay';
-import ControlsPanel from './components/ui/ControlsPanel';
-import { Tetromino, CellType } from './components/ui/types';
-import Footer from './components/ui/Footer';
+import Cell from './ui/Cell';
+import NextPieceDisplay from './ui/NextPieceDisplay';
+import ControlsPanel from './ui/ControlsPanel';
+import { Tetromino, CellType } from './ui/types';
+import Footer from './ui/Footer';
 
 const ROWS = 20;
 const COLS = 10;

@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { useState } from 'react';
-import Footer from './components/ui/Footer';
+import Footer from './ui/Footer';
 
 const About = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

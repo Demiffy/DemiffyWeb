@@ -2,14 +2,14 @@ import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import Navbar from './components/ui/Navbar';
-import About from './About';
-import Home from './Home';
-import PlaceRetired from './Place';
+import About from './components/About';
+import Home from './components/Home';
+import PlaceRetired from './components/Place';
 import Placev2 from './components/placev2';
-import Tetris from './Tetris';
+import Tetris from './components/Tetris';
 import Sudoku from './components/Sudoku';
 import TwoThousandFortyEightGame from './components/2048Game';
-import SowwyProto from './SowwyProto';
+import SowwyProto from './components/SowwyProto';
 import CarDatabase from './components/CarDatabase';
 import CarDetails from './components/CarDetails';
 import FileConverter from './components/FileConverter';
@@ -20,7 +20,7 @@ import VetteBase from './components/VetteBase';
 import Fnaf from './components/fnaf';
 import DatabaseTest from './components/databasetest';
 import DiscordUser from './components/DiscordUser';
-import NotFound from './NotFound';
+import NotFound from '../404Page';
 import './App.css';
 
 const AnimatedRoutes = () => {

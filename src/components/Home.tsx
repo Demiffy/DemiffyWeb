@@ -1,12 +1,12 @@
 // Home.tsx
 import { Helmet } from 'react-helmet-async';
-import MainIntro from './components/ui/MainIntro';
-import RadarAnimation from './components/ui/RadarAnimation';
-import SkillsOverview from './components/ui/SkillsOverview';
-import MissionBriefing from './components/ui/MissionBriefing';
-import MilestoneTimeline from './components/ui/MilestoneTimeline';
-import Footer from './components/ui/Footer';
-import NoteBoard from './components/ui/NoteBoard';
+import MainIntro from './ui/homepage/MainIntro';
+import RadarAnimation from './ui/homepage/RadarAnimation';
+import SkillsOverview from './ui/homepage/SkillsOverview';
+import Projects from './ui/homepage/Projects';
+import MilestoneTimeline from './ui/homepage/MilestoneTimeline';
+import NoteBoard from './ui/homepage/NoteBoard';
+import Footer from './ui/Footer';
 
 const Home = () => {
 const skills = [
@@ -135,7 +135,7 @@ const skills = [
         <SkillsOverview skills={skills} />
       </section>
       <section id="projects" className="py-20">
-        <MissionBriefing projects={projects} />
+        <Projects projects={projects} />
       </section>
       <section id="milestones" className="py-20 bg-slate-800">
         <MilestoneTimeline milestones={milestones} />

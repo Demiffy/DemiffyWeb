@@ -22,7 +22,7 @@
     "src/**/*.ts",
     "api/**/*.mts",
     "api/**/*.ts"
-  ],
+, "dts_files/vite-env.d.ts", "dts_files/sudoku.d.ts", "dts_files/gifjs-optimized.d.ts"  ],
   "exclude": [
     "node_modules",
     "dist"

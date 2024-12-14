@@ -16,7 +16,7 @@ interface Project {
   technologies?: Technology[];
 }
 
-const MissionBriefing = ({ projects }: { projects: Project[] }) => {
+const Projects = ({ projects }: { projects: Project[] }) => {
   const [activeProject, setActiveProject] = useState(0);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -296,4 +296,4 @@ const MissionBriefing = ({ projects }: { projects: Project[] }) => {
   );
 };
 
-export default MissionBriefing;
+export default Projects;

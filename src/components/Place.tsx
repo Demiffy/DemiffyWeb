@@ -3,9 +3,9 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import './App.css';
+import '../App.css';
 import { AnimatePresence, motion } from 'framer-motion';
-import Footer from './components/ui/Footer';
+import Footer from './ui/Footer';
 
 const GRID_SIZE = 50;
 const WORKER_API_URL = 'https://demiffy-place-worker.velnertomas78-668.workers.dev';

@@ -1,4 +1,4 @@
-// gifjs-optimized.d.ts
+// src/dts_files/gifjs-optimized.d.ts
 
 declare module 'gif.js.optimized' {
     import { EventEmitter } from 'events';
@@ -35,4 +35,4 @@ declare module 'gif.js.optimized' {
     }
   
     export default GIF;
-  }  
+  }

@@ -1,4 +1,4 @@
-// src/sudoku.d.ts
+// src/dts_files/sudoku.d.ts
 declare module 'sudoku' {
     /**
      * Generates a new Sudoku puzzle.
@@ -13,4 +13,3 @@ declare module 'sudoku' {
      */
     export function solvepuzzle(puzzle: (number | null)[]): (number | null)[];
   }
-  
