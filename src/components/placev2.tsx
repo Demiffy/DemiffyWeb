@@ -378,88 +378,99 @@ useEffect(() => {
   }, [offset, scale, hoveredPixel]);  
 
   // Draw the canvas
-const drawCanvas = useCallback(
-  (canvasData: any[], hoveredPixel?: { x: number; y: number } | null) => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.imageSmoothingEnabled = false;
-        ctx.clearRect(0, 0, viewport.width, viewport.height);
-
-        ctx.save();
-        ctx.translate(offset.x, offset.y);
-        ctx.scale(scale, scale);
-
-        const adjustedPixelSize = pixelSize + (scale < 1 ? 1 / scale : 0);
-
-        canvasData.forEach((pixel: any) => {
-          if (pixel.color === -1) return;
-
-          const x = pixel.x * pixelSize;
-          const y = pixel.y * pixelSize;
-          ctx.fillStyle = colors[pixel.color];
-          ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
-        });
-
-        // Highlight hovered pixel
-        if (hoveredPixel) {
-          const highlightX = hoveredPixel.x * pixelSize;
-          const highlightY = hoveredPixel.y * pixelSize;
-
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
-          ctx.fillRect(
-            highlightX,
-            highlightY,
-            adjustedPixelSize,
-            adjustedPixelSize
-          );
-
-          ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
-          ctx.lineWidth = 2 / scale;
-          ctx.strokeRect(
-            highlightX + 1 / scale,
-            highlightY + 1 / scale,
-            adjustedPixelSize - 2 / scale,
-            adjustedPixelSize - 2 / scale
-          );
-        }
-
-        // Lines > 1 zoom
-        if (scale > 1) {
-          ctx.strokeStyle = '#CCCCCC';
-          ctx.lineWidth = 0.5 / scale;
-
+  const drawCanvas = useCallback(
+    (canvasData: any[], hoveredPixel?: { x: number; y: number } | null) => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.clearRect(0, 0, viewport.width, viewport.height);
+  
+          ctx.save();
+          ctx.translate(offset.x, offset.y);
+          ctx.scale(scale, scale);
+  
+          const adjustedPixelSize = pixelSize + (scale < 1 ? 1 / scale : 0);
+  
           const startX = Math.floor((-offset.x / scale) / pixelSize) - 1;
-          const endX = Math.floor((viewport.width - offset.x) / scale / pixelSize) + 1;
+          const endX = Math.ceil((viewport.width - offset.x) / scale / pixelSize) + 1;
           const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
-          const endY = Math.floor((viewport.height - offset.y) / scale / pixelSize) + 1;
+          const endY = Math.ceil((viewport.height - offset.y) / scale / pixelSize) + 1;
+  
+          const visiblePixels = canvasData.filter((pixel: any) => {
+            return (
+              pixel.x >= startX &&
+              pixel.x <= endX &&
+              pixel.y >= startY &&
+              pixel.y <= endY
+            );
+          });
 
-          for (let x = startX; x <= endX; x++) {
-            const posX = x * pixelSize;
-            ctx.beginPath();
-            ctx.moveTo(posX, startY * pixelSize);
-            ctx.lineTo(posX, endY * pixelSize);
-            ctx.stroke();
+          console.log(`Rendering ${visiblePixels.length} visible pixels`);
+  
+          visiblePixels.forEach((pixel: any) => {
+            if (pixel.color === -1) return;
+  
+            const x = pixel.x * pixelSize;
+            const y = pixel.y * pixelSize;
+            ctx.fillStyle = colors[pixel.color];
+            ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
+          });
+  
+          // Highlight hovered pixel
+          if (hoveredPixel) {
+            const highlightX = hoveredPixel.x * pixelSize;
+            const highlightY = hoveredPixel.y * pixelSize;
+  
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+            ctx.fillRect(
+              highlightX,
+              highlightY,
+              adjustedPixelSize,
+              adjustedPixelSize
+            );
+  
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+            ctx.lineWidth = 2 / scale;
+            ctx.strokeRect(
+              highlightX + 1 / scale,
+              highlightY + 1 / scale,
+              adjustedPixelSize - 2 / scale,
+              adjustedPixelSize - 2 / scale
+            );
           }
-
-          for (let y = startY; y <= endY; y++) {
-            const posY = y * pixelSize;
-            ctx.beginPath();
-            ctx.moveTo(startX * pixelSize, posY);
-            ctx.lineTo(endX * pixelSize, posY);
-            ctx.stroke();
+  
+          // Draw grid if zoomed in
+          if (scale > 1) {
+            ctx.strokeStyle = '#CCCCCC';
+            ctx.lineWidth = 0.5 / scale;
+  
+            for (let x = startX; x <= endX; x++) {
+              const posX = x * pixelSize;
+              ctx.beginPath();
+              ctx.moveTo(posX, startY * pixelSize);
+              ctx.lineTo(posX, endY * pixelSize);
+              ctx.stroke();
+            }
+  
+            for (let y = startY; y <= endY; y++) {
+              const posY = y * pixelSize;
+              ctx.beginPath();
+              ctx.moveTo(startX * pixelSize, posY);
+              ctx.lineTo(endX * pixelSize, posY);
+              ctx.stroke();
+            }
+          } else {
+            setHoveredPixelInfo(null);
           }
-        } else {
-          setHoveredPixelInfo(null);
+  
+          ctx.restore();
         }
-
-        ctx.restore();
       }
-    }
-  },
-  [offset, scale, viewport.height, viewport.width, pixelSize]
-);
+    },
+    [offset, scale, viewport.height, viewport.width, pixelSize]
+  );  
 
   const updateCursorPosition = async (pixelX: number, pixelY: number) => {
     if (!isSignedIn || !userData.username) return;
