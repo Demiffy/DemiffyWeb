@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set, get, update, remove, onDisconnect } from 'firebase/database';
 import SidePanel from './ui/SidePanel';
+import SidePanelLookUp from './ui/SidePanelLookUp';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -48,6 +49,7 @@ const PlaceV2: React.FC = () => {
   const [onlinePlayers, setOnlinePlayers] = useState<number>(0);
   const lastPixelPosition = useRef<{ x: number; y: number } | null>(null);
   const [isPixelInfoEnabled, setIsPixelInfoEnabled] = useState(false);
+  const [isPainting, setIsPainting] = useState(false);
   const [hoveredPixelInfo, setHoveredPixelInfo] = useState<{
     x: number;
     y: number;
@@ -335,21 +337,28 @@ const drawCanvas = useCallback(
     }
   };  
 
+  const jumpToCoords = (x: number, y: number) => {
+    setOffset({ x: viewport.width / 2 - x * pixelSize * scale, y: viewport.height / 2 - y * pixelSize * scale });
+  };
+
   // Event handler mouse down
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-  if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
-    event.preventDefault();
-    setIsPanning(true);
-    setLastMousePos({ x: event.clientX, y: event.clientY });
-  } else if (event.button === 0 && !event.ctrlKey) {
     const canvas = canvasRef.current;
     if (!canvas) return;
+  
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    handleCanvasInteraction(x, y);
-  }
-};
+  
+    if (event.button === 0 && !event.ctrlKey) {
+      setIsPainting(true);
+      handleCanvasInteraction(x, y);
+    } else if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
+      event.preventDefault();
+      setIsPanning(true);
+      setLastMousePos({ x: event.clientX, y: event.clientY });
+    }
+  };  
 
 // Event handler mouse move
 const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
@@ -381,6 +390,10 @@ const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>)
     updateCursorPosition(pixelX, pixelY);
   }
 
+  if (isPainting) {
+    handleCanvasInteraction(x, y);
+  }
+
   if (isPanning && lastMousePos) {
     const deltaX = event.clientX - lastMousePos.x;
     const deltaY = event.clientY - lastMousePos.y;
@@ -399,6 +412,10 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
   if ((event.button === 0 && isPanning) || event.button === 1) {
     setIsPanning(false);
     setLastMousePos(null);
+  }
+
+  if (event.button === 0) {
+    setIsPainting(false);
   }
 };
 
@@ -587,6 +604,9 @@ return (
       onTogglePixelInfo={() => setIsPixelInfoEnabled((prev) => !prev)}
       isPixelInfoEnabled={isPixelInfoEnabled}
     />
+    <SidePanelLookUp
+      onJumpToCoords={jumpToCoords}
+    />
 
     {/* Main Canvas Area */}
     <div className="relative w-full h-full overflow-hidden">
@@ -608,17 +628,21 @@ return (
       />
 
       {/* Pixel Info Tooltip */}
-      {hoveredPixelInfo && (
+      {scale >= 1 && hoveredPixelInfo && (
       <div
-        className="absolute bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 text-sm backdrop-blur-md"
+        className="absolute bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 text-sm backdrop-blur-md select-none"
         style={{
           left: `${
-            (hoveredPixel!.x + 0.5) * pixelSize * scale + offset.x
-          }px`,
+            hoveredPixel 
+              ? (hoveredPixel.x + 0.5) * pixelSize * scale + offset.x 
+              : 0
+          }px`,          
           top: `${
-            (hoveredPixel!.y + 0.5) * pixelSize * scale + offset.y - 120
-          }px`,
-          transform: "translate(-50%, -50%)",
+            hoveredPixel 
+              ? (hoveredPixel.y + 0.5) * pixelSize * scale + offset.y 
+              : 0
+          }px`,          
+          transform: "translate(-50%, -140%)",
           maxWidth: "260px",
         }}
       >
@@ -631,7 +655,7 @@ return (
           <span
             className="inline-block ml-2 w-4 h-4 rounded"
             style={{
-              backgroundColor: colors[hoveredPixelInfo.color],
+              backgroundColor: hoveredPixelInfo.color === -1 ? '#ffffff' : colors[hoveredPixelInfo.color],
             }}
           ></span>
         </p>
