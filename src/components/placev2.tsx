@@ -35,7 +35,7 @@ const pixelSize = 20;
 const PlaceV2: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const [selectedColor, setSelectedColor] = useState<number>(31);
+  const [selectedColor, setSelectedColor] = useState<number>(27);
   const [isEraserSelected, setIsEraserSelected] = useState(false);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [scale, setScale] = useState<number>(1);
@@ -986,8 +986,8 @@ return (
       {/* Online Players Display */}
       <div className="absolute bottom-10 right-6 bg-opacity-70 p-2 rounded-lg text-white text-xs backdrop-blur-md">
         <p className="flex items-center">
-          <span className="font-bold mr-1">Online:</span>
-          <span>{onlinePlayers}</span>
+          <span className="font-bold mr-1 text-gray-900">Online:</span>
+          <span className='text-gray-500'>{onlinePlayers}</span>
         </p>
       </div>
 
