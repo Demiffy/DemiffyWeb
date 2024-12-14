@@ -46,10 +46,15 @@ const PlaceV2: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState<{ text: string; type: "success" | "error" | "info" | "tip" } | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [username, setUsername] = useState('');
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [typedInput, setTypedInput] = useState<string>("");
+  const closeAdminModal = () => setAdminModalOpen(false);
   const [onlinePlayers, setOnlinePlayers] = useState<number>(0);
   const lastPixelPosition = useRef<{ x: number; y: number } | null>(null);
   const [isPixelInfoEnabled, setIsPixelInfoEnabled] = useState(false);
   const [isPainting, setIsPainting] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
+  const [pasteCoords, setPasteCoords] = useState<{ x: number | null; y: number | null }>({x: null,y : null,});  
   const [hoveredPixelInfo, setHoveredPixelInfo] = useState<{
     x: number;
     y: number;
@@ -63,6 +68,28 @@ const PlaceV2: React.FC = () => {
     timeOnPage: 0,
     pfpurl: "https://demiffy.com/defaultuser.png",
   });
+  const canAccessAdminModal = userData.role === "Developer";
+
+  // Listen for keyboard events for admin modal
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Enter") {
+        if (typedInput === "fox" && canAccessAdminModal) {
+          setAdminModalOpen(true);
+        }
+        setTypedInput("");
+      } else if (event.key === "Backspace") {
+        setTypedInput((prev) => prev.slice(0, -1));
+      } else if (/^[a-zA-Z]$/.test(event.key)) {
+        setTypedInput((prev) => (prev + event.key).slice(0, 3)); // Limit 3 characters
+      }
+    };
+  
+    window.addEventListener("keydown", handleKeyPress);
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [typedInput, canAccessAdminModal]);  
   
   const fetchPixelInfo = async (x: number, y: number) => {
     const pixelRef = ref(db, `canvas/${x}_${y}`);
@@ -73,6 +100,153 @@ const PlaceV2: React.FC = () => {
       setHoveredPixelInfo(null);
     }
   };
+
+  // Handle image upload
+const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      setUploadedImage(img);
+    };
+    img.src = event.target?.result as string;
+  };
+  reader.readAsDataURL(file);
+};
+
+const hexToRgb = (hex: string) => {
+  const bigint = parseInt(hex.slice(1), 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255,
+  };
+};
+
+const findClosestColorIndex = (r: number, g: number, b: number) => {
+  let closestIndex = 0;
+  let smallestDistance = Infinity;
+
+  colors.forEach((hexColor, index) => {
+    const { r: pr, g: pg, b: pb } = hexToRgb(hexColor);
+
+    const distance = Math.sqrt(
+      (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2
+    );
+
+    if (distance < smallestDistance) {
+      smallestDistance = distance;
+      closestIndex = index;
+    }
+  });
+
+  return closestIndex;
+};
+
+const pasteImageToCanvas = async () => {
+  if (!uploadedImage) {
+    console.error("No image uploaded!");
+    customAlert("No image uploaded!", "error");
+    return;
+  }
+
+  // Validate coordinates
+  const validX = Math.max(0, pasteCoords.x ?? 0);
+  const validY = Math.max(0, pasteCoords.y ?? 0);
+
+  console.log(`Pasting image at valid coordinates: (${validX}, ${validY})`);
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    console.error("Failed to create a temporary canvas for processing the image.");
+    customAlert("Failed to process image!", "error");
+    return;
+  }
+
+  canvas.width = uploadedImage.width;
+  canvas.height = uploadedImage.height;
+  ctx.drawImage(uploadedImage, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const { data, width, height } = imageData;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 4;
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      const a = data[index + 3];
+
+      if (a === 0) continue;
+
+      const colorIndex = findClosestColorIndex(r, g, b);
+
+      const pixelX = validX + x;
+      const pixelY = validY + y;
+      const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
+
+      try {
+        await set(pixelRef, { x: pixelX, y: pixelY, color: colorIndex, placedBy: userData.username });
+      } catch (error) {
+        console.error(`Failed to write pixel (${pixelX}, ${pixelY})`, error);
+      }
+    }
+  }
+
+  customAlert("Image pasted to canvas!", "success");
+};
+
+const previewImageOnCanvas = () => {
+  if (!uploadedImage) {
+    console.error("No image uploaded for preview!");
+    customAlert("No image uploaded for preview!", "error");
+    return;
+  }
+
+  const canvas = canvasRef.current;
+  if (!canvas) {
+    console.error("Canvas element is null!");
+    return;
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    console.error("Failed to get 2D context from canvas!");
+    return;
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (pasteCoords.x !== null && pasteCoords.y !== null) {
+    console.log(`Coordinates are valid: (${pasteCoords.x}, ${pasteCoords.y})`);
+
+    ctx.save();
+    ctx.translate(offset.x, offset.y);
+    ctx.scale(scale, scale);
+
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(
+      uploadedImage,
+      pasteCoords.x * pixelSize,
+      pasteCoords.y * pixelSize,
+      uploadedImage.width * pixelSize,
+      uploadedImage.height * pixelSize
+    );
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+
+    customAlert("Preview displayed!", "info");
+  } else {
+    console.error("Coordinates are not set");
+    customAlert("Coordinates are not set", "error");
+  }
+};
 
   // Zoom limits
   const MIN_SCALE = 0.1;
@@ -574,6 +748,77 @@ return (
             Sign In
           </button>
         </div>
+      </div>
+    )}
+
+      {/* Admin Modal */}
+      {adminModalOpen && (
+      <div className="fixed top-4 right-4 w-80 bg-gray-800 p-4 rounded-lg shadow-lg text-white z-50">
+        <h2 className="text-lg font-bold mb-4">Admin Panel</h2>
+        <p className="text-sm text-gray-300 mb-6">
+          Hewwo! How did you get here? 🦊
+        </p>
+
+        {/* Image Upload */}
+        <div className="mb-4">
+          <h3 className="text-md font-bold mb-2">Upload Image</h3>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="mb-4 p-2 bg-gray-700 rounded text-sm"
+          />
+          <div className="flex space-x-4">
+            <input
+              type="number"
+              placeholder="X Coordinate"
+              value={pasteCoords.x === null ? "" : pasteCoords.x}
+              onChange={(e) => {
+                const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                setPasteCoords((prev) => ({
+                  ...prev,
+                  x: value,
+                }));
+              }}
+              className="w-1/2 p-2 bg-gray-700 rounded text-sm"
+            />
+            <input
+              type="number"
+              placeholder="Y Coordinate"
+              value={pasteCoords.y === null ? "" : pasteCoords.y}
+              onChange={(e) => {
+                const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                setPasteCoords((prev) => ({
+                  ...prev,
+                  y: value,
+                }));
+              }}
+              className="w-1/2 p-2 bg-gray-700 rounded text-sm"
+            />
+          </div>
+          <div className="mt-4 flex space-x-4">
+            <button
+              onClick={previewImageOnCanvas}
+              className="py-2 px-4 rounded bg-yellow-600 hover:bg-yellow-500 text-white font-bold"
+            >
+              Preview Image
+            </button>
+            <button
+              onClick={pasteImageToCanvas}
+              className="py-2 px-4 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold"
+            >
+              Paste Image
+            </button>
+          </div>
+        </div>
+
+        {/* Close Button */}
+        <button
+          onClick={closeAdminModal}
+          className="py-2 px-4 rounded bg-red-600 hover:bg-red-500 text-white font-bold w-full"
+        >
+          Close
+        </button>
       </div>
     )}
 
