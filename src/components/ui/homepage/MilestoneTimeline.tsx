@@ -19,10 +19,10 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
       </h2>
 
       {/* Display highest and lowest dates */}
-      <div className="absolute top-12 select-none">
+      <div className="absolute top-[8rem] select-none">
         <p className="text-sky-400 text-sm font-bold">{highestDate}</p>
       </div>
-      <div className="absolute bottom-[-2rem] select-none">
+      <div className="absolute bottom-[5rem] select-none">
         <p className="text-sky-400 text-sm font-bold">{lowestDate}</p>
       </div>
 
