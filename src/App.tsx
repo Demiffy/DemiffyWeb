@@ -19,6 +19,7 @@ import ImageResizer from './components/ImageResizer';
 import VetteBase from './components/VetteBase';
 import Fnaf from './components/fnaf';
 import DemiNotes from './components/DemiNotes';
+import Destabilize from './components/Destabilize';
 import DiscordUser from './components/DiscordUser';
 import NotFound from '../NotFound';
 import './App.css';
@@ -48,6 +49,7 @@ const AnimatedRoutes = () => {
           <Route path="/fnaf" element={<Fnaf />} />
           <Route path="/discord" element={<DiscordUser />} />
           <Route path="/deminotes" element={<DemiNotes />} />
+          <Route path="/DS" element={<Destabilize />} />
           <Route path="/404" element={<NotFound />} />
 
           <Route path="*" element={<NotFound />} />
