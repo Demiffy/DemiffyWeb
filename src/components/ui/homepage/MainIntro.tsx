@@ -17,10 +17,10 @@ const MainIntro = () => {
   }, []);
 
   return (
-    <section id="hero" className="min-h-screen flex flex-col justify-center items-center">
+    <section id="profile" className="min-h-screen flex flex-col justify-center items-center">
       <div className="profile-container bg-slate-800 p-6 rounded-full shadow-lg mb-6">
         <img
-          src="/heroN.png"
+          src="/pfp.png"
           alt="Profile"
           className="w-40 h-40 object-cover rounded-full border-4 border-sky-500"
         />

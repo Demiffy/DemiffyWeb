@@ -11,12 +11,12 @@ const About = () => {
   // Valid credentials
   const validUsername = 'demiffy';
   const validPassword = 'password123';
-  const guestPassword = 'interestingfox';
+  const guestPassword = 'guestpass';
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check for valid login
+    // Check valid login
     if (
       (username === validUsername && password === validPassword) ||
       (username === 'guest' && password === guestPassword)
@@ -35,12 +35,6 @@ const About = () => {
         <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
         <meta name="keywords" content="Demiffy, IT, aviation, jet pilot, projects, programming, portfolio" />
         <link rel="canonical" href="https://demiffy.com" />
-        {/* Discord tags */}
-        <meta property="og:title" content="Demiffy!" />
-        <meta property="og:description" content="What a dumbass who coded this" />
-        <meta property="og:url" content="https://demiffy.com" />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://demiffy.com/plane.png" />
       </Helmet>
       <div className="flex-grow">
         <div className="about-page-wrapper py-20">
@@ -68,7 +62,7 @@ const About = () => {
           )}
 
           {!isLoggedIn ? (
-            // Login Form
+            // Login
             <div className="login-form-wrapper max-w-sm mx-auto bg-slate-900 p-6 rounded-lg shadow-lg">
               <h3 className="text-2xl font-bold text-sky-400 mb-4">Login to Access About Section</h3>
               <form onSubmit={handleLogin} className="space-y-6">

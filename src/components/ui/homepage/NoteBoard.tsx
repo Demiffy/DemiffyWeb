@@ -1,5 +1,3 @@
-// NoteBoard.tsx
-
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -44,7 +42,7 @@ const NoteBoard = () => {
     }
   };
 
-  // Function to fetch user IP
+  // Fetch user IP
   const fetchUserIP = async () => {
     const ip = await fetchIPFromJsonIP();
     if (ip) {
@@ -298,7 +296,7 @@ const NoteBoard = () => {
     e.preventDefault();
   };
 
-  // Function to handle admin login
+  // Handle admin login
   const handleAdminLogin = () => {
     axios
       .post(`${WORKER_API_URL}/admin-login`, { password: adminPassword }, { headers: { 'Content-Type': 'application/json' } })
@@ -323,7 +321,7 @@ const NoteBoard = () => {
       });
   };
 
-  // Function to handle toggling posting status
+  // Handle toggling posting status
   const togglePosting = () => {
     if (!isAdmin) return;
 
@@ -349,7 +347,7 @@ const NoteBoard = () => {
       });
   };
 
-  // Function to handle clearing all notes
+  // Handle clearing all notes
   const clearNotes = () => {
     if (!isAdmin) return;
 
@@ -376,7 +374,7 @@ const NoteBoard = () => {
       });
   };
 
-  // Function to handle admin logout
+  // Handle admin logout
   const handleAdminLogout = () => {
     setIsAdmin(false);
     setAdminPassword('');
@@ -385,7 +383,6 @@ const NoteBoard = () => {
 
   return (
     <div className="container mx-auto py-10 flex flex-col lg:flex-row justify-between space-y-8 lg:space-y-0 lg:space-x-8 relative">
-      {/* Note Input Form */}
       <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg">
         <motion.h3
           className="text-sky-400 font-bold text-lg mb-4 select-none"
@@ -430,7 +427,6 @@ const NoteBoard = () => {
         </form>
       </div>
 
-      {/* Scrollable Notes Container */}
       <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg h-[600px] overflow-y-auto">
         <h3 className="text-sky-400 font-bold text-lg mb-4 select-none">Notes Board</h3>
         {notes.length === 0 ? (
@@ -523,7 +519,7 @@ const NoteBoard = () => {
               Clear All Notes
             </button>
 
-            {/* Banned IPs Section */}
+            {/* Banned IPs */}
             <div className="mb-4">
               <h4 className="text-sky-400 font-bold text-lg mb-2">
                 Banned IPs
@@ -547,12 +543,11 @@ const NoteBoard = () => {
               )}
             </div>
 
-            {/* Admin Action Error Message */}
+            {/* Admin Error Message */}
             {adminActionError && (
               <p className="text-red-500 text-sm mb-2">{adminActionError}</p>
             )}
 
-            {/* Additional Admin Features */}
             <div className="mb-4">
               <button
                 className="w-full bg-sky-600 text-white py-2 px-4 rounded-lg hover:bg-sky-700 transition-colors mb-2"
