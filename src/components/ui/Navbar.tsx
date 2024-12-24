@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link as ScrollLink } from "react-scroll";
-import { Link as RouterLink, useLocation } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const location = useLocation();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -26,8 +25,6 @@ const Navbar = () => {
     };
   }, []);
 
-  const isActive = (path: string) => location.pathname === path;
-
   return (
     <header
       className={`fixed top-0 w-full h-16 z-50 bg-slate-900/80 opacity-95 backdrop-blur-lg border-b border-sky-500/20 shadow-lg select-none transition-transform duration-300 ${
@@ -44,102 +41,33 @@ const Navbar = () => {
 
         {/* Desktop Links */}
         <nav className="hidden md:flex space-x-8">
-          {/* Internal Links*/}
-          {location.pathname === "/" && (
-            <div className="flex space-x-8">
-              <ScrollLink
-                to="skills"
-                smooth={true}
-                duration={500}
-                className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
-              >
-                Skills
-                <div
-                  className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"
-                ></div>
-              </ScrollLink>
-              <ScrollLink
-                to="projects"
-                smooth={true}
-                duration={500}
-                className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
-              >
-                Projects
-                <div
-                  className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"
-                ></div>
-              </ScrollLink>
-              <ScrollLink
-                to="contact"
-                smooth={true}
-                duration={500}
-                className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
-              >
-                Notes
-                <div
-                  className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"
-                ></div>
-              </ScrollLink>
-            </div>
-          )}
-
-          {location.pathname === "/" && <div className="w-0.5 bg-gray-600 mx-4"></div>}
-
-          {/* External Links */}
-          <div className="flex space-x-8">
-          <RouterLink
-              to="/about"
-              className={`relative group text-white cursor-pointer transition-colors ease-in-out py-2 ${
-                isActive("/about") ? "text-sky-400 font-bold" : ""
-              }`}
-            >
-              About
-              <div
-                className={`absolute left-0 bottom-0 w-full ${
-                  isActive("/weather") ? "h-1 bg-sky-400" : "h-0.5 bg-transparent"
-                } group-hover:h-1 group-hover:bg-sky-400 transition-all duration-300`}
-              ></div>
-            </RouterLink>    
-            <RouterLink
-              to="/weather"
-              className={`relative group text-white cursor-pointer transition-colors ease-in-out py-2 ${
-                isActive("/weather") ? "text-sky-400 font-bold" : ""
-              }`}
-            >
-              Weather
-              <div
-                className={`absolute left-0 bottom-0 w-full ${
-                  isActive("/weather") ? "h-1 bg-sky-400" : "h-0.5 bg-transparent"
-                } group-hover:h-1 group-hover:bg-sky-400 transition-all duration-300`}
-              ></div>
-            </RouterLink>
-            <RouterLink
-              to="/resources"
-              className={`relative group text-white cursor-pointer transition-colors ease-in-out py-2 ${
-                isActive("/resources") ? "text-sky-400 font-bold" : ""
-              }`}
-            >
-              Resources
-              <div
-                className={`absolute left-0 bottom-0 w-full ${
-                  isActive("/resources") ? "h-1 bg-sky-400" : "h-0.5 bg-transparent"
-                } group-hover:h-1 group-hover:bg-sky-400 transition-all duration-300`}
-              ></div>
-            </RouterLink>
-            <RouterLink
-              to="/contact"
-              className={`relative group text-white cursor-pointer transition-colors ease-in-out py-2 ${
-                isActive("/contact") ? "text-sky-400 font-bold" : ""
-              }`}
-            >
-              Contact
-              <div
-                className={`absolute left-0 bottom-0 w-full ${
-                  isActive("/contact") ? "h-1 bg-sky-400" : "h-0.5 bg-transparent"
-                } group-hover:h-1 group-hover:bg-sky-400 transition-all duration-300`}
-              ></div>
-            </RouterLink>
-          </div>
+          <ScrollLink
+            to="skills"
+            smooth={true}
+            duration={500}
+            className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
+          >
+            Skills
+            <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
+          </ScrollLink>
+          <ScrollLink
+            to="projects"
+            smooth={true}
+            duration={500}
+            className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
+          >
+            Projects
+            <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
+          </ScrollLink>
+          <ScrollLink
+            to="contact"
+            smooth={true}
+            duration={500}
+            className="relative group text-white cursor-pointer transition-colors ease-in-out py-2"
+          >
+            Notes
+            <div className="absolute left-0 bottom-0 w-full h-0.5 bg-transparent group-hover:bg-sky-400 transition-all duration-300"></div>
+          </ScrollLink>
         </nav>
 
         {/* Mobile Hamburger Menu */}
@@ -159,82 +87,38 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`fixed inset-0 bg-slate-900 transition-transform duration-500 ease-in-out transform top-56 ${
+        className={`fixed inset-0 bg-slate-900 transition-transform duration-500 ease-in-out transform ${
           isOpen ? "translate-x-0" : "translate-x-full"
         } z-40 flex flex-col items-center justify-center text-white`}
       >
-        <nav className="flex flex-col space-y-4 text-center text-xl bg-slate-900 w-4/5 rounded-lg shadow-lg">
-          {/* Internal Links */}
-          {location.pathname === "/" && (
-            <>
-              <ScrollLink
-                to="skills"
-                smooth={true}
-                duration={500}
-                onClick={toggleMenu}
-                className="hover:text-sky-400 transition-colors pt-2"
-              >
-                Skills
-              </ScrollLink>
-              <ScrollLink
-                to="projects"
-                smooth={true}
-                duration={500}
-                onClick={toggleMenu}
-                className="hover:text-sky-400 transition-colors"
-              >
-                Projects
-              </ScrollLink>
-              <ScrollLink
-                to="contact"
-                smooth={true}
-                duration={500}
-                onClick={toggleMenu}
-                className="hover:text-sky-400 transition-colors"
-              >
-                Notes
-              </ScrollLink>
-              <div className="w-10 h-0.5 bg-gray-600 mx-auto"></div>
-            </>
-          )}
-
-          {/* External Links */}
-          <RouterLink
-            to="/about"
+        <nav className="flex space-x-8 text-center text-xl">
+          <ScrollLink
+            to="skills"
+            smooth={true}
+            duration={500}
             onClick={toggleMenu}
-            className={`hover:text-sky-400 transition-colors pt-2 ${
-              isActive("/about") ? "text-sky-400 font-bold" : ""
-            }`}
+            className="hover:text-sky-400 transition-colors"
           >
-            About
-          </RouterLink>
-          <RouterLink
-            to="/weather"
+            Skills
+          </ScrollLink>
+          <ScrollLink
+            to="projects"
+            smooth={true}
+            duration={500}
             onClick={toggleMenu}
-            className={`hover:text-sky-400 transition-colors ${
-              isActive("/weather") ? "text-sky-400 font-bold" : ""
-            }`}
+            className="hover:text-sky-400 transition-colors"
           >
-            Weather
-          </RouterLink>
-          <RouterLink
-            to="/resources"
+            Projects
+          </ScrollLink>
+          <ScrollLink
+            to="contact"
+            smooth={true}
+            duration={500}
             onClick={toggleMenu}
-            className={`hover:text-sky-400 transition-colors ${
-              isActive("/resources") ? "text-sky-400 font-bold" : ""
-            }`}
+            className="hover:text-sky-400 transition-colors"
           >
-            Resources
-          </RouterLink>
-          <RouterLink
-            to="/contact"
-            onClick={toggleMenu}
-            className={`hover:text-sky-400 transition-colors pb-2 ${
-              isActive("/contact") ? "text-sky-400 font-bold" : ""
-            }`}
-          >
-            Contact
-          </RouterLink>
+            Notes
+          </ScrollLink>
         </nav>
       </div>
     </header>

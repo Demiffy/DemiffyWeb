@@ -6,12 +6,13 @@ const NotFound = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white px-4">
       <div className="flex flex-col lg:flex-row items-center gap-12">
+        {/* Code Block Section */}
         <div className="bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md relative overflow-hidden">
           <pre className="text-sm font-mono text-gray-300 z-10 relative">
             <code>
-              <span className="text-green-500">// Something went terribly wrong...</span>
+              <span className="text-green-400">// Something went terribly wrong...</span>
               {`\n\n`}
-              <span className="text-blue-500">try</span> {"{"}
+              <span className="text-blue-400">try</span> {"{"}
               {`\n  `}
               <span className="text-yellow-400">fetch</span>(<span className="text-red-500">"{window.location.origin + location.pathname}"</span>)
               {`\n    .then(`}
@@ -25,13 +26,14 @@ const NotFound = () => {
               <span className="text-red-500">console.error</span>(<span className="text-purple-400">"Error: 404 - Page not found!"</span>);
               {`\n}`}
               {`\n\n`}
-              <span className="text-green-500">// Redirect safely home</span>
+              <span className="text-green-400">// Redirect safely home</span>
               {`\nwindow.location.href = "/";`}
               <span className="text-blue-400 blink">|</span>
             </code>
           </pre>
         </div>
 
+        {/* 404 Section */}
         <div className="text-center p-8">
           <h1 className="text-9xl font-bold text-red-600 drop-shadow-md">
             404

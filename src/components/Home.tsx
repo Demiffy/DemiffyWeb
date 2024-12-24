@@ -1,3 +1,4 @@
+// Home.tsx
 import { Helmet } from 'react-helmet-async';
 import MainIntro from './ui/homepage/MainIntro';
 import RadarAnimation from './ui/homepage/RadarAnimation';
@@ -119,7 +120,7 @@ const skills = [
         <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
         <meta name="keywords" content="Demiffy, IT, aviation, jet pilot, projects, programming, portfolio" />
         <link rel="canonical" href="https://demiffy.com" />
-        {/* Meta Tags */}
+        {/* Discord tags */}
         <meta property="og:title" content="Demiffy!" />
         <meta property="og:description" content="What a dumbass who coded this" />
         <meta property="og:url" content="https://demiffy.com" />

@@ -4,9 +4,24 @@ import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import Navbar from './components/ui/Navbar';
 import About from './components/About';
 import Home from './components/Home';
-import WeatherApp from './components/WeatherAPI';
-import LearningResources from './components/LearningResources';
-import Contact from './components/Contact';
+import PlaceRetired from './components/Place';
+import Placev2 from './components/placev2';
+import Tetris from './components/Tetris';
+import Sudoku from './components/Sudoku';
+import TwoThousandFortyEightGame from './components/2048Game';
+import SowwyProto from './components/SowwyProto';
+import CarDatabase from './components/CarDatabase';
+import CarDetails from './components/CarDetails';
+import FileConverter from './components/FileConverter';
+import GifMaker from './components/GifMaker';
+import AllLinks from './components/AllLinks';
+import ImageResizer from './components/ImageResizer';
+import VetteBase from './components/VetteBase';
+import Fnaf from './components/fnaf';
+import DemiNotes from './components/DemiNotes';
+import Destabilize from './components/Desinote';
+import DiscordUser from './components/DiscordUser';
+import CanvasTest from './components/canvastest';
 import NotFound from '../NotFound';
 import './App.css';
 
@@ -19,9 +34,24 @@ const AnimatedRoutes = () => {
         <Routes location={location}>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/weather" element={<WeatherApp />} />
-          <Route path="/resources" element={<LearningResources />} />
+          <Route path="/placeretired" element={<PlaceRetired />} />
+          <Route path="/place" element={<Placev2 />} />
+          <Route path="/games/tetris" element={<Tetris />} />
+          <Route path="/games/sudoku" element={<Sudoku />} />
+          <Route path="/games/2048" element={<TwoThousandFortyEightGame />} />
+          <Route path="/proto/sowwy" element={<SowwyProto />} />
+          <Route path="/cdata" element={<CarDatabase />} />
+          <Route path="/cdata/cid/:carId" Component={CarDetails} />
+          <Route path="/ic" element={<FileConverter />} />
+          <Route path="/gif" element={<GifMaker />} />
+          <Route path="/links" element={<AllLinks />} />
+          <Route path="/img" element={<ImageResizer />} />
+          <Route path="/vette" element={<VetteBase />} />
+          <Route path="/fnaf" element={<Fnaf />} />
+          <Route path="/discord" element={<DiscordUser />} />
+          <Route path="/deminotes" element={<DemiNotes />} />
+          <Route path="/DN" element={<Destabilize />} />
+          <Route path="/canvas" element={<CanvasTest />} />
           <Route path="/404" element={<NotFound />} />
 
           <Route path="*" element={<NotFound />} />

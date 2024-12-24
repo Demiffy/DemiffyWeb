@@ -1,5 +1,4 @@
 import { FaGithub, FaLinkedin, FaEnvelope } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
@@ -9,18 +8,17 @@ const Footer = () => {
           {/* Demiffy */}
           <div className="text-center md:text-left mb-6 md:mb-0">
             <h2 className="text-2xl font-bold text-white">Demiffy</h2>
-            <p className="mt-2 text-sm">&copy; 2024 Demiffy</p>
+            <p className="mt-2 text-sm">&copy; 2024 Demiffy. All rights reserved.</p>
+            <p className="mt-1 text-xs text-gray-400">Fly safe, code strong.</p>
           </div>
 
           {/* Logo */}
           <div className="my-4">
-          <Link to="/">
             <img
               src="/DMLogoGif.gif"
-              alt="Go Home"
+              alt="Demiffy"
               className="h-20 w-20 mx-auto"
             />
-          </Link>
           </div>
 
           {/* Social Media */}

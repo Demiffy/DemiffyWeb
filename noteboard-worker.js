@@ -1,3 +1,5 @@
+// noteboard-worker.js
+
 addEventListener('fetch', (event) => {
   event.respondWith(handleRequest(event.request));
 });
@@ -133,6 +135,7 @@ async function handleRequest(request) {
 
     const { id } = parsedBody;
 
+    // Validate that 'id' is a number
     if (typeof id !== 'number') {
       return sendJSON({ success: false, message: '"id" must be a number' }, 400);
     }

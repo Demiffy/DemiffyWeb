@@ -17,6 +17,8 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
       <h2 className="text-3xl font-bold mb-10 text-center text-sky-400 select-none">
         Milestones
       </h2>
+
+      {/* Display highest and lowest dates */}
       <div className="absolute top-[8rem] select-none">
         <p className="text-sky-400 text-sm font-bold">{highestDate}</p>
       </div>
@@ -24,6 +26,7 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
         <p className="text-sky-400 text-sm font-bold">{lowestDate}</p>
       </div>
 
+      {/* Milestone Timeline */}
       <div className="relative border-l-2 border-sky-500">
         {milestones.map((milestone, index) => (
           <motion.div
@@ -42,6 +45,7 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
                     <p className="text-gray-300 mt-2 text-lg">{milestone.description}</p>
                   </div>
 
+                  {/* Display image if available */}
                   {milestone.image && (
                     <div className="ml-4 w-32 h-32">
                       <img

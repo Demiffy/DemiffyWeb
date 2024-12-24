@@ -21,7 +21,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect device = mobile
+  // Detect if the device is mobile
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -224,6 +224,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
               </button>
 
               <div className="flex flex-col md:flex-row gap-6 h-full">
+                {/* Left: Image Section */}
                 <div
                   className="grid grid-cols-2 gap-4 overflow-y-auto pr-0 md:pr-4"
                   style={{ maxHeight: '80vh', paddingBottom: '3rem' }}
@@ -243,6 +244,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                     ))}
                 </div>
 
+                {/* Right: Title, Description, and Tools */}
                 <div className="md:sticky md:top-0 flex-1">
                   <h3 className="text-2xl font-bold text-sky-400 mb-4 truncate max-w-full text-center md:text-left">
                     {projects[activeProject].title}
@@ -270,7 +272,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                     </div>
                   )}
 
-                  {/* Buttons */}
+                  {/* Action Buttons */}
                   {projects[activeProject].buttons && (
                     <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
                       {projects[activeProject].buttons.map((button, index) => (

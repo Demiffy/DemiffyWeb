@@ -182,7 +182,7 @@ button:focus-visible {
   }
 }
 
-#profile {
+#hero {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -329,6 +329,7 @@ body {
   background-color: #3b82f6;
 }
 
+/* Grid container */
 .grid-container {
   display: grid;
   justify-content: center;
