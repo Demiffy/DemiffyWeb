@@ -786,8 +786,8 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(date);
-  };  
-
+  }; 
+  
   const exportCanvasAsPNG = () => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -846,12 +846,80 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
   
     const dataUrl = croppedCanvas.toDataURL("image/png");
     const link = document.createElement("a");
-    link.download = "canvas.png";
+    link.download = "DemiffyPlaceCanvas.png";
     link.href = dataUrl;
     link.click();
   
-    customAlert("Canvas exported successfully!", "success");
+    customAlert("Canvas exported as PNG!", "success");
   };
+
+  const exportCanvasAsSVG = () => {
+    const SVG_NS = "http://www.w3.org/2000/svg";
+  
+    const visibleStartX = Math.floor(-offset.x / (pixelSize * scale));
+    const visibleEndX = Math.ceil(
+      (viewport.width - offset.x) / (pixelSize * scale)
+    );
+    const visibleStartY = Math.floor(-offset.y / (pixelSize * scale));
+    const visibleEndY = Math.ceil(
+      (viewport.height - offset.y) / (pixelSize * scale)
+    );
+  
+    const visiblePixels = canvasData.filter((pixel) => {
+      return (
+        pixel.x >= visibleStartX &&
+        pixel.x <= visibleEndX &&
+        pixel.y >= visibleStartY &&
+        pixel.y <= visibleEndY &&
+        pixel.color !== -1 // Ignore empty pixels
+      );
+    });
+  
+    if (visiblePixels.length === 0) {
+      customAlert("No pixels in the viewport to export!", "error");
+      return;
+    }
+  
+    const minX = Math.min(...visiblePixels.map((p) => p.x));
+    const maxX = Math.max(...visiblePixels.map((p) => p.x));
+    const minY = Math.min(...visiblePixels.map((p) => p.y));
+    const maxY = Math.max(...visiblePixels.map((p) => p.y));
+  
+    const exportWidth = (maxX - minX + 1) * pixelSize;
+    const exportHeight = (maxY - minY + 1) * pixelSize;
+  
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("xmlns", SVG_NS);
+    svg.setAttribute("width", `${exportWidth}`);
+    svg.setAttribute("height", `${exportHeight}`);
+    svg.setAttribute("viewBox", `0 0 ${exportWidth} ${exportHeight}`);
+    svg.setAttribute("style", "background-color: white;");
+  
+    visiblePixels.forEach((pixel) => {
+      const rect = document.createElementNS(SVG_NS, "rect");
+      rect.setAttribute("x", `${(pixel.x - minX) * pixelSize}`);
+      rect.setAttribute("y", `${(pixel.y - minY) * pixelSize}`);
+      rect.setAttribute("width", `${pixelSize}`);
+      rect.setAttribute("height", `${pixelSize}`);
+      rect.setAttribute("fill", colors[pixel.color]);
+      svg.appendChild(rect);
+    });
+  
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+  
+    const blob = new Blob([svgString], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+  
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "DemiffyPlaceCanvas.svg";
+    link.click();
+  
+    URL.revokeObjectURL(url);
+  
+    customAlert("Canvas exported as SVG!", "success");
+  };  
 
 return (
   <div className="h-screen bg-gray-900 text-white">
@@ -897,6 +965,14 @@ return (
             </div>
             <div>
               <h3 className="text-sm font-semibold mb-2">Export Canvas</h3>
+              <button
+                onClick={exportCanvasAsSVG}
+                className="w-full py-1 px-3 rounded bg-green-600 hover:bg-green-500 text-white font-semibold text-xs"
+              >
+                Export as SVG
+              </button>
+            </div>
+            <div>
               <button
                 onClick={exportCanvasAsPNG}
                 className="w-full py-1 px-3 rounded bg-green-600 hover:bg-green-500 text-white font-semibold text-xs"
