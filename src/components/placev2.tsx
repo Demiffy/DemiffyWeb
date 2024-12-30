@@ -220,7 +220,8 @@ const pasteImageToCanvas = async () => {
 };
 
   // Zoom limits
-  const MIN_SCALE = 0.3;
+  const BASE_MIN_SCALE = 0.3;
+  const ADMIN_MIN_SCALE = 0.001;
   const MAX_SCALE = 5;
 
   // Handle sign-in from the SidePanel
@@ -642,38 +643,42 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
 };
 
   // Handle zooming
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    // Determine zoom direction
-    const zoomFactor = 1.1;
-    let newScale = scale;
-
-    if (e.deltaY < 0) {
-      // Zoom in
-      newScale = scale * zoomFactor;
-    } else {
-      // Zoom out
-      newScale = scale / zoomFactor;
-    }
-
-    newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-
-    const scaleRatio = newScale / scale;
-
-    const newOffsetX = mouseX - scaleRatio * (mouseX - offset.x);
-    const newOffsetY = mouseY - scaleRatio * (mouseY - offset.y);
-
-    setScale(newScale);
-    setOffset({ x: newOffsetX, y: newOffsetY });
-  }, [offset.x, offset.y, scale]);
+  const handleWheel = useCallback(
+    (e: WheelEvent) => {
+      e.preventDefault();
+  
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+  
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+  
+      const zoomFactor = 1.1;
+      let newScale = scale;
+  
+      const currentMinScale = adminModalOpen ? ADMIN_MIN_SCALE : BASE_MIN_SCALE;
+  
+      if (e.deltaY < 0) {
+        // Zoom in
+        newScale = scale * zoomFactor;
+      } else {
+        // Zoom out
+        newScale = scale / zoomFactor;
+      }
+  
+      newScale = Math.max(currentMinScale, Math.min(MAX_SCALE, newScale));
+  
+      const scaleRatio = newScale / scale;
+  
+      const newOffsetX = mouseX - scaleRatio * (mouseX - offset.x);
+      const newOffsetY = mouseY - scaleRatio * (mouseY - offset.y);
+  
+      setScale(newScale);
+      setOffset({ x: newOffsetX, y: newOffsetY });
+    },
+    [adminModalOpen, offset.x, offset.y, scale]
+  );
 
   // Attach wheel event listener
   useEffect(() => {
@@ -783,6 +788,71 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
     }).format(date);
   };  
 
+  const exportCanvasAsPNG = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      customAlert("Canvas not available!", "error");
+      return;
+    }
+  
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      customAlert("Failed to access canvas context!", "error");
+      return;
+    }
+  
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  
+    let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+    const data = imageData.data;
+  
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const index = (y * canvas.width + x) * 4;
+        const a = data[index + 3];
+  
+        if (a !== 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+  
+    if (minX > maxX || minY > maxY) {
+      customAlert("Canvas is empty!", "info");
+      return;
+    }
+  
+    const croppedWidth = maxX - minX + 1;
+    const croppedHeight = maxY - minY + 1;
+    const croppedCanvas = document.createElement("canvas");
+    const croppedCtx = croppedCanvas.getContext("2d");
+  
+    if (!croppedCtx) {
+      customAlert("Failed to create cropped canvas!", "error");
+      return;
+    }
+  
+    croppedCanvas.width = croppedWidth;
+    croppedCanvas.height = croppedHeight;
+  
+    croppedCtx.putImageData(
+      ctx.getImageData(minX, minY, croppedWidth, croppedHeight),
+      0,
+      0
+    );
+  
+    const dataUrl = croppedCanvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = "canvas.png";
+    link.href = dataUrl;
+    link.click();
+  
+    customAlert("Canvas exported successfully!", "success");
+  };
+
 return (
   <div className="h-screen bg-gray-900 text-white">
 
@@ -825,7 +895,15 @@ return (
               <h2 className="text-xl font-bold">Admin Panel</h2>
               <p className="text-xs text-gray-300">Hewwo! How did you get here? 🦊</p>
             </div>
-
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Export Canvas</h3>
+              <button
+                onClick={exportCanvasAsPNG}
+                className="w-full py-1 px-3 rounded bg-green-600 hover:bg-green-500 text-white font-semibold text-xs"
+              >
+                Export as PNG
+              </button>
+            </div>
             {/* Image Upload */}
             <div>
               <h3 className="text-sm font-semibold mb-2">Upload Image</h3>
