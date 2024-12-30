@@ -17,8 +17,8 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
 
   const handleLookupUser = async () => {
     if (!lookupUsername.trim()) {
-      customAlert("Please enter a username to look up");
-      return;
+        customAlert("Please enter a username to look up");
+        return;
     }
 
     const normalizedUsername = lookupUsername.toLowerCase();
@@ -26,40 +26,43 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
     const cursorRef = ref(db, `users/${normalizedUsername}/cursor`);
 
     try {
-      const canvasSnapshot = await get(canvasRef);
-      const canvasData: Record<string, any> | null = canvasSnapshot.val();
+        const canvasSnapshot = await get(canvasRef);
+        const canvasData: Record<string, any> | null = canvasSnapshot.val();
 
-      if (canvasData) {
-        const userPixels = Object.entries(canvasData)
-          .filter(([, pixel]) => pixel.placedBy === normalizedUsername)
-          .map(([, pixel]) => ({
-            x: pixel.x,
-            y: pixel.y,
-          }));
+        if (canvasData) {
+            const userPixels = Object.entries(canvasData)
+                .filter(([, pixel]) => pixel.placedBy === normalizedUsername)
+                .map(([, pixel]) => ({
+                    x: pixel.x,
+                    y: pixel.y,
+                    timestamp: pixel.timestamp || 0,
+                }))
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 100); // 100 most recent pixels
 
-        if (userPixels.length > 0) {
-          setPixelsPlaced(userPixels);
-          customAlert(`Found ${userPixels.length} pixels placed by ${lookupUsername}.`);
+            if (userPixels.length > 0) {
+                setPixelsPlaced(userPixels);
+                customAlert(`Showing the 100 most recent pixels placed by ${lookupUsername}.`);
+            } else {
+                setPixelsPlaced([]);
+                customAlert("No pixels found for this user");
+            }
         } else {
-          setPixelsPlaced([]);
-          customAlert("No pixels found for this user");
+            setPixelsPlaced([]);
+            customAlert("No canvas data available");
         }
-      } else {
-        setPixelsPlaced([]);
-        customAlert("No canvas data available");
-      }
 
-      // Listen for cursor updates
-      onValue(cursorRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setUserCursor(snapshot.val());
-        } else {
-          setUserCursor(null);
-        }
-      });
+        // Listen for cursor updates
+        onValue(cursorRef, (snapshot) => {
+            if (snapshot.exists()) {
+                setUserCursor(snapshot.val());
+            } else {
+                setUserCursor(null);
+            }
+        });
     } catch (error) {
-      console.error("Error fetching user data:", error);
-      customAlert("An error occurred while looking up the user");
+        console.error("Error fetching user data:", error);
+        customAlert("An error occurred while looking up the user");
     }
   };
 

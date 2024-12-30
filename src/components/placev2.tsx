@@ -48,13 +48,15 @@ const PlaceV2: React.FC = () => {
   const [username, setUsername] = useState('');
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [typedInput, setTypedInput] = useState<string>("");
-  const closeAdminModal = () => setAdminModalOpen(false);
+  const closeAdminModal = () => {setAdminModalOpen(false);setIsPreviewActive(false);};  
   const [onlinePlayers, setOnlinePlayers] = useState<number>(0);
   const lastPixelPosition = useRef<{ x: number; y: number } | null>(null);
   const [isPixelInfoEnabled, setIsPixelInfoEnabled] = useState(false);
   const [isPainting, setIsPainting] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
   const [pasteCoords, setPasteCoords] = useState<{ x: number | null; y: number | null }>({x: null,y : null,});  
+  const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
+  const [canvasData, setCanvasData] = useState<any[]>([]);
   const [hoveredPixelInfo, setHoveredPixelInfo] = useState<{
     x: number;
     y: number;
@@ -102,20 +104,21 @@ const PlaceV2: React.FC = () => {
   };
 
   // Handle image upload
-const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    const img = new Image();
-    img.onload = () => {
-      setUploadedImage(img);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        setUploadedImage(img);
+        setIsPreviewActive(true);
+      };
+      img.src = event.target?.result as string;
     };
-    img.src = event.target?.result as string;
-  };
-  reader.readAsDataURL(file);
-};
+    reader.readAsDataURL(file);
+  };  
 
 const hexToRgb = (hex: string) => {
   const bigint = parseInt(hex.slice(1), 16);
@@ -153,9 +156,14 @@ const pasteImageToCanvas = async () => {
     return;
   }
 
-  // Validate coordinates
-  const validX = Math.max(0, pasteCoords.x ?? 0);
-  const validY = Math.max(0, pasteCoords.y ?? 0);
+  if (pasteCoords.x === null || pasteCoords.y === null) {
+    console.error("Paste coordinates are not set");
+    customAlert("Paste coordinates are not set", "error");
+    return;
+  }
+
+  const validX = Math.max(0, pasteCoords.x);
+  const validY = Math.max(0, pasteCoords.y);
 
   console.log(`Pasting image at valid coordinates: (${validX}, ${validY})`);
 
@@ -199,57 +207,11 @@ const pasteImageToCanvas = async () => {
   }
 
   customAlert("Image pasted to canvas!", "success");
-};
-
-const previewImageOnCanvas = () => {
-  if (!uploadedImage) {
-    console.error("No image uploaded for preview!");
-    customAlert("No image uploaded for preview!", "error");
-    return;
-  }
-
-  const canvas = canvasRef.current;
-  if (!canvas) {
-    console.error("Canvas element is null!");
-    return;
-  }
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    console.error("Failed to get 2D context from canvas!");
-    return;
-  }
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (pasteCoords.x !== null && pasteCoords.y !== null) {
-    console.log(`Coordinates are valid: (${pasteCoords.x}, ${pasteCoords.y})`);
-
-    ctx.save();
-    ctx.translate(offset.x, offset.y);
-    ctx.scale(scale, scale);
-
-    ctx.globalAlpha = 0.5;
-    ctx.drawImage(
-      uploadedImage,
-      pasteCoords.x * pixelSize,
-      pasteCoords.y * pixelSize,
-      uploadedImage.width * pixelSize,
-      uploadedImage.height * pixelSize
-    );
-    ctx.globalAlpha = 1;
-
-    ctx.restore();
-
-    customAlert("Preview displayed!", "info");
-  } else {
-    console.error("Coordinates are not set");
-    customAlert("Coordinates are not set", "error");
-  }
+  setIsPreviewActive(false);
 };
 
   // Zoom limits
-  const MIN_SCALE = 0.1;
+  const MIN_SCALE = 0.3;
   const MAX_SCALE = 5;
 
   // Handle sign-in from the SidePanel
@@ -370,12 +332,12 @@ useEffect(() => {
     const canvasReference = ref(db, 'canvas');
     const unsubscribe = onValue(canvasReference, (snapshot) => {
       const data = snapshot.val();
-      const canvasData = data ? Object.values(data) : [];
-      drawCanvas(canvasData, hoveredPixel);
+      const newCanvasData = data ? Object.values(data) : [];
+      setCanvasData(newCanvasData);
     });
   
     return () => unsubscribe();
-  }, [offset, scale, hoveredPixel]);  
+  }, []);  
 
   // Draw the canvas
   const drawCanvas = useCallback(
@@ -407,7 +369,7 @@ useEffect(() => {
             );
           });
 
-          console.log(`Rendering ${visiblePixels.length} visible pixels`);
+          //console.log(`Rendering ${visiblePixels.length} visible pixels`);
   
           visiblePixels.forEach((pixel: any) => {
             if (pixel.color === -1) return;
@@ -465,11 +427,24 @@ useEffect(() => {
             setHoveredPixelInfo(null);
           }
   
+          // Draw Preview Image if active
+          if (isPreviewActive && uploadedImage && pasteCoords.x !== null && pasteCoords.y !== null) {
+            ctx.globalAlpha = 0.5;
+            ctx.drawImage(
+              uploadedImage,
+              pasteCoords.x * pixelSize,
+              pasteCoords.y * pixelSize,
+              uploadedImage.width * pixelSize,
+              uploadedImage.height * pixelSize
+            );
+            ctx.globalAlpha = 1;
+          }
+  
           ctx.restore();
         }
       }
     },
-    [offset, scale, viewport.height, viewport.width, pixelSize]
+    [offset, scale, viewport.height, viewport.width, pixelSize, isPreviewActive, uploadedImage, pasteCoords]
   );  
 
   const updateCursorPosition = async (pixelX: number, pixelY: number) => {
@@ -504,6 +479,7 @@ useEffect(() => {
     const pixelY = Math.floor(adjustedY / pixelSize);
   
     const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
+    const timestamp = Date.now();
   
     try {
       if (isEraserSelected) {
@@ -544,6 +520,10 @@ useEffect(() => {
       setLastMousePos({ x: event.clientX, y: event.clientY });
     }
   };  
+
+  useEffect(() => {
+    drawCanvas(canvasData, hoveredPixel);
+  }, [canvasData, hoveredPixel, drawCanvas]);  
 
 // Event handler mouse move
 const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
@@ -764,74 +744,66 @@ return (
 
       {/* Admin Modal */}
       {adminModalOpen && (
-      <div className="fixed top-4 right-4 w-80 bg-gray-800 p-4 rounded-lg shadow-lg text-white z-50">
-        <h2 className="text-lg font-bold mb-4">Admin Panel</h2>
-        <p className="text-sm text-gray-300 mb-6">
-          Hewwo! How did you get here? 🦊
-        </p>
+        <div className="fixed top-4 right-4 bg-gray-800 bg-opacity-70 backdrop-blur-md p-4 rounded-xl shadow-lg text-white z-40 max-w-sm">
+          <div className="relative space-y-4">
+            {/* Close Button */}
+            <button
+              onClick={closeAdminModal}
+              className="absolute top-2 right-2 text-red-400 hover:text-red-300 text-lg"
+              aria-label="Close Admin Panel"
+            >
+              ✖️
+            </button>
 
-        {/* Image Upload */}
-        <div className="mb-4">
-          <h3 className="text-md font-bold mb-2">Upload Image</h3>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="mb-4 p-2 bg-gray-700 rounded text-sm"
-          />
-          <div className="flex space-x-4">
-            <input
-              type="number"
-              placeholder="X Coordinate"
-              value={pasteCoords.x === null ? "" : pasteCoords.x}
-              onChange={(e) => {
-                const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
-                setPasteCoords((prev) => ({
-                  ...prev,
-                  x: value,
-                }));
-              }}
-              className="w-1/2 p-2 bg-gray-700 rounded text-sm"
-            />
-            <input
-              type="number"
-              placeholder="Y Coordinate"
-              value={pasteCoords.y === null ? "" : pasteCoords.y}
-              onChange={(e) => {
-                const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
-                setPasteCoords((prev) => ({
-                  ...prev,
-                  y: value,
-                }));
-              }}
-              className="w-1/2 p-2 bg-gray-700 rounded text-sm"
-            />
-          </div>
-          <div className="mt-4 flex space-x-4">
-            <button
-              onClick={previewImageOnCanvas}
-              className="py-2 px-4 rounded bg-yellow-600 hover:bg-yellow-500 text-white font-bold"
-            >
-              Preview Image
-            </button>
-            <button
-              onClick={pasteImageToCanvas}
-              className="py-2 px-4 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold"
-            >
-              Paste Image
-            </button>
+            {/* Header */}
+            <div className="text-center">
+              <h2 className="text-xl font-bold">Admin Panel</h2>
+              <p className="text-xs text-gray-300">Hewwo! How did you get here? 🦊</p>
+            </div>
+
+            {/* Image Upload */}
+            <div>
+              <h3 className="text-sm font-semibold mb-2">Upload Image</h3>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="mb-3 p-2 bg-gray-700 rounded text-xs w-full"
+              />
+              <div className="flex space-x-2 mb-3">
+                <input
+                  type="number"
+                  placeholder="X Coord"
+                  value={pasteCoords.x ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                    setPasteCoords((prev) => ({ ...prev, x: value }));
+                    setIsPreviewActive(true);
+                  }}
+                  className="w-1/2 p-2 bg-gray-700 rounded text-xs"
+                />
+                <input
+                  type="number"
+                  placeholder="Y Coord"
+                  value={pasteCoords.y ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                    setPasteCoords((prev) => ({ ...prev, y: value }));
+                    setIsPreviewActive(true);
+                  }}
+                  className="w-1/2 p-2 bg-gray-700 rounded text-xs"
+                />
+              </div>
+              <button
+                onClick={pasteImageToCanvas}
+                className="w-full py-1 px-3 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs"
+              >
+                Paste Image
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Close Button */}
-        <button
-          onClick={closeAdminModal}
-          className="py-2 px-4 rounded bg-red-600 hover:bg-red-500 text-white font-bold w-full"
-        >
-          Close
-        </button>
-      </div>
-    )}
+      )}
 
     {/* Alert Popup */}
     {alertMessage && (
@@ -992,7 +964,7 @@ return (
       </div>
 
       {/* Coordinate and Zoom Display */}
-      <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md">
+      <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-black text-sm space-y-2 backdrop-blur-md">
         <p className="flex items-center">
           <span className="font-bold mr-1">Coordinates:</span>
           <span>
@@ -1005,7 +977,17 @@ return (
         </p>
         <p className="flex items-center">
           <span className="font-bold mr-1">FPS:</span>
-          <span>{fps}</span>
+          <span
+            className={`font-bold ${
+              fps >= 100
+                ? "text-green-500"
+                : fps >= 50
+                ? "text-orange-200"
+                : "text-red-500"
+            }`}
+          >
+            {fps}
+          </span>
         </p>
       </div>
     </div>
