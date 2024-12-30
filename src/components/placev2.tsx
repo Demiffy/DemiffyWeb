@@ -479,7 +479,6 @@ useEffect(() => {
     const pixelY = Math.floor(adjustedY / pixelSize);
   
     const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
-    const timestamp = Date.now();
   
     try {
       if (isEraserSelected) {
