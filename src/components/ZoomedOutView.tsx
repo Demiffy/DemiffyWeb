@@ -28,8 +28,6 @@ const ZoomedOutView: React.FC = () => {
 
   const [canvasData, setCanvasData] = useState<any[]>([]);
 
-  const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
-
   const [onlinePlayers, setOnlinePlayers] = useState<number>(0);
 
   const [pickerX, setPickerX] = useState<number>(0);
@@ -92,34 +90,11 @@ const ZoomedOutView: React.FC = () => {
         ctx.restore();
       }
     }
-  }, [canvasData, hoveredPixel, zoomScale, offset]);
+  }, [canvasData, zoomScale, offset]);
 
   useEffect(() => {
     drawCanvas();
   }, [drawCanvas]);
-
-  // Handle mouse movement over the canvas
-  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const canvasX = (x - offset.x) / zoomScale;
-    const canvasY = (y - offset.y) / zoomScale;
-
-    const pixelX = Math.floor(canvasX / pixelSize);
-    const pixelY = Math.floor(canvasY / pixelSize);
-
-    setHoveredPixel({ x: pixelX, y: pixelY });
-  };
-
-  // Handle mouse leaving the canvas
-  const handleMouseLeave = () => {
-    setHoveredPixel(null);
-  };
 
   // Coordinate Picker Handler to center selected pixel
   const handleCoordinateJump = () => {
@@ -176,8 +151,6 @@ const ZoomedOutView: React.FC = () => {
             backgroundColor: colors[31],
             imageRendering: "pixelated",
           }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
         />
 
         {/* Coordinate Picker */}
