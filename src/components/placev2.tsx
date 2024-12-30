@@ -57,11 +57,20 @@ const PlaceV2: React.FC = () => {
   const [pasteCoords, setPasteCoords] = useState<{ x: number | null; y: number | null }>({x: null,y : null,});  
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
   const [canvasData, setCanvasData] = useState<any[]>([]);
+  const pixelBufferRef = useRef<{ [key: string]: any }>({});
+  const [localPixels, setLocalPixels] = useState<{
+    x: number;
+    y: number;
+    color: number;
+    placedBy: string;
+    timestamp: number;
+  }[]>([]);  
   const [hoveredPixelInfo, setHoveredPixelInfo] = useState<{
     x: number;
     y: number;
     placedBy: string;
     color: number;
+    timestamp?: number;
   } | null>(null);
 
   const [userData, setUserData] = useState({
@@ -341,7 +350,17 @@ useEffect(() => {
 
   // Draw the canvas
   const drawCanvas = useCallback(
-    (canvasData: any[], hoveredPixel?: { x: number; y: number } | null) => {
+    (
+      canvasData: any[],
+      hoveredPixel?: { x: number; y: number } | null,
+      localPixels: {
+        x: number;
+        y: number;
+        color: number;
+        placedBy: string;
+        timestamp: number;
+      }[] = []
+    ) => {
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -360,17 +379,20 @@ useEffect(() => {
           const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
           const endY = Math.ceil((viewport.height - offset.y) / scale / pixelSize) + 1;
   
-          const visiblePixels = canvasData.filter((pixel: any) => {
-            return (
-              pixel.x >= startX &&
-              pixel.x <= endX &&
-              pixel.y >= startY &&
-              pixel.y <= endY
-            );
+          const combinedCanvasData = [...canvasData, ...localPixels];
+          const pixelMap = new Map<string, any>();
+          combinedCanvasData.forEach(pixel => {
+            const key = `${pixel.x}_${pixel.y}`;
+            pixelMap.set(key, pixel);
           });
-
-          //console.log(`Rendering ${visiblePixels.length} visible pixels`);
+          const visiblePixels = Array.from(pixelMap.values()).filter(pixel => (
+            pixel.x >= startX &&
+            pixel.x <= endX &&
+            pixel.y >= startY &&
+            pixel.y <= endY
+          ));
   
+          // Render visible pixels
           visiblePixels.forEach((pixel: any) => {
             if (pixel.color === -1) return;
   
@@ -444,7 +466,17 @@ useEffect(() => {
         }
       }
     },
-    [offset, scale, viewport.height, viewport.width, pixelSize, isPreviewActive, uploadedImage, pasteCoords]
+    [
+      offset,
+      scale,
+      viewport.height,
+      viewport.width,
+      pixelSize,
+      isPreviewActive,
+      uploadedImage,
+      pasteCoords,
+      colors
+    ]
   );  
 
   const updateCursorPosition = async (pixelX: number, pixelY: number) => {
@@ -460,17 +492,14 @@ useEffect(() => {
   };  
   
   // Handle placing/removing a pixel
-  const handleCanvasInteraction = async (x: number, y: number) => {
+  const handleCanvasInteraction = (x: number, y: number) => {
     if (!userData.username) {
       customAlert(
-        "Why did you use Inspect Element to remove the Sign In Form? Please sign in to place pixels.",
+        "Please sign in to place pixels.",
         "tip"
       );
       return;
     }
-  
-    const canvas = canvasRef.current;
-    if (!canvas) return;
   
     const adjustedX = (x - offset.x) / scale;
     const adjustedY = (y - offset.y) / scale;
@@ -478,24 +507,51 @@ useEffect(() => {
     const pixelX = Math.floor(adjustedX / pixelSize);
     const pixelY = Math.floor(adjustedY / pixelSize);
   
-    const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
+    const pixelKey = `${pixelX}_${pixelY}`;
+    const timestamp = Date.now();
+
+    pixelBufferRef.current[pixelKey] = {
+      x: pixelX,
+      y: pixelY,
+      color: isEraserSelected ? -1 : selectedColor,
+      placedBy: userData.username,
+      timestamp,
+    };
+  
+    setLocalPixels((prev) => [
+      ...prev,
+      {
+        x: pixelX,
+        y: pixelY,
+        color: isEraserSelected ? -1 : selectedColor,
+        placedBy: userData.username,
+        timestamp,
+      }
+    ]);
+  };  
+
+  const flushPixelBuffer = async () => {
+    const bufferedPixels = pixelBufferRef.current;
+  
+    if (Object.keys(bufferedPixels).length === 0) return;
+  
+    const updates: { [key: string]: any } = {};
+    for (const [key, pixel] of Object.entries(bufferedPixels)) {
+      updates[`canvas/${key}`] = pixel;
+    }
   
     try {
-      if (isEraserSelected) {
-        await remove(pixelRef);
-      } else if (selectedColor === 31) {
-        await set(pixelRef, { x: pixelX, y: pixelY, color: -1, placedBy: userData.username });
-      } else {
-        await set(pixelRef, { x: pixelX, y: pixelY, color: selectedColor, placedBy: userData.username });
-      }
-      setTimeout(() => {
-        setHoveredPixel(null);
-      }, 5000);
+      await update(ref(db), updates);
+      console.log("Batch update successful:", updates);
     } catch (error) {
-      console.error("Failed to update pixel:", error);
-      customAlert("Failed to update pixel. Try again!", "error");
+      console.error("Batch update failed:", error);
+      customAlert("Failed to update pixels. Please try again.", "error");
     }
+  
+    pixelBufferRef.current = {};
+    setLocalPixels([]);
   };  
+
 
   const jumpToCoords = (x: number, y: number) => {
     setOffset({ x: viewport.width / 2 - x * pixelSize * scale, y: viewport.height / 2 - y * pixelSize * scale });
@@ -505,24 +561,25 @@ useEffect(() => {
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-  
-    if (event.button === 0 && !event.ctrlKey) {
-      setIsPainting(true);
-      handleCanvasInteraction(x, y);
-    } else if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
-      event.preventDefault();
-      setIsPanning(true);
-      setLastMousePos({ x: event.clientX, y: event.clientY });
-    }
-  };  
 
-  useEffect(() => {
-    drawCanvas(canvasData, hoveredPixel);
-  }, [canvasData, hoveredPixel, drawCanvas]);  
+    if (event.button === 0 && !event.ctrlKey) {
+        setIsPainting(true);
+        handleCanvasInteraction(x, y);
+    } else if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
+        event.preventDefault();
+        setIsPanning(true);
+        setLastMousePos({ x: event.clientX, y: event.clientY });
+    }
+};
+
+
+useEffect(() => {
+  drawCanvas(canvasData, hoveredPixel, localPixels);
+}, [canvasData, hoveredPixel, localPixels, drawCanvas]);
 
 // Event handler mouse move
 const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
@@ -574,12 +631,13 @@ const handleMouseLeave = () => {
 // Event handler mouse up
 const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
   if ((event.button === 0 && isPanning) || event.button === 1) {
-    setIsPanning(false);
-    setLastMousePos(null);
+      setIsPanning(false);
+      setLastMousePos(null);
   }
 
   if (event.button === 0) {
-    setIsPainting(false);
+      setIsPainting(false);
+      flushPixelBuffer();
   }
 };
 
@@ -716,6 +774,14 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
   
     return () => unsubscribe();
   }, []);
+
+  const formatTimestamp = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    return new Intl.DateTimeFormat('en-GB', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  };  
 
 return (
   <div className="h-screen bg-gray-900 text-white">
@@ -889,6 +955,11 @@ return (
         <p>
           <strong>Coordinates:</strong> ({hoveredPixelInfo.x}, {hoveredPixelInfo.y})
         </p>
+        {hoveredPixelInfo.timestamp && (
+          <p className="mt-2 text-xs text-gray-400">
+            Placed on {formatTimestamp(hoveredPixelInfo.timestamp)}
+          </p>
+        )}
       </div>
     )}
 
@@ -927,10 +998,10 @@ return (
           {/* Eraser Icon */}
           <div className="flex justify-center items-center">
             <div
-              className={`color-square w-11 h-11 rounded border transition-all ${
+              className={`color-square border-red-500 w-11 h-11 rounded border transition-all ${
                 isEraserSelected
                   ? "border-red-500 border-4 shadow-lg shadow-red-300 scale-110"
-                  : "border-gray-300 hover:border-gray-400 hover:scale-110 hover:shadow-md hover:shadow-gray-500 cursor-pointer"
+                  : "border-gray-300 hover:border-red-400 hover:scale-110 hover:shadow-md hover:shadow-gray-500 cursor-pointer"
               }`}
               style={{
                 backgroundColor: "transparent",
@@ -941,29 +1012,28 @@ return (
               onClick={() => setIsEraserSelected(true)}
               aria-label="Eraser"
             >
-              <span
-                style={{
-                  fontSize: "1.5rem",
-                  color: isEraserSelected ? "red" : "gray",
-                }}
-              >
-                🧹
-              </span>
+              <img
+                src="/eraser.png"
+                alt="Eraser"
+                className={`w-8 h-8 transition-transform ${
+                  isEraserSelected ? "scale-110" : "hover:scale-110"
+                }`}
+              />
             </div>
           </div>
         </div>
       </div>
 
       {/* Online Players Display */}
-      <div className="absolute bottom-10 right-6 bg-opacity-70 p-2 rounded-lg text-white text-xs backdrop-blur-md">
+      <div className="absolute bottom-10 right-6 bg-opacity-70 p-2 rounded-lg text-zinc-800 text-xs backdrop-blur-md">
         <p className="flex items-center">
-          <span className="font-bold mr-1 text-gray-900">Online:</span>
+          <span className="font-bold mr-1">Online:</span>
           <span className='text-gray-500'>{onlinePlayers}</span>
         </p>
       </div>
 
       {/* Coordinate and Zoom Display */}
-      <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-black text-sm space-y-2 backdrop-blur-md">
+      <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-zinc-800 text-sm space-y-2 backdrop-blur-md">
         <p className="flex items-center">
           <span className="font-bold mr-1">Coordinates:</span>
           <span>
