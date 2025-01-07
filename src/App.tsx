@@ -23,6 +23,7 @@ import DemiNotes from './components/DemiNotes';
 import Destabilize from './components/Desinote';
 import DiscordUser from './components/DiscordUser';
 import CanvasTest from './components/canvastest';
+import DCars from './components/DCars';
 import NotFound from '../NotFound';
 import './App.css';
 
@@ -54,6 +55,7 @@ const AnimatedRoutes = () => {
           <Route path="/deminotes" element={<DemiNotes />} />
           <Route path="/DN" element={<Destabilize />} />
           <Route path="/canvas" element={<CanvasTest />} />
+          <Route path="/dcars" element={<DCars />} />
           <Route path="/404" element={<NotFound />} />
 
           <Route path="*" element={<NotFound />} />
