@@ -18,60 +18,45 @@ interface Specs {
 
 interface Car {
   name: string;
-  year: number;
+  year: string;
   tagline: string;
   image: string;
   specs: Specs;
   interestingFact: string;
 }
 
-// Sample Data
 const cars: Car[] = [
   {
-    name: 'Tesla Model S Plaid',
-    year: 2023,
-    tagline: 'Beyond Ludicrous',
-    image: '/tesla-model-s-plaid.jpg',
+    name: 'Corvette C5',
+    year: "1997 - 2004",
+    tagline: 'The Birth of a New Era',
+    image: '/carImages/corvetteC5/c5front.png',
     specs: {
-      acceleration: '0-60 mph in 1.99 seconds',
-      topSpeed: '200 mph',
-      range: '396 miles (EPA est.)',
-      battery: '100 kWh Lithium-ion',
-      power: '1,020 hp',
-      torque: '1,050 lb-ft',
+      engine: '5.7L LS1 V8',
+      power: '345 hp - 350 hp',
+      acceleration: '0-100 km/h in 4.5 seconds',
+      topSpeed: '277 km/h',
+      transmission: '4-speed automatic / 6-speed manual',
+      weight: '1,472 kg (approx.)',
     },
     interestingFact:
-      'The Tesla Model S Plaid is the fastest production car in the world, achieving unparalleled acceleration and speed.',
-  },
-  {
-    name: 'Porsche 911 GT3 RS',
-    year: 2023,
-    tagline: 'Born in Flacht',
-    image: '/porsche-911-gt3-rs.jpg',
-    specs: {
-      power: '518 hp',
-      torque: '346 lb-ft',
-      weight: '3,268 lbs',
-      engine: '4.0L Naturally Aspirated Flat-6',
-      transmission: '7-speed PDK (Dual-Clutch)',
-    },
-    interestingFact:
-      'The Porsche 911 GT3 RS features active aerodynamics that adjust in real-time to optimize performance on both street and track.',
+      'The Corvette C5 was the first to use the LS1 engine, which became a legend in automotive performance circles. It also introduced a transaxle design for better weight distribution.',
   },
   {
     name: 'Toyota Supra MK5',
-    year: 2023,
+    year: "2019 - Present",
     tagline: 'The Legend Returns',
     image: '/toyota-supra-mk5.jpg',
     specs: {
       engines: '2.0L Turbo I4 / 3.0L Turbo I6',
-      power: 'Up to 382 hp',
-      acceleration: '0-60 mph in 3.9 seconds (3.0L)',
-      weight: '3,400 lbs',
+      power: '255 hp (2.0L) / 382 hp (3.0L)',
+      acceleration: '0-100 km/h in 5.0 seconds (2.0L) / 3.9 seconds (3.0L)',
+      topSpeed: '250 km/h (electronically limited)',
       transmission: '8-speed automatic',
+      weight: '1,443 kg (2.0L) / 1,542 kg (3.0L)',
     },
     interestingFact:
-      'The Toyota Supra MK5 marks the return of the iconic Supra nameplate after a 17-year hiatus, blending classic design with modern performance.',
+      'The Toyota Supra MK5 was co-developed with BMW and shares its platform with the BMW Z4. It marked the return of the Supra after a 17-year hiatus, reigniting its status as an icon.',
   },
 ];
 
@@ -105,47 +90,47 @@ export default function CarOverview() {
   const [hoveredCar, setHoveredCar] = useState<number | null>(null);
 
   return (
-    <section className="py-20 px-4 md:px-0 bg-gray-800">
-      <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <section className="py-20 px-4 md:px-0 bg-secondary-color">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-8 justify-items-center">
         {cars.map((car, index) => (
-            <motion.div
+          <motion.div
             key={car.name}
             className="relative overflow-hidden rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 cursor-default select-none"
             onHoverStart={() => setHoveredCar(index)}
             onHoverEnd={() => setHoveredCar(null)}
-            >
+          >
             <Image
-                src={car.image}
-                alt={car.name}
-                width={800}
-                height={600}
-                className="w-full h-[400px] object-cover"
-                priority
+              src={car.image}
+              alt={car.name}
+              width={800}
+              height={600}
+              className="w-full h-[400px] object-cover"
+              priority
             />
             {/* Overlay */}
             <motion.div
-                className="absolute inset-0 bg-black bg-opacity-70 flex flex-col justify-end p-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: hoveredCar === index ? 1 : 0 }}
-                transition={{ duration: 0.3 }}
+              className="absolute inset-0 bg-black bg-opacity-70 flex flex-col justify-end p-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: hoveredCar === index ? 1 : 0 }}
+              transition={{ duration: 0.3 }}
             >
-                <h2 className="text-3xl font-bold mb-2">{car.name}</h2>
-                <p className="text-xl mb-1">{car.year}</p>
-                <p className="text-lg mb-4 italic">{car.tagline}</p>
-                <ul className="text-sm mb-4">
+              <h2 className="text-3xl font-bold mb-2">{car.name}</h2>
+              <p className="text-xl mb-1">{car.year}</p>
+              <p className="text-lg mb-4 italic">{car.tagline}</p>
+              <ul className="text-sm mb-4">
                 {Object.entries(car.specs).map(([key, value]) => (
-                    <li key={key} className="mb-1">
+                  <li key={key} className="mb-1">
                     <SpecItem label={key} value={value} />
-                    </li>
+                  </li>
                 ))}
-                </ul>
-                {/* Interesting Fact */}
-                <div className="text-sm text-gray-300">
+              </ul>
+              {/* Interesting Fact */}
+              <div className="text-sm text-gray-300">
                 <span className="font-semibold">Interesting Fact: </span>
                 {car.interestingFact}
-                </div>
+              </div>
             </motion.div>
-        </motion.div>
+          </motion.div>
         ))}
       </div>
     </section>

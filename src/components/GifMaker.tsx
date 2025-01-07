@@ -299,7 +299,7 @@ const GifMaker: React.FC = () => {
                 fileInputRef.current?.click();
               }
             }}
-            className="flex flex-col items-center justify-center w-full lg:w-1/3 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer border-gray-500 bg-primary-color hover:bg-black"
+            className="flex flex-col items-center justify-center w-full lg:w-1/3 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer border-gray-500 bg-primary-color hover:bg-tertiary-color"
           >
             <ArrowUpTrayIcon className="h-12 w-12 text-blue-400 mb-4" />
             <p className="text-center mb-4">Drag and drop images here, or click to select files.</p>

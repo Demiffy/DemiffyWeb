@@ -224,7 +224,7 @@ const ImageResizer: React.FC = () => {
                 fileInputRef.current?.click();
               }
             }}
-            className={`flex flex-col items-center justify-center w-full h-64 p-6 border-2 border-dashed rounded-lg transition-colors duration-200 cursor-pointer border-gray-500 bg-primary-color hover:bg-black ${
+            className={`flex flex-col items-center justify-center w-full h-64 p-6 border-2 border-dashed rounded-lg transition-colors duration-200 cursor-pointer border-gray-500 bg-primary-color hover:bg-tertiary-color ${
               selectedImage ? 'lg:w-1/2' : ''
             }`}
           >

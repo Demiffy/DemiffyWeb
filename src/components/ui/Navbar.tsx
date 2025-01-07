@@ -96,7 +96,20 @@ const Navbar = () => {
               About
               <div
                 className={`absolute left-0 bottom-0 w-full ${
-                  isActive("/weather") ? "h-1 bg-accent-color" : "h-0.5 bg-transparent"
+                  isActive("/about") ? "h-1 bg-accent-color" : "h-0.5 bg-transparent"
+                } group-hover:h-1 group-hover:bg-accent-color transition-all duration-300`}
+              ></div>
+            </RouterLink>
+            <RouterLink
+              to="/links"
+              className={`relative group text-white cursor-pointer transition-colors ease-in-out py-2 ${
+                isActive("/links") ? "text-sky-400 font-bold" : ""
+              }`}
+            >
+              All Links
+              <div
+                className={`absolute left-0 bottom-0 w-full ${
+                  isActive("/links") ? "h-1 bg-accent-color" : "h-0.5 bg-transparent"
                 } group-hover:h-1 group-hover:bg-accent-color transition-all duration-300`}
               ></div>
             </RouterLink>
@@ -168,6 +181,15 @@ const Navbar = () => {
             }`}
           >
             About
+          </RouterLink>
+          <RouterLink
+            to="/links"
+            onClick={toggleMenu}
+            className={`hover:bg-accent-color transition-colors pt-2 pb-2 ${
+              isActive("/links") ? "text-accent-color font-bold" : ""
+            }`}
+          >
+            All Links
           </RouterLink>
         </nav>
       </div>

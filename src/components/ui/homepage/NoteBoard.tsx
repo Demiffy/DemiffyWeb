@@ -416,7 +416,7 @@ const NoteBoard = () => {
           {error && <p className="text-red-500">{error}</p>}
           <motion.button
             type="submit"
-            className="w-full bg-accent-color-light text-white py-3 rounded-lg hover:bg-sky-700 transition-colors"
+            className="w-full bg-accent-color-light text-white py-3 rounded-lg hover:bg-accent-color-lighter transition-colors"
             whileHover={{ scale: 1.05 }}
             disabled={!newNote.trim()}
           >

@@ -39,9 +39,9 @@ const DiscordUser: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-800 text-white flex flex-col pt-12">
+    <div className="min-h-screen text-white flex flex-col pt-12">
       <header className="p-6">
-        <h1 className="text-3xl font-bold text-center">Discord Profile Viewer</h1>
+        <h1 className="text-3xl font-bold text-center text-accent-color">Discord Profile Viewer</h1>
       </header>
 
       <main className="flex-grow p-6 overflow-auto flex flex-col items-center">
@@ -51,7 +51,7 @@ const DiscordUser: React.FC = () => {
             placeholder="Enter Discord User ID"
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
-            className="w-full p-4 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-4 bg-tertiary-color text-white rounded-lg border border-accent-color focus:ring-2 focus:ring-accent-color-lighter"
           />
           <button
             onClick={handleFetchUser}
@@ -87,7 +87,7 @@ const DiscordUser: React.FC = () => {
               )}
 
               {/* Profile Section */}
-              <div className="bg-gray-700 p-6 text-center relative">
+              <div className="bg-primary-color p-6 text-center relative">
                 {userData.avatar_url ? (
                   <img
                     src={userData.avatar_url}

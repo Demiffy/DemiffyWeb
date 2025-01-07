@@ -44,7 +44,7 @@ export default function Hero() {
           transition={{ duration: 1 }}
           className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-wide drop-shadow-lg"
         >
-          Discover Your Dream Machines
+          Good-Looking & High-Performing<br/>Dream Cars
         </motion.h1>
 
         {/* Subtitle */}
@@ -54,7 +54,7 @@ export default function Hero() {
           transition={{ duration: 1, delay: 0.3 }}
           className="text-lg md:text-2xl text-gray-300 mt-4 mb-8 max-w-3xl"
         >
-          Experience the future of automotive engineering with luxury, style, and performance.
+          Explore my collection of dream cars, awesome looks and powerful performance
         </motion.p>
 
         {/* Call-to-Action Buttons */}
@@ -69,17 +69,6 @@ export default function Hero() {
           >
             Scroll to Explore <FaArrowDown className="ml-2" />
           </motion.button>
-
-          <motion.a
-            href="#learn-more"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.9 }}
-            className="flex items-center px-6 py-3 bg-transparent border border-white text-white font-semibold text-lg md:text-xl rounded-full shadow-lg hover:bg-white hover:text-black transition-all transform hover:scale-105"
-            aria-label="Learn More"
-          >
-            Learn More <FaCar className="ml-2" />
-          </motion.a>
         </div>
       </div>
 
@@ -93,23 +82,23 @@ export default function Hero() {
       >
         <div className="flex flex-col items-center">
           <FaCar className="text-white text-3xl mb-2" />
-          <h3 className="text-white text-lg font-semibold">Luxury Design</h3>
-          <p className="text-gray-300 text-sm">Sleek and sophisticated aesthetics.</p>
+          <h3 className="text-white text-lg font-semibold">Modern Designs</h3>
+          <p className="text-gray-300 text-sm">Sleek and sophisticated aesthetics</p>
         </div>
         <div className="flex flex-col items-center">
           <FaCar className="text-white text-3xl mb-2" />
-          <h3 className="text-white text-lg font-semibold">Advanced Technology</h3>
-          <p className="text-gray-300 text-sm">Cutting-edge automotive innovations.</p>
+          <h3 className="text-white text-lg font-semibold">Reliable</h3>
+          <p className="text-gray-300 text-sm">Engineered for consistency and built to last</p>
         </div>
         <div className="flex flex-col items-center">
           <FaCar className="text-white text-3xl mb-2" />
           <h3 className="text-white text-lg font-semibold">Unmatched Performance</h3>
-          <p className="text-gray-300 text-sm">Powerful and efficient engines.</p>
+          <p className="text-gray-300 text-sm">Powerful and efficient engines</p>
         </div>
       </motion.div>
 
       {/* Decorative Gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black via-transparent to-transparent z-10"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-primary-color via-transparent to-transparent z-10"></div>
     </section>
   );
 }

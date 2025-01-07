@@ -402,7 +402,7 @@ const FileConverter: React.FC = () => {
             className={`flex flex-col items-center justify-center w-full lg:w-1/2 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer ${
               isDragging
                 ? 'border-blue-400 bg-black'
-                : 'border-gray-500 bg-primary-color hover:bg-black'
+                : 'border-gray-500 bg-primary-color hover:bg-tertiary-color'
             }`}
           >
             <ArrowUpTrayIcon className="h-12 w-12 text-accent-color mb-4" />

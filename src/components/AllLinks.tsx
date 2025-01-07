@@ -1,176 +1,132 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  FaGamepad,
+  FaTools,
+  FaBook,
+  FaGlobe,
+  FaBrain,
+} from 'react-icons/fa';
+
+interface LinkItem {
+  to: string;
+  title: string;
+  description: string;
+}
+
+interface Category {
+  name: string;
+  icon: JSX.Element;
+  links: LinkItem[];
+}
+
+const categories: Category[] = [
+  {
+    name: 'General',
+    icon: <FaGlobe className="text-4xl text-blue-400 mb-2" />,
+    links: [
+      { to: '/', title: 'Home', description: 'Go back to the homepage' },
+      { to: '/about', title: 'About', description: 'Learn about me' },
+      { to: '/place', title: 'Place', description: 'Small r/place replica' },
+    ],
+  },
+  {
+    name: 'Games',
+    icon: <FaGamepad className="text-4xl text-green-400 mb-2" />,
+    links: [
+      { to: '/games/tetris', title: 'Tetris Game', description: 'Play Tetris' },
+      { to: '/games/sudoku', title: 'Sudoku Game', description: 'Play Sudoku' },
+      { to: '/games/2048', title: '2048 Game', description: 'Play 2048' },
+    ],
+  },
+  {
+    name: 'Tools',
+    icon: <FaTools className="text-4xl text-yellow-400 mb-2" />,
+    links: [
+      { to: '/cdata', title: 'Car Database', description: 'Check out the car database' },
+      { to: '/ic', title: 'File Converter', description: 'Convert your files easily' },
+      { to: '/gif', title: 'GIF Maker', description: 'Create GIFs easily' },
+      { to: '/img', title: 'Image Resizer & Rotater', description: 'Resize and rotate images easily' },
+      { to: '/discord', title: 'Discord Profile Fetcher', description: 'Fetch Discord profiles' },
+    ],
+  },
+  {
+    name: 'Notes',
+    icon: <FaBook className="text-4xl text-red-400 mb-2" />,
+    links: [
+      { to: '/deminotes', title: 'Demi Notes', description: 'Your notes organized' },
+      { to: '/dn', title: 'Notes Editor', description: 'Create and edit notes' },
+      { to: '/dcars', title: 'Dream Cars', description: 'Explore dream cars' },
+    ],
+  },
+  {
+    name: 'Other',
+    icon: <FaBrain className="text-4xl text-purple-400 mb-2" />,
+    links: [
+      { to: '/', title: 'WIP', description: 'Work In Progress' },
+    ],
+  }
+];
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.05 },
+  }),
+};
 
 const AllLinks = () => {
   return (
-    <div className="min-h-screen text-white flex flex-col justify-center items-center py-16 px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-color to-secondary-color text-white flex flex-col py-16 px-8">
       <div className="container mx-auto">
-        <h1 className="text-4xl font-extrabold mb-12 text-accent-color text-center">
+        <motion.h1
+          className="text-5xl font-extrabold mb-12 text-center bg-clip-text text-transparent bg-gradient-to-r from-accent-color to-accent-color-light"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           All Links
-        </h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Link
-            to="/"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Home</h2>
-              <p className="text-gray-400">Go back to the homepage</p>
+        </motion.h1>
+        {categories.map((category, catIdx) => (
+          <section key={category.name} className="mb-12">
+            <motion.div
+              className="flex items-center mb-6"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: catIdx * 0.1, duration: 0.5 }}
+            >
+              {category.icon}
+              <h2 className="text-3xl font-bold border-b border-gray-700 pb-2 ml-3">
+                {category.name}
+              </h2>
+            </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {category.links.map((link, linkIdx) => (
+                <motion.div
+                  key={link.to}
+                  custom={linkIdx}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  <Link
+                    to={link.to}
+                    className="relative p-6 bg-tertiary-color rounded-lg shadow-lg hover:bg-quaternary-color transition-all flex justify-between items-center transform hover:-translate-y-1 hover:shadow-2xl"
+                  >
+                    <div className="text-left">
+                      <h3 className="text-2xl font-semibold mb-1">{link.title}</h3>
+                      <p className="text-gray-400">{link.description}</p>
+                    </div>
+                    <ChevronRight className="text-gray-400" size={32} />
+                  </Link>
+                </motion.div>
+              ))}
             </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/about"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">About</h2>
-              <p className="text-gray-400">Learn about me</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/place"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Place</h2>
-              <p className="text-gray-400">Small r/place replica</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/games/tetris"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Tetris Game</h2>
-              <p className="text-gray-400">Play Tetris</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/games/sudoku"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Sudoku Game</h2>
-              <p className="text-gray-400">Play Sudoku</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/games/2048"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">2048 Game</h2>
-              <p className="text-gray-400">Play 2048</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/proto/sowwy"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Sowwy Proto</h2>
-              <p className="text-gray-400">QwQ</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/cdata"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Car Database</h2>
-              <p className="text-gray-400">Check out the car database</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/ic"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">File Converter</h2>
-              <p className="text-gray-400">Convert your files easily</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/gif"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">GIF Maker</h2>
-              <p className="text-gray-400">Create GIFs easily</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/img"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Image Resizer & Rotater</h2>
-              <p className="text-gray-400">Resize and rotate images easily</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-
-          <Link
-            to="/discord"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Discord Profile Fetcher</h2>
-              <p className="text-gray-400">Something here</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-          <Link
-            to="/deminotes"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Demi Notes</h2>
-              <p className="text-gray-400">Something here</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-          <Link
-            to="/dn"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Notes Editor</h2>
-              <p className="text-gray-400">Something here</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-          <Link
-            to="/dcars"
-            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
-          >
-            <div className="text-left">
-              <h2 className="text-2xl font-semibold">Dream Cars</h2>
-              <p className="text-gray-400">Something here</p>
-            </div>
-            <ChevronRight className="text-gray-400" size={32} />
-          </Link>
-        </div>
+          </section>
+        ))}
       </div>
     </div>
   );
