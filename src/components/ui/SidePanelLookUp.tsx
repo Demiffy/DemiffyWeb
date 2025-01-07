@@ -84,7 +84,7 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
 
   return (
     <div
-      className={`side-panel bg-gray-900 w-80 h-full z-10 fixed right-0 text-white backdrop-blur-md bg-opacity-70 ${
+      className={`side-panel bg-primary-color w-80 h-full z-10 fixed right-0 text-white backdrop-blur-md bg-opacity-70 select-none ${
         isOpen ? "open" : "closed"
       }`}
       style={{
@@ -109,7 +109,7 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
             placeholder="Enter username"
             value={lookupUsername}
             onChange={(e) => setLookupUsername(e.target.value)}
-            className="w-full p-2 rounded bg-gray-800 text-gray-200 mb-4"
+            className="w-full p-2 rounded bg-secondary-color text-gray-200 mb-4"
           />
           <button
             onClick={handleLookupUser}
@@ -126,7 +126,7 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
               {pixelsPlaced.map((pixel, index) => (
                 <li
                   key={index}
-                  className="p-3 rounded bg-gray-800 hover:bg-gray-700 transition-all shadow-md"
+                  className="p-3 rounded bg-secondary-color hover:bg-black transition-all shadow-md"
                 >
                   <div className="flex justify-between items-center">
                     <div>
@@ -150,7 +150,7 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
         </div>
 
         {/* User Cursor Location */}
-        <div className="p-3 rounded bg-gray-800">
+        <div className="p-3 rounded bg-secondary-color">
         {userCursor ? (
             <div className="flex justify-between items-center">
             <p className="text-sm text-gray-300">

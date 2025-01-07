@@ -14,20 +14,20 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
 
   return (
     <div className="container py-20 relative">
-      <h2 className="text-3xl font-bold mb-10 text-center text-sky-400 select-none">
+      <h2 className="text-3xl font-bold mb-10 text-center text-accent-color select-none">
         Milestones
       </h2>
 
       {/* Display highest and lowest dates */}
       <div className="absolute top-[8rem] select-none">
-        <p className="text-sky-400 text-sm font-bold">{highestDate}</p>
+        <p className="text-accent-color text-sm font-bold">{highestDate}</p>
       </div>
       <div className="absolute bottom-[5rem] select-none">
-        <p className="text-sky-400 text-sm font-bold">{lowestDate}</p>
+        <p className="text-accent-color text-sm font-bold">{lowestDate}</p>
       </div>
 
       {/* Milestone Timeline */}
-      <div className="relative border-l-2 border-sky-500">
+      <div className="relative border-l-2 border-accent-color">
         {milestones.map((milestone, index) => (
           <motion.div
             key={milestone.date}
@@ -36,12 +36,12 @@ const MilestoneTimeline = ({ milestones }: { milestones: Milestone[] }) => {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: index * 0.2 }}
           >
-            <Card className="bg-slate-800 border-sky-500 overflow-hidden">
+            <Card className="bg-slate-900 border-accent-color overflow-hidden">
               <CardContent className="p-6">
                 <div className="flex justify-between items-center">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-sky-400">{milestone.title}</h3>
-                    <p className="text-sky-300 text-sm">{milestone.date}</p>
+                    <h3 className="text-xl font-bold text-accent-color">{milestone.title}</h3>
+                    <p className="text-accent-color-light text-sm">{milestone.date}</p>
                     <p className="text-gray-300 mt-2 text-lg">{milestone.description}</p>
                   </div>
 

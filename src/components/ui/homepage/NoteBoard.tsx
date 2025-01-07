@@ -386,9 +386,9 @@ const NoteBoard = () => {
   return (
     <div className="container mx-auto py-10 flex flex-col lg:flex-row justify-between space-y-8 lg:space-y-0 lg:space-x-8 relative">
       {/* Note Input Form */}
-      <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg">
+      <div className="w-full lg:w-1/2 p-6">
         <motion.h3
-          className="text-sky-400 font-bold text-lg mb-4 select-none"
+          className="text-accent-color font-bold text-lg mb-4 select-none"
           onClick={handleTitleClick}
           style={{ cursor: 'default' }}
         >
@@ -396,7 +396,7 @@ const NoteBoard = () => {
         </motion.h3>
         <form onSubmit={handleAddNote} className="space-y-4">
           <textarea
-            className={`w-full p-3 rounded-lg bg-slate-800 text-white border-sky-500 focus:ring-2 focus:ring-sky-500 ${
+            className={`w-full p-3 rounded-lg bg-primary-color text-white focus:ring-2 ${
               newNote.length > characterLimit ? 'border-red-500' : ''
             }`}
             rows={6}
@@ -416,7 +416,7 @@ const NoteBoard = () => {
           {error && <p className="text-red-500">{error}</p>}
           <motion.button
             type="submit"
-            className="w-full bg-sky-600 text-white py-3 rounded-lg hover:bg-sky-700 transition-colors"
+            className="w-full bg-accent-color-light text-white py-3 rounded-lg hover:bg-sky-700 transition-colors"
             whileHover={{ scale: 1.05 }}
             disabled={!newNote.trim()}
           >
@@ -431,8 +431,8 @@ const NoteBoard = () => {
       </div>
 
       {/* Scrollable Notes Container */}
-      <div className="w-full lg:w-1/2 bg-slate-900 p-6 rounded-lg shadow-lg h-[600px] overflow-y-auto">
-        <h3 className="text-sky-400 font-bold text-lg mb-4 select-none">Notes Board</h3>
+      <div className="w-full lg:w-1/2 p-6 h-[600px] overflow-y-auto">
+        <h3 className="text-accent-color font-bold text-lg mb-4 select-none">Notes Board</h3>
         {notes.length === 0 ? (
           <p className="text-white">
             No notes yet. Be the first to leave one!
@@ -442,7 +442,7 @@ const NoteBoard = () => {
             {notes.map((note) => (
               <motion.div
                 key={note.id}
-                className="bg-slate-800 p-4 rounded-lg relative shadow-lg"
+                className="bg-primary-color p-4 rounded-lg relative shadow-lg"
                 whileHover={{ scale: 1.02 }}
               >
                 {/* Delete Button */}

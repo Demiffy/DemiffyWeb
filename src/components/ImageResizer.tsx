@@ -201,9 +201,9 @@ const ImageResizer: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-800 text-white flex flex-col pt-12">
+    <div className="min-h-screen text-white flex flex-col pt-12">
       <header className="p-6">
-        <h1 className="text-3xl font-bold text-center">Image Resizer</h1>
+        <h1 className="text-3xl font-bold text-center text-accent-color">Image Resizer</h1>
       </header>
 
       {/* Main Content */}
@@ -224,11 +224,11 @@ const ImageResizer: React.FC = () => {
                 fileInputRef.current?.click();
               }
             }}
-            className={`flex flex-col items-center justify-center w-full h-64 p-6 border-2 border-dashed rounded-lg transition-colors duration-200 cursor-pointer border-gray-500 bg-gray-700 hover:bg-gray-600 ${
+            className={`flex flex-col items-center justify-center w-full h-64 p-6 border-2 border-dashed rounded-lg transition-colors duration-200 cursor-pointer border-gray-500 bg-primary-color hover:bg-black ${
               selectedImage ? 'lg:w-1/2' : ''
             }`}
           >
-            <ArrowUpTrayIcon className="h-12 w-12 text-blue-400 mb-4" />
+            <ArrowUpTrayIcon className="h-12 w-12 text-accent-color mb-4" />
             <p className="text-center">
               Drag and drop an image here, or click to select a file.
             </p>
@@ -243,7 +243,7 @@ const ImageResizer: React.FC = () => {
 
           {/* Settings and Controls */}
           {selectedImage && width && height && (
-            <div className="w-full lg:w-1/2 mt-6 lg:mt-0 bg-gray-700 p-6 rounded-lg shadow-md max-h-full overflow-auto">
+            <div className="w-full lg:w-1/2 mt-6 lg:mt-0 bg-primary-color p-6 rounded-lg shadow-md max-h-full overflow-auto">
               <h2 className="text-2xl font-semibold mb-4">Resize & Transform Settings</h2>
               <div className="space-y-4">
                 {/* Width Input */}
@@ -256,7 +256,7 @@ const ImageResizer: React.FC = () => {
                     id="width"
                     value={width}
                     onChange={handleWidthChange}
-                    className="flex-1 p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    className="flex-1 p-2 bg-tertiary-color border border-accent-color rounded text-white"
                     min={1}
                   />
                 </div>
@@ -271,7 +271,7 @@ const ImageResizer: React.FC = () => {
                     id="height"
                     value={height}
                     onChange={handleHeightChange}
-                    className="flex-1 p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    className="flex-1 p-2 bg-tertiary-color border border-accent-color rounded text-white"
                     min={1}
                   />
                 </div>
@@ -346,10 +346,10 @@ const ImageResizer: React.FC = () => {
         {resizedImage && width && height && (
           <div className="flex flex-col lg:flex-row lg:space-x-6 mt-6">
             {/* Resized Image */}
-            <div className="w-full lg:w-1/2 bg-gray-700 p-6 rounded-lg shadow-md flex flex-col items-center">
+            <div className="w-full lg:w-1/2 p-6 flex flex-col items-center">
               <h2 className="text-2xl font-semibold mb-4">Resized Image</h2>
               <div
-                className="bg-gray-800 p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
+                className="bg-primary-color p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
                 style={{
                   width:
                     width > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : width,
@@ -384,10 +384,10 @@ const ImageResizer: React.FC = () => {
 
             {/* Original Image Preview */}
             {selectedImage && originalDimensions && (
-              <div className="w-full lg:w-1/2 bg-gray-700 p-6 rounded-lg shadow-md flex flex-col items-center mt-6 lg:mt-0">
+              <div className="w-full lg:w-1/2 flex flex-col items-center mt-6 lg:mt-0">
                 <h2 className="text-2xl font-semibold mb-4">Original Image</h2>
                 <div
-                  className="bg-gray-800 p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
+                  className="bg-primary-color p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
                   style={{
                     width:
                       originalDimensions.width > MAX_PREVIEW_SIZE

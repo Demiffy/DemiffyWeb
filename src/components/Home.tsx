@@ -114,7 +114,7 @@ const skills = [
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen text-white bg-primary-color">
       <Helmet>
         <title>Home - Demiffy</title>
         <meta name="description" content="This is Demiffy's home page, showcasing skills and projects in IT" />
@@ -129,7 +129,7 @@ const skills = [
       </Helmet>
       <MainIntro />
       <section id="skills" className="py-20">
-        <h2 className="text-3xl font-bold text-center text-sky-400 mb-8 select-none">Skills Overview</h2>
+        <h2 className="text-3xl font-bold text-center text-accent-color mb-8 select-none">Skills Overview</h2>
         <RadarAnimation skills={skills} />
         <div className="h-8"></div>
         <SkillsOverview skills={skills} />
@@ -137,10 +137,10 @@ const skills = [
       <section id="projects" className="py-20">
         <Projects projects={projects} />
       </section>
-      <section id="milestones" className="py-20 bg-slate-800">
+      <section id="milestones" className="py-20" style={{ background: "linear-gradient(to bottom, #0d0c0b, #141312)" }}>
         <MilestoneTimeline milestones={milestones} />
       </section>
-      <section id="contact" className="py-20 bg-slate-800">
+      <section id="contact" className="py-20 bg-secondary-color">
         <NoteBoard />
       </section>
       <Footer />

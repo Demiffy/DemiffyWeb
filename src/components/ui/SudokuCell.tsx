@@ -36,7 +36,7 @@ const SudokuCell: React.FC<SudokuCellProps> = ({
       value={value !== null ? value : ''}
       onChange={handleChange}
       disabled={isInitial || isSolving}
-      className={`w-full h-12 bg-gray-700 text-center text-2xl font-bold rounded 
+      className={`w-full h-12 bg-tertiary-color text-center text-2xl font-bold rounded 
         ${(col + 1) % 3 === 0 && col !== 8 ? 'border-r-2 border-gray-500' : 'border-gray-500'} 
         ${(row + 1) % 3 === 0 && row !== 8 ? 'border-b-2 border-gray-500' : 'border-gray-500'} 
         focus:outline-none focus:ring-2 focus:ring-cyan-400 

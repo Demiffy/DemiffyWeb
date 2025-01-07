@@ -59,10 +59,10 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                 }
               </style>
             </head>
-            <body class="p-4 bg-slate-900 text-slate-100">
+            <body class="p-4 bg-slate-950 text-slate-100">
               <div class="content-container text-center space-y-4">
                 <!-- Title -->
-                <h1 class="text-3xl font-bold text-sky-400 select-none">
+                <h1 class="text-3xl font-bold text-sky-600 select-none">
                   ${projects[activeProject]?.title ?? 'Untitled Project'}
                 </h1>
   
@@ -138,8 +138,8 @@ const Projects = ({ projects }: { projects: Project[] }) => {
 
   return (
     <div className="container py-20 px-4 mx-auto">
-      <h3 className="text-2xl font-bold text-sky-400 mb-6 text-center md:text-left select-none">Projects</h3>
-      <div className="bg-slate-900 p-6 rounded-lg">
+      <h3 className="text-2xl font-bold text-accent-color mb-6 text-center md:text-left select-none">Projects</h3>
+      <div className="p-6 rounded-lg">
         <div className="flex flex-wrap justify-center md:justify-start mb-6">
           <div className="space-x-2 flex flex-wrap gap-2">
             {projects.map((project, index) => (
@@ -148,8 +148,8 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                 onClick={() => setActiveProject(index)}
                 className={`px-4 py-2 rounded-full transition-all text-sm font-semibold shadow-md select-none ${
                   activeProject === index
-                    ? 'bg-gradient-to-r from-sky-500 to-indigo-500 text-white hover:from-sky-600 hover:to-indigo-600'
-                    : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white'
+                    ? 'bg-gradient-to-r from-accent-color/90 to-accent-color-light/90 text-white hover:from-accent-color hover:to-accent-color-light'
+                    : 'bg-slate-900 text-gray-300 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 {project.title}
@@ -174,7 +174,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
             </p>
             <button
               onClick={handleViewDetails}
-              className="w-full bg-gradient-to-r from-sky-500 to-indigo-500 text-white py-3 rounded-lg hover:from-sky-600 hover:to-indigo-600 transition-colors select-none"
+              className="w-full bg-gradient-to-r from-accent-color/90 to-accent-color-light/90 text-white py-3 rounded-lg hover:from-accent-color hover:to-accent-color-light transition-colors select-none"
             >
               View Details
             </button>
@@ -198,7 +198,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
               transition={{ duration: 0.3 }}
-              className="bg-slate-900 p-6 rounded-lg shadow-lg max-w-4xl w-full relative overflow-hidden"
+              className="bg-slate-950 p-6 rounded-lg shadow-lg max-w-4xl w-full relative overflow-hidden"
               style={{ maxHeight: '90vh' }}
             >
               {/* Exit Button */}
@@ -246,7 +246,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
 
                 {/* Right: Title, Description, and Tools */}
                 <div className="md:sticky md:top-0 flex-1">
-                  <h3 className="text-2xl font-bold text-sky-400 mb-4 truncate max-w-full text-center md:text-left">
+                  <h3 className="text-2xl font-bold text-accent-color mb-4 truncate max-w-full text-center md:text-left">
                     {projects[activeProject].title}
                   </h3>
                   <p className="text-base text-gray-300 mb-6">
@@ -256,7 +256,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                   {/* Tools and Technologies Used */}
                   {projects[activeProject].technologies && (
                     <div className="mb-6">
-                      <h4 className="text-lg font-semibold text-sky-400 mb-2">
+                      <h4 className="text-lg font-semibold text-accent-color mb-2">
                         Technologies Used:
                       </h4>
                       <ul className="list-none flex flex-wrap gap-4">

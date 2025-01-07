@@ -28,11 +28,11 @@ const RadarAnimation = ({ skills }: { skills: Skill[] }) => {
 
   return (
     <div className="relative w-80 h-80 mx-auto">
-      <div className="absolute inset-0 rounded-full border-2 border-sky-500 opacity-20"></div>
-      <div className="absolute inset-8 rounded-full border-2 border-sky-500 opacity-40"></div>
-      <div className="absolute inset-16 rounded-full border-2 border-sky-500 opacity-60"></div>
+      <div className="absolute inset-0 rounded-full border-2 border-accent-color opacity-20"></div>
+      <div className="absolute inset-8 rounded-full border-2 border-accent-color opacity-40"></div>
+      <div className="absolute inset-16 rounded-full border-2 border-accent-color opacity-60"></div>
       <motion.div
-        className="absolute top-1/2 left-1/2 w-0.5 h-40 bg-sky-500 origin-bottom"
+        className="absolute top-1/2 left-1/2 w-0.5 h-40 bg-accent-color origin-bottom"
         animate={radarLine}
         style={{
           transformOrigin: 'center bottom',
@@ -61,7 +61,7 @@ const RadarAnimation = ({ skills }: { skills: Skill[] }) => {
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <Badge className="bg-sky-700 text-white">{skill.name}</Badge>
+          <Badge className="bg-accent-color text-white">{skill.name}</Badge>
         </motion.div>
       ))}
     </div>

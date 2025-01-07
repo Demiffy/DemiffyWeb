@@ -217,7 +217,7 @@ useEffect(() => {
 
   return (
     <div
-      className={`side-panel bg-gray-900 w-60 h-full z-10 fixed text-white backdrop-blur-md bg-opacity-70 ${
+      className={`side-panel bg-primary-color w-60 h-full z-10 fixed text-white backdrop-blur-md bg-opacity-70 select-none ${
         isOpen ? "open" : "closed"
       }`}
       style={{
@@ -308,7 +308,7 @@ useEffect(() => {
             type="text"
             placeholder="Enter new username"
             value={updatedUsername}
-            className="w-full p-2 rounded bg-gray-800 text-gray-200"
+            className="w-full p-2 rounded bg-secondary-color text-gray-200"
             onChange={(e) => setUpdatedUsername(e.target.value)}
             onBlur={() => handleUpdateUsername(updatedUsername)}
             onKeyDown={(e) => {
@@ -328,7 +328,7 @@ useEffect(() => {
               type="text"
               placeholder="Enter new profile picture URL"
               value={updatedPfpUrl}
-              className="w-full p-2 rounded bg-gray-800 text-gray-200"
+              className="w-full p-2 rounded bg-secondary-color text-gray-200"
               onChange={(e) => setUpdatedPfpUrl(e.target.value)}
               onBlur={() => handleUpdateProfilePicture(updatedPfpUrl)}
               onKeyDown={(e) => {

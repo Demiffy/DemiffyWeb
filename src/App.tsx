@@ -17,8 +17,6 @@ import FileConverter from './components/FileConverter';
 import GifMaker from './components/GifMaker';
 import AllLinks from './components/AllLinks';
 import ImageResizer from './components/ImageResizer';
-import VetteBase from './components/VetteBase';
-import Fnaf from './components/fnaf';
 import DemiNotes from './components/DemiNotes';
 import Destabilize from './components/Desinote';
 import DiscordUser from './components/DiscordUser';
@@ -49,8 +47,6 @@ const AnimatedRoutes = () => {
           <Route path="/gif" element={<GifMaker />} />
           <Route path="/links" element={<AllLinks />} />
           <Route path="/img" element={<ImageResizer />} />
-          <Route path="/vette" element={<VetteBase />} />
-          <Route path="/fnaf" element={<Fnaf />} />
           <Route path="/discord" element={<DiscordUser />} />
           <Route path="/deminotes" element={<DemiNotes />} />
           <Route path="/DN" element={<Destabilize />} />

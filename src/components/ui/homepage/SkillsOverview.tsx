@@ -3,14 +3,13 @@ const SkillsOverview = ({ skills }: { skills: { name: string, level: number, foc
     <div className="skills-overview container mx-auto py-12">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {skills.map((skill) => (
-          <div key={skill.name} className="bg-slate-800 p-6 rounded-lg shadow-lg border border-sky-500 relative">
-            <h3 className="text-xl font-bold text-sky-400 mb-2">{skill.name}</h3>
-            
+          <div key={skill.name} className="bg-slate-900 p-6 rounded-lg shadow-lg border border-accent-color relative">
+            <h3 className="text-xl font-bold text-accent-color mb-2">{skill.name}</h3>
             <div className="mb-4">
               <p className="text-gray-300 select-none"><strong>Proficiency Level:</strong> {skill.level}%</p>
               <div className="w-full bg-gray-700 h-2 rounded-full">
                 <div 
-                  className="bg-sky-500 h-2 rounded-full" 
+                  className="bg-sky-400 h-2 rounded-full" 
                   style={{ width: `${skill.level}%` }}>
                 </div>
               </div>

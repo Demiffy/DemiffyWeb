@@ -3,15 +3,15 @@ import { ChevronRight } from 'lucide-react';
 
 const AllLinks = () => {
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col justify-center items-center py-16 px-8">
+    <div className="min-h-screen text-white flex flex-col justify-center items-center py-16 px-8">
       <div className="container mx-auto">
-        <h1 className="text-4xl font-extrabold mb-12 text-gray-200 text-center">
+        <h1 className="text-4xl font-extrabold mb-12 text-accent-color text-center">
           All Links
         </h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <Link
             to="/"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Home</h2>
@@ -22,7 +22,7 @@ const AllLinks = () => {
 
           <Link
             to="/about"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">About</h2>
@@ -33,7 +33,7 @@ const AllLinks = () => {
 
           <Link
             to="/place"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Place</h2>
@@ -44,7 +44,7 @@ const AllLinks = () => {
 
           <Link
             to="/games/tetris"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Tetris Game</h2>
@@ -55,7 +55,7 @@ const AllLinks = () => {
 
           <Link
             to="/games/sudoku"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Sudoku Game</h2>
@@ -66,7 +66,7 @@ const AllLinks = () => {
 
           <Link
             to="/games/2048"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">2048 Game</h2>
@@ -77,7 +77,7 @@ const AllLinks = () => {
 
           <Link
             to="/proto/sowwy"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Sowwy Proto</h2>
@@ -88,7 +88,7 @@ const AllLinks = () => {
 
           <Link
             to="/cdata"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Car Database</h2>
@@ -99,7 +99,7 @@ const AllLinks = () => {
 
           <Link
             to="/ic"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">File Converter</h2>
@@ -110,7 +110,7 @@ const AllLinks = () => {
 
           <Link
             to="/gif"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">GIF Maker</h2>
@@ -121,7 +121,7 @@ const AllLinks = () => {
 
           <Link
             to="/img"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
               <h2 className="text-2xl font-semibold">Image Resizer & Rotater</h2>
@@ -131,12 +131,42 @@ const AllLinks = () => {
           </Link>
 
           <Link
-            to="/vette"
-            className="relative p-6 bg-gray-800 rounded-lg shadow-lg hover:bg-gray-700 transition-all flex justify-between items-center"
+            to="/discord"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
           >
             <div className="text-left">
-              <h2 className="text-2xl font-semibold">Vette C5s</h2>
-              <p className="text-gray-400">Check out some Vette C5s</p>
+              <h2 className="text-2xl font-semibold">Discord Profile Fetcher</h2>
+              <p className="text-gray-400">Something here</p>
+            </div>
+            <ChevronRight className="text-gray-400" size={32} />
+          </Link>
+          <Link
+            to="/deminotes"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
+          >
+            <div className="text-left">
+              <h2 className="text-2xl font-semibold">Demi Notes</h2>
+              <p className="text-gray-400">Something here</p>
+            </div>
+            <ChevronRight className="text-gray-400" size={32} />
+          </Link>
+          <Link
+            to="/dn"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
+          >
+            <div className="text-left">
+              <h2 className="text-2xl font-semibold">Notes Editor</h2>
+              <p className="text-gray-400">Something here</p>
+            </div>
+            <ChevronRight className="text-gray-400" size={32} />
+          </Link>
+          <Link
+            to="/dcars"
+            className="relative p-6 bg-primary-color rounded-lg shadow-lg hover:bg-tertiary-color transition-all flex justify-between items-center"
+          >
+            <div className="text-left">
+              <h2 className="text-2xl font-semibold">Dream Cars</h2>
+              <p className="text-gray-400">Something here</p>
             </div>
             <ChevronRight className="text-gray-400" size={32} />
           </Link>

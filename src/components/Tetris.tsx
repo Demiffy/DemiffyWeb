@@ -244,7 +244,7 @@ const TetrisGame: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-800">
+    <div className="min-h-screen flex flex-col">
       <div
         className="flex-grow flex justify-center items-center outline-none focus:outline-none p-8 mt-9 relative"
         tabIndex={0}

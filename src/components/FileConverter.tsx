@@ -381,7 +381,7 @@ const FileConverter: React.FC = () => {
   return (
     <div className="min-h-screen text-white">
       <section className="min-h-screen flex flex-col items-center text-white p-12">
-        <h2 className="text-3xl font-bold mb-6">IMG Converter</h2>
+        <h2 className="text-3xl font-bold mb-6 text-accent-color">IMG Converter</h2>
 
         <div className="flex flex-col lg:flex-row w-full max-w-5xl space-y-6 lg:space-y-0 lg:space-x-6">
           {/* Drag and Drop Area */}
@@ -401,11 +401,11 @@ const FileConverter: React.FC = () => {
             }}
             className={`flex flex-col items-center justify-center w-full lg:w-1/2 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer ${
               isDragging
-                ? 'border-blue-400 bg-gray-600'
-                : 'border-gray-500 bg-gray-700 hover:bg-gray-600'
+                ? 'border-blue-400 bg-black'
+                : 'border-gray-500 bg-primary-color hover:bg-black'
             }`}
           >
-            <ArrowUpTrayIcon className="h-12 w-12 text-blue-400 mb-4" />
+            <ArrowUpTrayIcon className="h-12 w-12 text-accent-color mb-4" />
             <p className="text-center mb-4">
               {isDragging
                 ? 'Release to upload your files'
@@ -423,7 +423,7 @@ const FileConverter: React.FC = () => {
 
           {/* Output Format Selection and Convert Button */}
           <div className="flex flex-col w-full lg:w-1/2 space-y-4">
-            <div className="bg-gray-700 p-6 rounded shadow-md">
+            <div className="bg-primary-color p-6 rounded shadow-md">
               <label
                 htmlFor="outputFormat"
                 className="block mb-2 text-sm font-medium"
@@ -434,7 +434,7 @@ const FileConverter: React.FC = () => {
                 id="outputFormat"
                 value={outputFormat}
                 onChange={handleOutputFormatChange}
-                className="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                className="w-full p-2 bg-tertiary-color border border-accent-color rounded text-white"
               >
                 {outputFormatOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -445,7 +445,7 @@ const FileConverter: React.FC = () => {
             </div>
 
             {/* Add Image from URL */}
-            <div className="bg-gray-700 p-6 rounded shadow-md flex flex-col">
+            <div className="bg-primary-color p-6 rounded shadow-md flex flex-col">
               <label
                 htmlFor="imageUrl"
                 className="block mb-2 text-sm font-medium"
@@ -459,7 +459,7 @@ const FileConverter: React.FC = () => {
                   value={imageUrl}
                   onChange={handleImageUrlChange}
                   placeholder="Enter image URL"
-                  className="flex-grow p-2 bg-gray-600 border border-gray-500 rounded-l text-white focus:outline-none"
+                  className="flex-grow p-2 bg-tertiary-color border border-accent-color rounded-l text-white focus:outline-none"
                 />
                 <button
                   onClick={handleAddImageFromUrl}
@@ -504,7 +504,7 @@ const FileConverter: React.FC = () => {
               {selectedFiles.map((fileData, index) => (
                 <li
                   key={index}
-                  className="relative flex items-center justify-between bg-gray-700 p-3 rounded"
+                  className="relative flex items-center justify-between bg-primary-color p-3 rounded"
                 >
                   <div>
                     <p className="font-medium">{fileData.file.name}</p>
@@ -556,7 +556,7 @@ const FileConverter: React.FC = () => {
                 fileData.convertedUrl ? (
                   <div
                     key={index}
-                    className="bg-gray-700 p-4 rounded shadow-md"
+                    className="bg-primary-color p-4 rounded shadow-md"
                   >
                     <img
                       src={fileData.convertedUrl}

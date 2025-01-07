@@ -298,7 +298,7 @@ const Sudoku: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-900 text-gray-100 p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col text-gray-100 p-4 relative overflow-hidden">
       {isCompleted && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <Bubble color="#ec4899" /> {/* Pink */}
@@ -314,7 +314,7 @@ const Sudoku: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Sudoku Grid */}
           <div className="col-span-2">
-            <div className="grid grid-cols-9 gap-1 bg-gray-800 p-2 rounded-lg shadow-lg">
+            <div className="grid grid-cols-9 gap-1 bg-primary-color p-2 rounded-lg shadow-lg">
               {grid.map((rowValues, rowIndex) =>
                 rowValues.map((cell, colIndex) => (
                   <SudokuCell
@@ -339,7 +339,7 @@ const Sudoku: React.FC = () => {
           {/* Game Info and Controls */}
           <div className="space-y-6">
             {/* Game Info */}
-            <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+            <div className="bg-primary-color p-4 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4 text-cyan-400">Game Info</h2>
               <div className="flex justify-between items-center mb-2">
                 <span className="flex items-center">
@@ -354,7 +354,7 @@ const Sudoku: React.FC = () => {
             </div>
   
             {/* Controls */}
-            <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+            <div className="bg-primary-color p-4 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4 text-cyan-400">Controls</h2>
               <div className="grid grid-cols-2 gap-2">
                 <Button

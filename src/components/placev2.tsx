@@ -1077,7 +1077,7 @@ return (
       {/* Pixel Info Tooltip */}
       {scale >= 1 && hoveredPixelInfo && (
       <div
-        className="absolute bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 text-sm backdrop-blur-md select-none"
+        className="absolute bg-secondary-color/90 text-white p-4 rounded-lg shadow-lg z-50 text-sm backdrop-blur-md select-none"
         style={{
           left: `${
             hoveredPixel 
@@ -1150,7 +1150,7 @@ return (
           ))}
 
           {/* Eraser Icon */}
-          <div className="flex justify-center items-center">
+          <div className="flex justify-center items-center select-none">
             <div
               className={`color-square border-red-500 w-11 h-11 rounded border transition-all ${
                 isEraserSelected

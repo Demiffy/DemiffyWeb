@@ -285,7 +285,7 @@ const GifMaker: React.FC = () => {
   return (
     <div className="min-h-screen text-white p-12">
       <section className="min-h-screen flex flex-col items-center text-white p-6">
-        <h2 className="text-3xl font-bold mb-6">GIF Maker</h2>
+        <h2 className="text-3xl font-bold mb-6 text-accent-color">GIF Maker</h2>
 
         <div className="flex flex-col lg:flex-row w-full max-w-7xl space-y-6 lg:space-y-0 lg:space-x-6">
           {/* Upload Area */}
@@ -299,7 +299,7 @@ const GifMaker: React.FC = () => {
                 fileInputRef.current?.click();
               }
             }}
-            className="flex flex-col items-center justify-center w-full lg:w-1/3 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer border-gray-500 bg-gray-700 hover:bg-gray-600"
+            className="flex flex-col items-center justify-center w-full lg:w-1/3 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer border-gray-500 bg-primary-color hover:bg-black"
           >
             <ArrowUpTrayIcon className="h-12 w-12 text-blue-400 mb-4" />
             <p className="text-center mb-4">Drag and drop images here, or click to select files.</p>
@@ -315,7 +315,7 @@ const GifMaker: React.FC = () => {
 
           {/* Settings and Generate Button */}
           <div className="flex flex-col w-full lg:w-2/3 space-y-4">
-            <div className="bg-gray-700 p-6 rounded shadow-md">
+            <div className="bg-primary-color p-6 rounded shadow-md">
               <h3 className="text-xl font-semibold mb-4">Settings</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Frame Delay */}
@@ -328,7 +328,7 @@ const GifMaker: React.FC = () => {
                     id="frameDelay"
                     value={frameDelay}
                     onChange={handleFrameDelayChange}
-                    className="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    className="w-full p-2 bg-tertiary-color border border-accent-color rounded text-white"
                     min={20}
                   />
                 </div>
@@ -343,7 +343,7 @@ const GifMaker: React.FC = () => {
                     id="loopCount"
                     value={loopCount}
                     onChange={handleLoopCountChange}
-                    className="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    className="w-full p-2 bg-tertiary-color border border-accent-color rounded text-white"
                     min={0}
                   />
                 </div>
@@ -358,7 +358,7 @@ const GifMaker: React.FC = () => {
                     id="gifQuality"
                     value={gifQuality}
                     onChange={handleGifQualityChange}
-                    className="w-full p-2 bg-gray-600 border border-gray-500 rounded text-white"
+                    className="w-full p-2 bg-tertiary-color border border-accent-color rounded text-white"
                     min={1}
                     max={30}
                   />
@@ -483,7 +483,7 @@ const GifMaker: React.FC = () => {
               {selectedImages.map((imageData, index) => (
                 <li
                   key={imageData.id}
-                  className="relative bg-gray-700 p-2 rounded flex flex-col items-center min-w-[150px]"
+                  className="relative bg-primary-color p-2 rounded flex flex-col items-center min-w-[150px]"
                 >
                   <img src={imageData.url} alt={`Selected ${index}`} className="w-full h-auto rounded mb-2" />
                   {imageData.error && <p className="text-red-400 text-sm">{imageData.error}</p>}
@@ -546,7 +546,7 @@ const GifMaker: React.FC = () => {
         {gifUrl && (
           <div className="w-full max-w-7xl mt-6">
             <h3 className="text-2xl font-semibold mb-4">Generated GIF:</h3>
-            <div className="bg-gray-700 p-4 rounded shadow-md flex flex-col items-center">
+            <div className="bg-primary-color p-4 rounded shadow-md flex flex-col items-center">
               <img
                 src={gifUrl}
                 alt="Generated GIF"

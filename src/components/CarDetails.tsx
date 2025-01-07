@@ -54,7 +54,7 @@ export default function CarDetails() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-900 text-white pt-16 pb-8">
+    <div className="min-h-screen flex flex-col text-white pt-16 pb-8">
       {/* Back to Cars Link */}
       <div className="container mx-auto px-4 py-4">
         <Link to="/cdata" className="text-cyan-400 hover:text-cyan-300 transition-colors flex items-center">
@@ -99,14 +99,14 @@ export default function CarDetails() {
             <div className="mt-4 flex justify-between">
               <button
                 onClick={handleShare}
-                className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center"
+                className="bg-primary-color hover:bg-black text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center"
               >
                 <Share2 className="mr-2" size={18} />
                 {shareText}
               </button>
               <button
                 onClick={handleSave}
-                className={`bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center`}
+                className={`bg-primary-color hover:bg-black text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 flex items-center`}
               >
                 <Heart className={`mr-2 ${isSaved ? 'text-red-500' : 'text-white'}`} size={18} />
                 {isSaved ? 'Saved' : 'Save'}
@@ -125,7 +125,7 @@ export default function CarDetails() {
                   key={year}
                   onClick={() => setActiveTab(parseInt(year))}
                   className={`px-4 py-2 rounded-full flex-shrink-0 ${
-                    activeTab === parseInt(year) ? 'bg-cyan-600 text-white' : 'bg-gray-700 text-gray-300'
+                    activeTab === parseInt(year) ? 'bg-cyan-600 text-white' : 'bg-primary-color text-gray-300'
                   }`}
                 >
                   {year}
@@ -133,27 +133,27 @@ export default function CarDetails() {
               ))}
             </div>
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-primary-color p-4 rounded-lg">
                 <p className="text-sm text-gray-400">Power</p>
                 <p className="text-lg font-semibold">{car.modelYears[activeTab].power}</p>
               </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-primary-color p-4 rounded-lg">
                 <p className="text-sm text-gray-400">Torque</p>
                 <p className="text-lg font-semibold">{car.modelYears[activeTab].torque}</p>
               </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-primary-color p-4 rounded-lg">
                 <p className="text-sm text-gray-400">0-100 km/h</p>
                 <p className="text-lg font-semibold">{car.modelYears[activeTab].acceleration}</p>
               </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-primary-color p-4 rounded-lg">
                 <p className="text-sm text-gray-400">Top Speed</p>
                 <p className="text-lg font-semibold">{car.modelYears[activeTab].topSpeed}</p>
               </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-primary-color p-4 rounded-lg">
                 <p className="text-sm text-gray-400">Fuel Economy</p>
                 <p className="text-lg font-semibold">{car.modelYears[activeTab].fuelEconomy}</p>
               </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-primary-color p-4 rounded-lg">
                 <p className="text-sm text-gray-400">Weight</p>
                 <p className="text-lg font-semibold">{car.modelYears[activeTab].weight}</p>
               </div>
@@ -166,7 +166,7 @@ export default function CarDetails() {
           <h2 className="text-2xl font-bold mb-4">Key Features</h2>
           <ul className="grid md:grid-cols-2 gap-4">
             {car.features[activeTab].map((feature, index) => (
-              <li key={index} className="bg-gray-800 p-4 rounded-lg flex items-center">
+              <li key={index} className="bg-primary-color p-4 rounded-lg flex items-center">
                 <ChevronRight className="text-cyan-400 mr-2" size={18} />
                 {feature}
               </li>
@@ -177,7 +177,7 @@ export default function CarDetails() {
         {/* Common Issues */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-4">Common Issues</h2>
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-primary-color rounded-lg p-6">
             <ul className="space-y-2">
               {car.commonIssues[activeTab].map((issue, index) => (
                 <li key={index} className="flex items-start">
@@ -199,7 +199,7 @@ export default function CarDetails() {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-gray-800 p-4 rounded-lg flex items-center justify-between hover:bg-gray-700 transition-colors"
+                className="bg-primary-color p-4 rounded-lg flex items-center justify-between hover:bg-gray-700 transition-colors"
               >
                 <span>{link.name}</span>
                 <ShoppingCart className="text-cyan-400" size={18} />

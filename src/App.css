@@ -9,7 +9,7 @@ html {
 html, body, #root {
   height: 100%;
   width: 100%;
-  background-color: #1e293b;
+  background-color: #141312;
 }
 
 body {
@@ -33,7 +33,7 @@ body {
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #1e293b;
+  background-color: #141312;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -43,11 +43,7 @@ body {
 
 a {
   font-weight: 500;
-  color: #646cff;
   text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
 }
 
 button {
@@ -58,6 +54,7 @@ button {
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
+  color: white;
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -82,97 +79,6 @@ button:focus-visible {
   }
 }
 
-.compass-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  margin: 2rem;
-}
-
-.compass-title {
-  font-size: 1.8rem;
-  color: #f1f5f9;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-}
-
-.compass {
-  position: relative;
-  width: 250px;
-  height: 250px;
-  border: 5px solid #0af;
-  border-radius: 50%;
-  background: radial-gradient(circle at center, #1b263b, #141e30);
-  box-shadow: 0px 0px 40px rgba(0, 170, 255, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  position: relative;
-}
-
-.compass-directions {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.north, .south, .east, .west {
-  position: absolute;
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #0af;
-  text-shadow: 0 0 10px rgba(0, 170, 255, 0.7);
-}
-
-.north {
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.south {
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.east {
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.west {
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.plane {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
-  transform-origin: center;
-}
-
-.compass-glow {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at center, rgba(0, 170, 255, 0.2), rgba(0, 170, 255, 0.05));
-  border-radius: 50%;
-  z-index: -1;
-  box-shadow: 0px 0px 40px rgba(0, 170, 255, 0.5);
-  animation: glow 3s infinite alternate;
-}
-
 @keyframes glow {
   0% {
     box-shadow: 0 0 40px rgba(0, 170, 255, 0.5);
@@ -188,28 +94,16 @@ button:focus-visible {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: radial-gradient(circle, #1b263b, #141e30);
+  background: radial-gradient(circle, #141312, #0d0c0b);
 }
 
 .profile-container {
-  background: radial-gradient(circle at center, #1b263b, #141e30);
+  background: radial-gradient(circle at center, #2666CF, #08081f);
   padding: 1rem;
   border-radius: 50%;
   display: inline-block;
   box-shadow: 0 10px 30px rgba(0, 170, 255, 0.2);
-}
-
-button {
-  background-color: #3b82f6;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
-  border-radius: 10px;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: #2563eb;
+  user-select: none;
 }
 
 /* Scroll Indicator */
@@ -314,19 +208,6 @@ button:hover {
   background-color: #4f46e5;
   border-radius: 10px;
   border: 2px solid #1e293b;
-}
-
-body {
-  scrollbar-width: thin;
-  scrollbar-color: #4f46e5 #1e293b;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: #2563eb;
-}
-
-::-webkit-scrollbar-thumb:active {
-  background-color: #3b82f6;
 }
 
 /* Grid container */

@@ -59,7 +59,7 @@ const About = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <p className="text-white font-medium">
+                <p className="text-white font-medium select-none">
                   This section contains sensitive information and is protected by a password. I do not wish to have this content
                   publicly displayed.
                 </p>
@@ -69,12 +69,12 @@ const About = () => {
 
           {!isLoggedIn ? (
             // Login Form
-            <div className="login-form-wrapper max-w-sm mx-auto bg-slate-900 p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-bold text-sky-400 mb-4">Login to Access About Section</h3>
+            <div className="login-form-wrapper max-w-sm mx-auto bg-primary-color p-6 rounded-lg shadow-lg select-none">
+              <h3 className="text-2xl font-bold text-accent-color mb-4">Login to Access About Section</h3>
               <form onSubmit={handleLogin} className="space-y-6">
                 {error && <p className="text-red-500 text-sm">{error}</p>}
                 <div>
-                  <label htmlFor="username" className="block text-sky-400 mb-2 text-sm font-medium">
+                  <label htmlFor="username" className="block text-accent-color mb-2 text-sm font-medium">
                     Username
                   </label>
                   <input
@@ -82,12 +82,12 @@ const About = () => {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-slate-700 border-sky-500 text-white py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                    className="w-full bg-slate-700 border-accent-color-light text-white py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
                     placeholder="Enter your username"
                   />
                 </div>
                 <div>
-                  <label htmlFor="password" className="block text-sky-400 mb-2 text-sm font-medium">
+                  <label htmlFor="password" className="block text-accent-color mb-2 text-sm font-medium">
                     Password
                   </label>
                   <input
@@ -95,13 +95,13 @@ const About = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-700 border-sky-500 text-white py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                    className="w-full bg-slate-700 border-accent-color-light text-white py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
                     placeholder="Enter your password"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-sky-600 text-white py-3 rounded-lg hover:bg-sky-700 transition-colors"
+                  className="w-full bg-accent-color-light text-white py-3 rounded-lg hover:bg-sky-700 transition-colors"
                 >
                   Login
                 </button>
@@ -109,8 +109,8 @@ const About = () => {
             </div>
           ) : (
             // About
-            <div className="about-content-wrapper bg-slate-900 p-6 rounded-lg shadow-lg max-w-3xl mx-auto">
-              <h1 className="text-3xl font-bold text-sky-400 mb-4">About Me</h1>
+            <div className="about-content-wrapper bg-primary-color p-6 rounded-lg shadow-lg max-w-3xl mx-auto select-none">
+              <h1 className="text-3xl font-bold text-accent-color mb-4">About Me</h1>
               <p className="text-xl text-gray-300">
                 I am an 18-year-old Czech male interested in IT, army technologies, and aspiring to be an army jet pilot. 
                 My journey has been focused on learning cutting-edge technology while integrating my passion for aviation 
