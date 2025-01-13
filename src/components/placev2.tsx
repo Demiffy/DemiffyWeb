@@ -4,6 +4,7 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set, get, update, remove, onDisconnect } from 'firebase/database';
 import SidePanel from './ui/SidePanel';
 import SidePanelLookUp from './ui/SidePanelLookUp';
+import ChatBox from './ui/ChatBox';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -923,6 +924,8 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
 
 return (
   <div className="h-screen bg-gray-900 text-white">
+
+  {isSignedIn && <ChatBox currentUsername={userData.username} />}
 
     {!isSignedIn && (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
