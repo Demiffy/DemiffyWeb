@@ -172,8 +172,8 @@ const pasteImageToCanvas = async () => {
     return;
   }
 
-  const validX = Math.max(0, pasteCoords.x);
-  const validY = Math.max(0, pasteCoords.y);
+  const validX = pasteCoords.x ?? 0;
+  const validY = pasteCoords.y ?? 0;  
 
   console.log(`Pasting image at valid coordinates: (${validX}, ${validY})`);
 
@@ -192,6 +192,8 @@ const pasteImageToCanvas = async () => {
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const { data, width, height } = imageData;
 
+  const updates: { [key: string]: any } = {};
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const index = (y * width + x) * 4;
@@ -203,20 +205,29 @@ const pasteImageToCanvas = async () => {
       if (a === 0) continue;
 
       const colorIndex = findClosestColorIndex(r, g, b);
-
       const pixelX = validX + x;
       const pixelY = validY + y;
-      const pixelRef = ref(db, `canvas/${pixelX}_${pixelY}`);
+      const pixelKey = `${pixelX}_${pixelY}`;
 
-      try {
-        await set(pixelRef, { x: pixelX, y: pixelY, color: colorIndex, placedBy: userData.username });
-      } catch (error) {
-        console.error(`Failed to write pixel (${pixelX}, ${pixelY})`, error);
-      }
+      updates[`canvas/${pixelKey}`] = {
+        x: pixelX,
+        y: pixelY,
+        color: colorIndex,
+        placedBy: userData.username,
+        timestamp: Date.now(),
+      };
     }
   }
 
-  customAlert("Image pasted to canvas!", "success");
+  try {
+    await update(ref(db), updates);
+    console.log("Batch image paste successful.");
+    customAlert("Image pasted to canvas!", "success");
+  } catch (error) {
+    console.error("Failed to perform batch image paste:", error);
+    customAlert("Failed to paste image. Please try again.", "error");
+  }
+
   setIsPreviewActive(false);
 };
 
