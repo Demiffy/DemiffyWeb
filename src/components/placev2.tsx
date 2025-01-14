@@ -81,6 +81,9 @@ const PlaceV2: React.FC = () => {
     pfpurl: "https://demiffy.com/defaultuser.png",
   });
   const canAccessAdminModal = userData.role === "Developer";
+  const [brushSize, setBrushSize] = useState<number>(1);
+  const [showBrushMenu, setShowBrushMenu] = useState<boolean>(false);
+  const [brushMenuPosition, setBrushMenuPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Listen for keyboard events for admin modal
   useEffect(() => {
@@ -415,29 +418,25 @@ useEffect(() => {
             ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
           });
   
-          // Highlight hovered pixel
           if (hoveredPixel) {
-            const highlightX = hoveredPixel.x * pixelSize;
-            const highlightY = hoveredPixel.y * pixelSize;
-  
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
-            ctx.fillRect(
-              highlightX,
-              highlightY,
-              adjustedPixelSize,
-              adjustedPixelSize
-            );
-  
+            const halfBrush = Math.floor(brushSize / 2);
+            const regionX = (hoveredPixel.x - halfBrush) * pixelSize;
+            const regionY = (hoveredPixel.y - halfBrush) * pixelSize;
+            const regionSize = brushSize * adjustedPixelSize;
+
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'; 
+            ctx.fillRect(regionX, regionY, regionSize, regionSize);
+
             ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
             ctx.lineWidth = 2 / scale;
             ctx.strokeRect(
-              highlightX + 1 / scale,
-              highlightY + 1 / scale,
-              adjustedPixelSize - 2 / scale,
-              adjustedPixelSize - 2 / scale
+              regionX + 1 / scale,
+              regionY + 1 / scale,
+              regionSize - 2 / scale,
+              regionSize - 2 / scale
             );
           }
-  
+
           // Draw grid if zoomed in
           if (scale > 1) {
             ctx.strokeStyle = '#CCCCCC';
@@ -488,7 +487,8 @@ useEffect(() => {
       isPreviewActive,
       uploadedImage,
       pasteCoords,
-      colors
+      colors,
+      brushSize
     ]
   );  
 
@@ -507,41 +507,66 @@ useEffect(() => {
   // Handle placing/removing a pixel
   const handleCanvasInteraction = (x: number, y: number) => {
     if (!userData.username) {
-      customAlert(
-        "Please sign in to place pixels.",
-        "tip"
-      );
+      customAlert("Please sign in to place pixels.", "tip");
       return;
     }
   
     const adjustedX = (x - offset.x) / scale;
     const adjustedY = (y - offset.y) / scale;
-  
     const pixelX = Math.floor(adjustedX / pixelSize);
     const pixelY = Math.floor(adjustedY / pixelSize);
-  
-    const pixelKey = `${pixelX}_${pixelY}`;
     const timestamp = Date.now();
-
-    pixelBufferRef.current[pixelKey] = {
-      x: pixelX,
-      y: pixelY,
-      color: isEraserSelected ? -1 : selectedColor,
-      placedBy: userData.username,
-      timestamp,
-    };
   
-    setLocalPixels((prev) => [
-      ...prev,
-      {
-        x: pixelX,
-        y: pixelY,
-        color: isEraserSelected ? -1 : selectedColor,
-        placedBy: userData.username,
-        timestamp,
+    for (let dy = -Math.floor(brushSize/2); dy <= Math.floor(brushSize/2); dy++) {
+      for (let dx = -Math.floor(brushSize/2); dx <= Math.floor(brushSize/2); dx++) {
+        const targetX = pixelX + dx;
+        const targetY = pixelY + dy;
+        const key = `${targetX}_${targetY}`;
+  
+        pixelBufferRef.current[key] = {
+          x: targetX,
+          y: targetY,
+          color: isEraserSelected ? -1 : selectedColor,
+          placedBy: userData.username,
+          timestamp,
+        };
+  
+        setLocalPixels((prev) => [
+          ...prev,
+          {
+            x: targetX,
+            y: targetY,
+            color: isEraserSelected ? -1 : selectedColor,
+            placedBy: userData.username,
+            timestamp,
+          }
+        ]);
       }
-    ]);
-  };  
+    }
+  };
+  
+  const handleContextMenu = (event: MouseEvent) => {
+    event.preventDefault();
+    setShowBrushMenu(true);
+    setBrushMenuPosition({ x: event.clientX, y: event.clientY });
+  };
+  
+  const selectBrushSize = (size: number) => {
+    setBrushSize(size);
+    setShowBrushMenu(false);
+
+    drawCanvas(canvasData, hoveredPixel, localPixels);
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+  
+    canvas.addEventListener('contextmenu', handleContextMenu);
+    return () => {
+      canvas.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [canvasRef]);
 
   const flushPixelBuffer = async () => {
     const bufferedPixels = pixelBufferRef.current;
@@ -587,12 +612,18 @@ useEffect(() => {
         setIsPanning(true);
         setLastMousePos({ x: event.clientX, y: event.clientY });
     }
+
+    if (showBrushMenu) {
+      setShowBrushMenu(false);
+    }
 };
 
 
 useEffect(() => {
   drawCanvas(canvasData, hoveredPixel, localPixels);
 }, [canvasData, hoveredPixel, localPixels, drawCanvas]);
+
+const MENU_CLOSE_THRESHOLD = 20;
 
 // Event handler mouse move
 const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
@@ -633,6 +664,15 @@ const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>)
     const deltaY = event.clientY - lastMousePos.y;
     setOffset((prev) => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
     setLastMousePos({ x: event.clientX, y: event.clientY });
+  }
+
+  if (showBrushMenu) {
+    const dx = event.clientX - brushMenuPosition.x;
+    const dy = event.clientY - brushMenuPosition.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > MENU_CLOSE_THRESHOLD) {
+      setShowBrushMenu(false);
+    }
   }
 };
 
@@ -954,6 +994,49 @@ return (
             className="w-full py-2 rounded bg-blue-700 hover:bg-blue-600 text-white font-bold"
           >
             Sign In
+          </button>
+        </div>
+      </div>
+    )}
+
+      {/* Brush Size Context Menu */}
+      {showBrushMenu && (
+      <div
+        className="absolute z-50 p-4 rounded-xl shadow-2xl backdrop-blur-md transition-transform transform-gpu motion-reduce:transition-none"
+        style={{
+          top: brushMenuPosition.y,
+          left: brushMenuPosition.x,
+          background:
+            "linear-gradient(135deg, #141312 0%, #1b1a19 100%)",
+        }}
+      >
+        <div className="flex flex-col space-y-4">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold text-white">Select Brush Size</h3>
+          </div>
+          <div className="flex space-x-4 justify-center">
+            {[1, 3, 5, 7].map(size => (
+              <button
+                key={size}
+                className="flex flex-col items-center justify-center focus:outline-none transition-transform transform hover:scale-110"
+                onClick={() => selectBrushSize(size)}
+              >
+                <div
+                  className="bg-blue-500 rounded-full mb-1 shadow-md"
+                  style={{
+                    width: `${size * 6}px`,
+                    height: `${size * 6}px`,
+                  }}
+                />
+                <span className="text-xs text-gray-200">{size}×{size}</span>
+              </button>
+            ))}
+          </div>
+          <button
+            className="w-full py-2 mt-2 bg-red-600 text-white rounded-md text-center hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors"
+            onClick={() => setShowBrushMenu(false)}
+          >
+            Cancel
           </button>
         </div>
       </div>
