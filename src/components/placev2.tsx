@@ -85,6 +85,52 @@ const PlaceV2: React.FC = () => {
   const [showBrushMenu, setShowBrushMenu] = useState<boolean>(false);
   const [brushMenuPosition, setBrushMenuPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
+  const achievementsList = [
+    // **Beginner Achievements**
+    { id: 'first_pixel', name: 'Pixel Pioneer', description: 'Placed your very first pixel. Welcome aboard!', imgSrc: '/achievements/first_pixel.png' },
+    { id: 'five_pixels', name: 'Getting the Hang of It', description: 'Placed 5 pixels. A great start!', imgSrc: '/achievements/five_pixels.png' },
+    { id: 'ten_pixels', name: 'Double Digits', description: 'Placed 10 pixels. Keep it going!', imgSrc: '/achievements/ten_pixels.png' },
+  
+    // **Engagement-Based Achievements**
+    { id: 'canvas_regular', name: 'Canvas Regular', description: 'Logged in and interacted 10 times!', imgSrc: '/achievements/canvas_regular.png' },
+    { id: 'dedicated_artist', name: 'Canvas Keeper', description: 'Spent 1 hour creating art on the canvas.', imgSrc: '/achievements/dedicated_artist.png' },
+    { id: 'persistent_painter', name: 'Persistent Painter', description: 'Stayed active for 30 minutes in one session.', imgSrc: '/achievements/persistent_painter.png' },
+    { id: 'legendary_creator', name: 'Legendary Creator', description: 'Placed an astonishing 10,000 pixels!', imgSrc: '/achievements/legendary_creator.png' },
+  
+    // **Color & Creativity Achievements**
+    { id: 'color_virtuoso', name: 'Color Virtuoso', description: 'Used every color in the palette at least once!', imgSrc: '/achievements/color_virtuoso.png' },
+    { id: 'harmony_creator', name: 'Harmony Creator', description: 'Placed a pixel with each color in order of the rainbow.', imgSrc: '/achievements/harmony_creator.png' },
+    { id: 'precision_madness', name: 'Precision Madness', description: 'Placed 20 pixels in a perfect line.', imgSrc: '/achievements/precision_madness.png' },
+  
+    // **Time & Event Achievements**
+    { id: 'night_owl', name: 'Moonlit Artist', description: 'Placed pixels between 12 AM and 4 AM.', imgSrc: '/achievements/night_owl.png' },
+    { id: 'early_bird', name: 'Dawn Creator', description: 'Placed pixels before 8 AM.', imgSrc: '/achievements/early_bird.png' },
+    { id: 'weekender', name: 'Weekend Warrior', description: 'Logged in and placed pixels on a weekend.', imgSrc: '/achievements/weekender.png' },
+    { id: 'long_runner', name: 'Marathon Artist', description: 'Stayed active for 3 hours straight!', imgSrc: '/achievements/long_runner.png' },
+    { id: 'time_traveler', name: 'Time Traveler', description: 'Logged in at least once every day for a week.', imgSrc: '/achievements/time_traveler.png' },
+  
+    // **Interaction-Based Achievements**
+    { id: 'community_builder', name: 'Friendly Neighbor', description: 'Sent 10 messages in the chat.', imgSrc: '/achievements/community_builder.png' },
+    { id: 'chatterbox', name: 'Chatterbox', description: 'Sent 50 messages in chat. Talkative much?', imgSrc: '/achievements/chatterbox.png' },
+  
+    // **Tool Usage Achievements**
+    { id: 'eraser_wizard', name: 'Eraser Wizard', description: 'Erased 100 pixels. Cleaning up nicely!', imgSrc: '/achievements/eraser_wizard.png' },
+    { id: 'brush_master', name: 'Brush Master', description: 'Used every brush size in a single session.', imgSrc: '/achievements/brush_master.png' },
+  
+    // **Streak Achievements**
+    { id: 'streak_keeper', name: 'Daily Devotee', description: 'Logged in for 7 consecutive days.', imgSrc: '/achievements/streak_keeper.png' },
+  
+    // **Challenge & Fun Achievements**
+    { id: 'canvas_click', name: 'How Is That Possible', description: 'Clicked on the canvas 50 times without placing a pixel.', imgSrc: '/achievements/canvas_click.png' },
+    { id: 'the_perfectionist', name: 'The Perfectionist', description: 'Replaced 50 pixels placed by a different user.', imgSrc: '/achievements/the_perfectionist.png' },
+    { id: 'hidden_masterpiece', name: 'Hidden Masterpiece', description: 'Placed a pixel in a hidden or remote area of the canvas.', imgSrc: '/achievements/hidden_masterpiece.png' },
+  
+    // **Exclusive & Secret Achievements**
+    { id: 'completionist', name: 'The Completionist', description: 'Unlocked all available achievements!', imgSrc: '/achievements/completionist.png' },
+  ];  
+
   // Listen for keyboard events for admin modal
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -973,6 +1019,75 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
     customAlert("Canvas exported as SVG!", "success");
   };  
 
+  const awardAchievement = async (achievementId: string) => {
+    if (unlockedAchievements.includes(achievementId)) return;
+    try {
+      const achievementRef = ref(db, `users/${userData.username}/achievements/${achievementId}`);
+      await set(achievementRef, true);
+      setUnlockedAchievements(prev => [...prev, achievementId]);
+      customAlert(`Achievement Unlocked: ${achievementId}`, "success");
+    } catch (error) {
+      console.error("Error awarding achievement:", error);
+      customAlert("Failed to award achievement. Try again.", "error");
+    }
+  };
+  
+  useEffect(() => {
+    if (!userData.username) return;
+    const achievementsRef = ref(db, `users/${userData.username}/achievements`);
+    const unsubscribe = onValue(achievementsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setUnlockedAchievements(Object.keys(data).filter(key => data[key] === true));
+      } else {
+        setUnlockedAchievements([]);
+      }
+    });
+    return () => unsubscribe();
+  }, [db, userData.username]);
+
+  const checkAndAwardAchievements = async () => {
+    const canvasRef = ref(db, 'canvas');
+    try {
+      const snapshot = await get(canvasRef);
+      if (!snapshot.exists()) {
+        console.log("No canvas data found.");
+        return;
+      }
+  
+      const canvasData = snapshot.val();
+      const userPixels = Object.values(canvasData).filter(
+        (pixel: any) => pixel.placedBy === userData.username
+      );
+  
+      const pixelCount = userPixels.length;
+  
+      // Logic for beginner achievements
+      const achievementsToCheck = [
+        { id: 'first_pixel', threshold: 1 },
+        { id: 'five_pixels', threshold: 5 },
+        { id: 'ten_pixels', threshold: 10 },
+      ];
+  
+      for (const achievement of achievementsToCheck) {
+        if (
+          pixelCount >= achievement.threshold &&
+          !unlockedAchievements.includes(achievement.id)
+        ) {
+          await awardAchievement(achievement.id);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking achievements:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (userData.username) {
+      checkAndAwardAchievements();
+    }
+  }, [canvasData, userData.username]);
+
 return (
   <div className="h-screen bg-gray-900 text-white">
 
@@ -998,6 +1113,51 @@ return (
         </div>
       </div>
     )}
+
+    {/* Achievement */}
+    {showAchievements && (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm z-50 transition-opacity duration-300">
+      <div className="bg-secondary-color p-8 rounded-xl shadow-2xl text-white max-w-5xl w-full transform scale-100 transition-transform duration-300">
+        <h3 className="text-3xl font-extrabold mb-6 text-center border-b pb-3 border-gray-700">
+          Achievements
+        </h3>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-h-[70vh] overflow-y-auto mb-6">
+          {achievementsList.map(ach => (
+            <li key={ach.id} className="flex flex-col items-center bg-tertiary-color p-4 rounded-lg shadow hover:shadow-xl transition-shadow space-y-3">
+              <img 
+                src={ach.imgSrc} 
+                alt={ach.name} 
+                className="w-20 h-20 object-cover rounded-lg shadow-md"
+                onError={(e) => (e.currentTarget.src = '/achievements/placeholder.png')}
+              />
+              <div className="text-center">
+                <p className="font-semibold text-xl">{ach.name}</p>
+                <p className="text-sm text-gray-300">{ach.description}</p>
+              </div>
+              {unlockedAchievements.includes(ach.id) ? (
+                <span className="text-green-400 font-bold mt-2">Completed ✓</span>
+              ) : (
+                userData.role === "Developer" && (
+                <button 
+                  onClick={() => awardAchievement(ach.id)}
+                  className="mt-2 text-blue-400 hover:text-blue-300 underline text-sm"
+                >
+                  Unlock
+                </button>
+                )
+              )}
+            </li>
+          ))}
+        </ul>
+        <button
+          onClick={() => setShowAchievements(false)}
+          className="w-full py-4 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )}
 
       {/* Brush Size Context Menu */}
       {showBrushMenu && (
@@ -1147,6 +1307,7 @@ return (
       onUpdateUsername={handleUpdateUsername}
       onTogglePixelInfo={() => setIsPixelInfoEnabled((prev) => !prev)}
       isPixelInfoEnabled={isPixelInfoEnabled}
+      onAchievementsButtonClick={() => setShowAchievements(true)}
     />
     <SidePanelLookUp
       onJumpToCoords={jumpToCoords}

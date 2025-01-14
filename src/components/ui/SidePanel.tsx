@@ -7,6 +7,7 @@ const SidePanel = ({
   onUpdateUsername,
   onTogglePixelInfo,
   isPixelInfoEnabled,
+  onAchievementsButtonClick,
 }: {
   userData: {
     username: string;
@@ -19,6 +20,7 @@ const SidePanel = ({
   onUpdateUsername: (newUsername: string) => void;
   onTogglePixelInfo: () => void;
   isPixelInfoEnabled: boolean;
+  onAchievementsButtonClick: () => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { username, role, pfpurl } = userData;
@@ -336,7 +338,9 @@ useEffect(() => {
               }}
             />
           </div>
-          <button className="w-full py-2 rounded bg-blue-700 hover:bg-blue-600 text-white font-bold">
+          <button 
+          onClick={onAchievementsButtonClick}
+          className="w-full py-2 rounded bg-blue-700 hover:bg-blue-600 text-white font-bold">
             Achievements
           </button>
         </div>
