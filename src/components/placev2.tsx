@@ -456,8 +456,8 @@ useEffect(() => {
   
           // Render visible pixels
           visiblePixels.forEach((pixel: any) => {
-            if (pixel.color === -1) return;
-  
+            if (pixel.color === 31) return;
+
             const x = pixel.x * pixelSize;
             const y = pixel.y * pixelSize;
             ctx.fillStyle = colors[pixel.color];
@@ -563,34 +563,51 @@ useEffect(() => {
     const pixelY = Math.floor(adjustedY / pixelSize);
     const timestamp = Date.now();
   
-    for (let dy = -Math.floor(brushSize/2); dy <= Math.floor(brushSize/2); dy++) {
-      for (let dx = -Math.floor(brushSize/2); dx <= Math.floor(brushSize/2); dx++) {
+    for (let dy = -Math.floor(brushSize / 2); dy <= Math.floor(brushSize / 2); dy++) {
+      for (let dx = -Math.floor(brushSize / 2); dx <= Math.floor(brushSize / 2); dx++) {
         const targetX = pixelX + dx;
         const targetY = pixelY + dy;
         const key = `${targetX}_${targetY}`;
   
-        pixelBufferRef.current[key] = {
-          x: targetX,
-          y: targetY,
-          color: isEraserSelected ? -1 : selectedColor,
-          placedBy: userData.username,
-          timestamp,
-        };
+        if (isEraserSelected) {
+          pixelBufferRef.current[key] = null;
   
-        setLocalPixels((prev) => [
-          ...prev,
-          {
+          setLocalPixels((prev) => [
+            ...prev.filter(
+              (p) => !(p.x === targetX && p.y === targetY)
+            ),
+            {
+              x: targetX,
+              y: targetY,
+              color: 31,
+              placedBy: userData.username,
+              timestamp,
+            }
+          ]);
+        } else {
+          pixelBufferRef.current[key] = {
             x: targetX,
             y: targetY,
-            color: isEraserSelected ? -1 : selectedColor,
+            color: selectedColor,
             placedBy: userData.username,
             timestamp,
-          }
-        ]);
+          };
+  
+          setLocalPixels((prev) => [
+            ...prev,
+            {
+              x: targetX,
+              y: targetY,
+              color: selectedColor,
+              placedBy: userData.username,
+              timestamp,
+            }
+          ]);
+        }
       }
     }
   };
-  
+
   const handleContextMenu = (event: MouseEvent) => {
     event.preventDefault();
     setShowBrushMenu(true);
@@ -621,7 +638,11 @@ useEffect(() => {
   
     const updates: { [key: string]: any } = {};
     for (const [key, pixel] of Object.entries(bufferedPixels)) {
-      updates[`canvas/${key}`] = pixel;
+      if (pixel === null) {
+        updates[`canvas/${key}`] = null;
+      } else {
+        updates[`canvas/${key}`] = pixel;
+      }
     }
   
     try {
@@ -634,8 +655,7 @@ useEffect(() => {
   
     pixelBufferRef.current = {};
     setLocalPixels([]);
-  };  
-
+  };
 
   const jumpToCoords = (x: number, y: number) => {
     setOffset({ x: viewport.width / 2 - x * pixelSize * scale, y: viewport.height / 2 - y * pixelSize * scale });
@@ -969,7 +989,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
         pixel.x <= visibleEndX &&
         pixel.y >= visibleStartY &&
         pixel.y <= visibleEndY &&
-        pixel.color !== -1 // Ignore empty pixels
+        pixel.color !== -1
       );
     });
   
