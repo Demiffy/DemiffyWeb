@@ -54,6 +54,8 @@ const ASynCPlace: React.FC = () => {
   const lastPixelPosition = useRef<{ x: number; y: number } | null>(null);
   const [isPixelInfoEnabled, setIsPixelInfoEnabled] = useState(false);
   const [isPainting, setIsPainting] = useState(false);
+  const drawingStartTimeRef = useRef<number | null>(null);
+  const drawingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
   const [pasteCoords, setPasteCoords] = useState<{ x: number | null; y: number | null }>({x: null,y : null,});  
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
@@ -161,6 +163,35 @@ const ASynCPlace: React.FC = () => {
       setHoveredPixelInfo(null);
     }
   };
+
+const startDrawingTimer = () => {
+  if (drawingTimerRef.current) {
+    clearInterval(drawingTimerRef.current);
+  }
+
+  drawingTimerRef.current = setInterval(() => {
+    console.log("Auto-flushing pixel buffer every 10 seconds of drawing.");
+    flushPixelBuffer();
+  }, 10000);
+};
+
+const stopDrawingTimer = () => {
+  console.log("Drawing timer stopped.");
+  if (drawingTimerRef.current) {
+    clearInterval(drawingTimerRef.current);
+    drawingTimerRef.current = null;
+  }
+  drawingStartTimeRef.current = null;
+};
+
+useEffect(() => {
+  return () => {
+    if (drawingTimerRef.current) {
+      clearInterval(drawingTimerRef.current);
+      drawingTimerRef.current = null;
+    }
+  };
+}, []);
 
   // Handle image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -672,6 +703,7 @@ useEffect(() => {
 
     if (event.button === 0 && !event.ctrlKey) {
         setIsPainting(true);
+        startDrawingTimer();
         handleCanvasInteraction(x, y);
     } else if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
         event.preventDefault();
@@ -756,6 +788,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
 
   if (event.button === 0) {
       setIsPainting(false);
+      stopDrawingTimer();
       flushPixelBuffer();
   }
 };

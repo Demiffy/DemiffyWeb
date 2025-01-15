@@ -1,12 +1,35 @@
 import { useState, useEffect } from "react";
 import { getDatabase, ref, get, onValue } from "firebase/database";
 
+interface Pixel {
+  x: number;
+  y: number;
+  color: string;
+  timestamp: number;
+}
+
+interface LookedUpUser {
+  username: string;
+  pfpurl: string;
+  pixelsCount: number;
+}
+
+const colors = [
+  '#6d001a', '#be0039', '#ff4500', '#ffa800', '#ffd635', '#fff8b8',
+  '#00a368', '#00cc78', '#7eed56', '#00756f', '#009eaa', '#00ccc0',
+  '#2450a4', '#3690ea', '#51e9f4', '#493ac1', '#6a5cff', '#94b3ff',
+  '#811e9f', '#b44ac0', '#e4abff', '#de107f', '#ff3881', '#ff99aa',
+  '#6d482f', '#9c6926', '#ffb470', '#000000', '#515252', '#898d90',
+  '#d4d7d9', '#ffffff',
+];
+
 const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: number) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [lookupUsername, setLookupUsername] = useState("");
-  const [pixelsPlaced, setPixelsPlaced] = useState<{ x: number; y: number }[]>([]);
+  const [pixelsPlaced, setPixelsPlaced] = useState<Pixel[]>([]);
   const [userCursor, setUserCursor] = useState<{ x: number; y: number } | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [lookedUpUser, setLookedUpUser] = useState<LookedUpUser | null>(null);
 
   const db = getDatabase();
 
@@ -17,52 +40,67 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
 
   const handleLookupUser = async () => {
     if (!lookupUsername.trim()) {
-        customAlert("Please enter a username to look up");
-        return;
+      customAlert("Please enter a username to look up");
+      return;
     }
 
     const normalizedUsername = lookupUsername.toLowerCase();
     const canvasRef = ref(db, "canvas");
     const cursorRef = ref(db, `users/${normalizedUsername}/cursor`);
+    const userRef = ref(db, `users/${normalizedUsername}`);
 
     try {
-        const canvasSnapshot = await get(canvasRef);
-        const canvasData: Record<string, any> | null = canvasSnapshot.val();
+      const [canvasSnapshot, userSnapshot] = await Promise.all([get(canvasRef), get(userRef)]);
+      const canvasData: Record<string, any> | null = canvasSnapshot.val();
+      const userData: any = userSnapshot.val();
 
-        if (canvasData) {
-            const userPixels = Object.entries(canvasData)
-                .filter(([, pixel]) => pixel.placedBy === normalizedUsername)
-                .map(([, pixel]) => ({
-                    x: pixel.x,
-                    y: pixel.y,
-                    timestamp: pixel.timestamp || 0,
-                }))
-                .sort((a, b) => b.timestamp - a.timestamp)
-                .slice(0, 100); // 100 most recent pixels
+      if (canvasData) {
+        const allUserPixels = Object.entries(canvasData).filter(
+          ([, pixel]) => pixel.placedBy === normalizedUsername
+        );
+        const totalUserPixelsCount = allUserPixels.length;
 
-            if (userPixels.length > 0) {
-                setPixelsPlaced(userPixels);
-                customAlert(`Showing the 100 most recent pixels placed by ${lookupUsername}.`);
-            } else {
-                setPixelsPlaced([]);
-                customAlert("No pixels found for this user");
-            }
+        // Get the 100 most recent pixels
+        const recentUserPixels = allUserPixels
+          .map(([, pixel]) => ({
+            x: pixel.x,
+            y: pixel.y,
+            color: pixel.color || "NULL",
+            timestamp: pixel.timestamp || 0,
+          }))
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 100);
+
+
+        if (recentUserPixels.length > 0) {
+          setPixelsPlaced(recentUserPixels);
+          customAlert(`Showing the 100 most recent pixels placed by ${lookupUsername}.`);
         } else {
-            setPixelsPlaced([]);
-            customAlert("No canvas data available");
+          setPixelsPlaced([]);
+          customAlert("No pixels found for this user");
         }
 
-        // Listen for cursor updates
-        onValue(cursorRef, (snapshot) => {
-            if (snapshot.exists()) {
-                setUserCursor(snapshot.val());
-            } else {
-                setUserCursor(null);
-            }
+        setLookedUpUser({
+          username: lookupUsername,
+          pfpurl: userData?.pfpurl || "",
+          pixelsCount: totalUserPixelsCount,
         });
+      } else {
+        setPixelsPlaced([]);
+        customAlert("No canvas data available");
+      }
+
+      // Listen for cursor updates for the looked up user
+      onValue(cursorRef, (snapshot) => {
+        if (snapshot.exists()) {
+          setUserCursor(snapshot.val());
+        } else {
+          setUserCursor(null);
+        }
+      });
     } catch (error) {
-        console.error("Error fetching user data:", error);
-        customAlert("An error occurred while looking up the user");
+      console.error("Error fetching user data:", error);
+      customAlert("An error occurred while looking up the user");
     }
   };
 
@@ -119,6 +157,27 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
           </button>
         </div>
 
+        {/* Looked Up User Info */}
+        {lookedUpUser && (
+          <div className="mb-4 p-3 rounded bg-secondary-color flex items-center space-x-4">
+            {lookedUpUser.pfpurl ? (
+              <img
+                src={lookedUpUser.pfpurl}
+                alt={`${lookedUpUser.username}'s profile`}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-gray-500" />
+            )}
+            <div>
+              <p className="font-bold">{lookedUpUser.username}</p>
+              <p className="text-sm text-gray-300">
+                Pixels Placed: {lookedUpUser.pixelsCount}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Results */}
         <div className="flex-grow overflow-y-auto mb-4">
           {pixelsPlaced.length > 0 ? (
@@ -126,12 +185,25 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
               {pixelsPlaced.map((pixel, index) => (
                 <li
                   key={index}
-                  className="p-3 rounded bg-secondary-color hover:bg-black transition-all shadow-md"
+                  className="p-3 rounded bg-secondary-color transition-all shadow-md"
                 >
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="text-sm font-medium text-gray-300">
-                        ({pixel.x}, {pixel.y})
+                        {pixel.x}, {pixel.y}
+                      </p>
+                      <p className="text-sm text-gray-400 flex items-center">
+                      <strong>Color:</strong>
+                        <span
+                          className="inline-block ml-2 w-4 h-4 rounded"
+                          style={{
+                            backgroundColor: colors[Number(pixel.color)] || '#000000',
+                            verticalAlign: 'middle',
+                          }}
+                        ></span>
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Placed: {new Date(pixel.timestamp).toLocaleString()}
                       </p>
                     </div>
                     <button
@@ -151,21 +223,21 @@ const SidePanelLookUp = ({ onJumpToCoords }: { onJumpToCoords: (x: number, y: nu
 
         {/* User Cursor Location */}
         <div className="p-3 rounded bg-secondary-color">
-        {userCursor ? (
+          {userCursor ? (
             <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-300">
+              <p className="text-sm text-gray-300">
                 <strong>Cursor:</strong> ({userCursor.x}, {userCursor.y})
-            </p>
-            <button
+              </p>
+              <button
                 onClick={() => onJumpToCoords(userCursor.x, userCursor.y)}
                 className="py-1 px-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
-            >
+              >
                 Jump
-            </button>
+              </button>
             </div>
-        ) : (
+          ) : (
             <p className="text-sm text-gray-400">Cursor location unavailable.</p>
-        )}
+          )}
         </div>
       </div>
     </div>
