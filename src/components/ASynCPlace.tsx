@@ -36,6 +36,7 @@ const pixelSize = 20;
 const ASynCPlace: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const movementIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedColor, setSelectedColor] = useState<number>(27);
   const [isEraserSelected, setIsEraserSelected] = useState(false);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -163,6 +164,110 @@ const ASynCPlace: React.FC = () => {
       setHoveredPixelInfo(null);
     }
   };
+
+  const startCanvasMovement = () => {
+    if (movementIntervalRef.current) return;
+
+    const maxSpeed = 1.5;
+    const directionChangeInterval = 10000;
+    const slowDownDuration = 5000;
+    const speedUpDuration = 5000;
+
+    let velocity = { x: 0, y: 0 };
+    let targetVelocity = { x: 0, y: 0 };
+    let transitionProgress = 0;
+    let isSlowingDown = false;
+
+    const normalizeVelocity = (vx: number, vy: number, speed: number) => {
+      const magnitude = Math.sqrt(vx * vx + vy * vy);
+      if (magnitude === 0) return { x: speed, y: 0 };
+      return {
+        x: (vx / magnitude) * speed,
+        y: (vy / magnitude) * speed,
+      };
+    };
+
+    const updateDirection = () => {
+      const angle = Math.random() * 2 * Math.PI;
+      targetVelocity = normalizeVelocity(Math.cos(angle), Math.sin(angle), maxSpeed);
+    };
+
+    const handleDirectionChange = () => {
+      isSlowingDown = true;
+      transitionProgress = 0;
+
+      const slowDownInterval = setInterval(() => {
+        transitionProgress += 16.7 / slowDownDuration;
+        if (transitionProgress >= 1) {
+          clearInterval(slowDownInterval);
+          isSlowingDown = false;
+          velocity = { x: 0, y: 0 };
+          updateDirection();
+          handleSpeedUp();
+        } else {
+          velocity = {
+            x: velocity.x * (1 - transitionProgress),
+            y: velocity.y * (1 - transitionProgress),
+          };
+        }
+      }, 16.7);
+    };
+
+    const handleSpeedUp = () => {
+      transitionProgress = 0;
+
+      const speedUpInterval = setInterval(() => {
+        transitionProgress += 16.7 / speedUpDuration;
+        if (transitionProgress >= 1) {
+          clearInterval(speedUpInterval);
+          velocity = { ...targetVelocity };
+        } else {
+
+          velocity = {
+            x: targetVelocity.x * transitionProgress,
+            y: targetVelocity.y * transitionProgress,
+          };
+        }
+      }, 16.7);
+    };
+
+    const moveCanvas = () => {
+      if (!isSlowingDown) {
+        setOffset((prevOffset) => ({
+          x: prevOffset.x + velocity.x,
+          y: prevOffset.y + velocity.y,
+        }));
+      }
+
+      movementIntervalRef.current = requestAnimationFrame(moveCanvas) as unknown as NodeJS.Timeout;
+    };
+
+    updateDirection();
+    handleSpeedUp();
+
+    const directionChangeTimer = setInterval(handleDirectionChange, directionChangeInterval);
+
+    movementIntervalRef.current = requestAnimationFrame(moveCanvas) as unknown as NodeJS.Timeout;
+
+    return () => clearInterval(directionChangeTimer);
+  };
+
+  const stopCanvasMovement = () => {
+    if (movementIntervalRef.current) {
+      cancelAnimationFrame(movementIntervalRef.current as unknown as number);
+      movementIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      startCanvasMovement();
+    } else {
+      stopCanvasMovement();
+    }
+
+    return () => stopCanvasMovement();
+  }, [isSignedIn]);
 
 const startDrawingTimer = () => {
   if (drawingTimerRef.current) {
@@ -1099,47 +1204,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
     return () => unsubscribe();
   }, [db, userData.username]);
 
-  const checkAndAwardAchievements = async () => {
-    const canvasRef = ref(db, 'canvas');
-    try {
-      const snapshot = await get(canvasRef);
-      if (!snapshot.exists()) {
-        console.log("No canvas data found.");
-        return;
-      }
-
-      const canvasData = snapshot.val();
-      const userPixels = Object.values(canvasData).filter(
-        (pixel: any) => pixel.placedBy === userData.username
-      );
-
-      const pixelCount = userPixels.length;
-
-      // Logic for beginner achievements
-      const achievementsToCheck = [
-        { id: 'first_pixel', threshold: 1 },
-        { id: 'five_pixels', threshold: 5 },
-        { id: 'ten_pixels', threshold: 10 },
-      ];
-
-      for (const achievement of achievementsToCheck) {
-        if (
-          pixelCount >= achievement.threshold &&
-          !unlockedAchievements.includes(achievement.id)
-        ) {
-          await awardAchievement(achievement.id);
-        }
-      }
-    } catch (error) {
-      console.error("Error checking achievements:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (userData.username) {
-      checkAndAwardAchievements();
-    }
-  }, [canvasData, userData.username]);
+  //TODO: ADD CHECKS FOR ACHIEVEMENTS ADD ACHIV PROGRESS TO EACH USER IN DB
 
 return (
   <div className="h-screen bg-gray-900 text-white">
@@ -1151,14 +1216,14 @@ return (
         <h1 className="text-4xl font-extrabold text-white mb-6">
           ASynC Place
         </h1>
-        <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
+        <div className="bg-secondary-color p-6 rounded-lg shadow-lg text-white">
           <h3 className="text-lg font-semibold mb-4">Sign In</h3>
           <input
             type="text"
             placeholder="Enter your name"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full p-2 rounded bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+            className="w-full p-2 rounded bg-quaternary-color text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
           />
           <button
             onClick={handleSignIn}
@@ -1167,6 +1232,11 @@ return (
             Sign In
           </button>
         </div>
+        <img
+          src="/DMLogoGif.gif"
+          alt="Demiffy Logo"
+          className="absolute bottom-4 w-20 object-contain"
+        />
       </div>
     )}
 
@@ -1432,6 +1502,7 @@ return (
     )}
 
       {/* Overlay Color Palette */}
+      {isSignedIn &&
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-full shadow-lg">
         <div
           className="grid grid-cols-[repeat(auto-fit,_minmax(2.5rem,_1fr))] gap-2 justify-center items-center"
@@ -1491,16 +1562,20 @@ return (
           </div>
         </div>
       </div>
+      }
 
       {/* Online Players Display */}
+      {isSignedIn &&
       <div className="absolute bottom-10 right-6 bg-opacity-70 p-2 rounded-lg text-zinc-800 text-xs backdrop-blur-md">
         <p className="flex items-center">
           <span className="font-bold mr-1">Online:</span>
           <span className='text-gray-500'>{onlinePlayers}</span>
         </p>
       </div>
+      }
 
       {/* Coordinate and Zoom Display */}
+      {isSignedIn &&
       <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-zinc-800 text-sm space-y-2 backdrop-blur-md">
         <p className="flex items-center">
           <span className="font-bold mr-1">Coordinates:</span>
@@ -1527,6 +1602,7 @@ return (
           </span>
         </p>
       </div>
+      }
     </div>
   </div>
 );
