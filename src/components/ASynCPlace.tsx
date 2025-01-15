@@ -1,4 +1,4 @@
-// PlaceV2.tsx
+// ASynC.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set, get, update, remove, onDisconnect } from 'firebase/database';
@@ -33,7 +33,7 @@ const colors = [
 
 const pixelSize = 20;
 
-const PlaceV2: React.FC = () => {
+const ASynCPlace: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [selectedColor, setSelectedColor] = useState<number>(27);
@@ -65,7 +65,7 @@ const PlaceV2: React.FC = () => {
     color: number;
     placedBy: string;
     timestamp: number;
-  }[]>([]);  
+  }[]>([]);
   const [hoveredPixelInfo, setHoveredPixelInfo] = useState<{
     x: number;
     y: number;
@@ -92,44 +92,44 @@ const PlaceV2: React.FC = () => {
     { id: 'first_pixel', name: 'Pixel Pioneer', description: 'Placed your very first pixel. Welcome aboard!', imgSrc: '/achievements/first_pixel.png' },
     { id: 'five_pixels', name: 'Getting the Hang of It', description: 'Placed 5 pixels. A great start!', imgSrc: '/achievements/five_pixels.png' },
     { id: 'ten_pixels', name: 'Double Digits', description: 'Placed 10 pixels. Keep it going!', imgSrc: '/achievements/ten_pixels.png' },
-  
+
     // **Engagement-Based Achievements**
     { id: 'canvas_regular', name: 'Canvas Regular', description: 'Logged in and interacted 10 times!', imgSrc: '/achievements/canvas_regular.png' },
     { id: 'dedicated_artist', name: 'Canvas Keeper', description: 'Spent 1 hour creating art on the canvas.', imgSrc: '/achievements/dedicated_artist.png' },
     { id: 'persistent_painter', name: 'Persistent Painter', description: 'Stayed active for 30 minutes in one session.', imgSrc: '/achievements/persistent_painter.png' },
     { id: 'legendary_creator', name: 'Legendary Creator', description: 'Placed an astonishing 10,000 pixels!', imgSrc: '/achievements/legendary_creator.png' },
-  
+
     // **Color & Creativity Achievements**
     { id: 'color_virtuoso', name: 'Color Virtuoso', description: 'Used every color in the palette at least once!', imgSrc: '/achievements/color_virtuoso.png' },
     { id: 'harmony_creator', name: 'Harmony Creator', description: 'Placed a pixel with each color in order of the rainbow.', imgSrc: '/achievements/harmony_creator.png' },
     { id: 'precision_madness', name: 'Precision Madness', description: 'Placed 20 pixels in a perfect line.', imgSrc: '/achievements/precision_madness.png' },
-  
+
     // **Time & Event Achievements**
     { id: 'night_owl', name: 'Moonlit Artist', description: 'Placed pixels between 12 AM and 4 AM.', imgSrc: '/achievements/night_owl.png' },
     { id: 'early_bird', name: 'Dawn Creator', description: 'Placed pixels before 8 AM.', imgSrc: '/achievements/early_bird.png' },
     { id: 'weekender', name: 'Weekend Warrior', description: 'Logged in and placed pixels on a weekend.', imgSrc: '/achievements/weekender.png' },
     { id: 'long_runner', name: 'Marathon Artist', description: 'Stayed active for 3 hours straight!', imgSrc: '/achievements/long_runner.png' },
     { id: 'time_traveler', name: 'Time Traveler', description: 'Logged in at least once every day for a week.', imgSrc: '/achievements/time_traveler.png' },
-  
+
     // **Interaction-Based Achievements**
     { id: 'community_builder', name: 'Friendly Neighbor', description: 'Sent 10 messages in the chat.', imgSrc: '/achievements/community_builder.png' },
     { id: 'chatterbox', name: 'Chatterbox', description: 'Sent 50 messages in chat. Talkative much?', imgSrc: '/achievements/chatterbox.png' },
-  
+
     // **Tool Usage Achievements**
     { id: 'eraser_wizard', name: 'Eraser Wizard', description: 'Erased 100 pixels. Cleaning up nicely!', imgSrc: '/achievements/eraser_wizard.png' },
     { id: 'brush_master', name: 'Brush Master', description: 'Used every brush size in a single session.', imgSrc: '/achievements/brush_master.png' },
-  
+
     // **Streak Achievements**
     { id: 'streak_keeper', name: 'Daily Devotee', description: 'Logged in for 7 consecutive days.', imgSrc: '/achievements/streak_keeper.png' },
-  
+
     // **Challenge & Fun Achievements**
     { id: 'canvas_click', name: 'How Is That Possible', description: 'Clicked on the canvas 50 times without placing a pixel.', imgSrc: '/achievements/canvas_click.png' },
     { id: 'the_perfectionist', name: 'The Perfectionist', description: 'Replaced 50 pixels placed by a different user.', imgSrc: '/achievements/the_perfectionist.png' },
     { id: 'hidden_masterpiece', name: 'Hidden Masterpiece', description: 'Placed a pixel in a hidden or remote area of the canvas.', imgSrc: '/achievements/hidden_masterpiece.png' },
-  
+
     // **Exclusive & Secret Achievements**
     { id: 'completionist', name: 'The Completionist', description: 'Unlocked all available achievements!', imgSrc: '/achievements/completionist.png' },
-  ];  
+  ];
 
   // Listen for keyboard events for admin modal
   useEffect(() => {
@@ -145,13 +145,13 @@ const PlaceV2: React.FC = () => {
         setTypedInput((prev) => (prev + event.key).slice(0, 3)); // Limit 3 characters
       }
     };
-  
+
     window.addEventListener("keydown", handleKeyPress);
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [typedInput, canAccessAdminModal]);  
-  
+  }, [typedInput, canAccessAdminModal]);
+
   const fetchPixelInfo = async (x: number, y: number) => {
     const pixelRef = ref(db, `canvas/${x}_${y}`);
     const snapshot = await get(pixelRef);
@@ -166,7 +166,7 @@ const PlaceV2: React.FC = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-  
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -177,7 +177,7 @@ const PlaceV2: React.FC = () => {
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
-  };  
+  };
 
 const hexToRgb = (hex: string) => {
   const bigint = parseInt(hex.slice(1), 16);
@@ -344,7 +344,7 @@ useEffect(() => {
   const customAlert = (text: string, type: "success" | "error" | "info" | "tip") => {
     setAlertMessage({ text, type });
     setTimeout(() => setAlertMessage(null), 7000);
-  };   
+  };
 
   // FPS Tracking
   const [fps, setFps] = useState<number>(0);
@@ -406,9 +406,9 @@ useEffect(() => {
       const newCanvasData = data ? Object.values(data) : [];
       setCanvasData(newCanvasData);
     });
-  
+
     return () => unsubscribe();
-  }, []);  
+  }, []);
 
   // Draw the canvas
   const drawCanvas = useCallback(
@@ -429,18 +429,18 @@ useEffect(() => {
         if (ctx) {
           ctx.imageSmoothingEnabled = false;
           ctx.clearRect(0, 0, viewport.width, viewport.height);
-  
+
           ctx.save();
           ctx.translate(offset.x, offset.y);
           ctx.scale(scale, scale);
-  
+
           const adjustedPixelSize = pixelSize + (scale < 1 ? 1 / scale : 0);
-  
+
           const startX = Math.floor((-offset.x / scale) / pixelSize) - 1;
           const endX = Math.ceil((viewport.width - offset.x) / scale / pixelSize) + 1;
           const startY = Math.floor((-offset.y / scale) / pixelSize) - 1;
           const endY = Math.ceil((viewport.height - offset.y) / scale / pixelSize) + 1;
-  
+
           const combinedCanvasData = [...canvasData, ...localPixels];
           const pixelMap = new Map<string, any>();
           combinedCanvasData.forEach(pixel => {
@@ -453,7 +453,7 @@ useEffect(() => {
             pixel.y >= startY &&
             pixel.y <= endY
           ));
-  
+
           // Render visible pixels
           visiblePixels.forEach((pixel: any) => {
             if (pixel.color === 31) return;
@@ -463,7 +463,7 @@ useEffect(() => {
             ctx.fillStyle = colors[pixel.color];
             ctx.fillRect(x, y, adjustedPixelSize, adjustedPixelSize);
           });
-  
+
           if (hoveredPixel) {
             const halfBrush = Math.floor(brushSize / 2);
             const regionX = (hoveredPixel.x - halfBrush) * pixelSize;
@@ -487,7 +487,7 @@ useEffect(() => {
           if (scale > 1) {
             ctx.strokeStyle = '#CCCCCC';
             ctx.lineWidth = 0.5 / scale;
-  
+
             for (let x = startX; x <= endX; x++) {
               const posX = x * pixelSize;
               ctx.beginPath();
@@ -495,7 +495,7 @@ useEffect(() => {
               ctx.lineTo(posX, endY * pixelSize);
               ctx.stroke();
             }
-  
+
             for (let y = startY; y <= endY; y++) {
               const posY = y * pixelSize;
               ctx.beginPath();
@@ -506,7 +506,7 @@ useEffect(() => {
           } else {
             setHoveredPixelInfo(null);
           }
-  
+
           // Draw Preview Image if active
           if (isPreviewActive && uploadedImage && pasteCoords.x !== null && pasteCoords.y !== null) {
             ctx.globalAlpha = 0.5;
@@ -519,7 +519,7 @@ useEffect(() => {
             );
             ctx.globalAlpha = 1;
           }
-  
+
           ctx.restore();
         }
       }
@@ -536,42 +536,42 @@ useEffect(() => {
       colors,
       brushSize
     ]
-  );  
+  );
 
   const updateCursorPosition = async (pixelX: number, pixelY: number) => {
     if (!isSignedIn || !userData.username) return;
-  
+
     const userCursorRef = ref(db, `users/${userData.username}/cursor`);
-    
+
     try {
       await set(userCursorRef, { x: pixelX, y: pixelY });
     } catch (error) {
       console.error("Failed to update cursor position in Firebase:", error);
     }
-  };  
-  
+  };
+
   // Handle placing/removing a pixel
   const handleCanvasInteraction = (x: number, y: number) => {
     if (!userData.username) {
       customAlert("Please sign in to place pixels.", "tip");
       return;
     }
-  
+
     const adjustedX = (x - offset.x) / scale;
     const adjustedY = (y - offset.y) / scale;
     const pixelX = Math.floor(adjustedX / pixelSize);
     const pixelY = Math.floor(adjustedY / pixelSize);
     const timestamp = Date.now();
-  
+
     for (let dy = -Math.floor(brushSize / 2); dy <= Math.floor(brushSize / 2); dy++) {
       for (let dx = -Math.floor(brushSize / 2); dx <= Math.floor(brushSize / 2); dx++) {
         const targetX = pixelX + dx;
         const targetY = pixelY + dy;
         const key = `${targetX}_${targetY}`;
-  
+
         if (isEraserSelected) {
           pixelBufferRef.current[key] = null;
-  
+
           setLocalPixels((prev) => [
             ...prev.filter(
               (p) => !(p.x === targetX && p.y === targetY)
@@ -592,7 +592,7 @@ useEffect(() => {
             placedBy: userData.username,
             timestamp,
           };
-  
+
           setLocalPixels((prev) => [
             ...prev,
             {
@@ -613,7 +613,7 @@ useEffect(() => {
     setShowBrushMenu(true);
     setBrushMenuPosition({ x: event.clientX, y: event.clientY });
   };
-  
+
   const selectBrushSize = (size: number) => {
     setBrushSize(size);
     setShowBrushMenu(false);
@@ -624,7 +624,7 @@ useEffect(() => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     canvas.addEventListener('contextmenu', handleContextMenu);
     return () => {
       canvas.removeEventListener('contextmenu', handleContextMenu);
@@ -633,9 +633,9 @@ useEffect(() => {
 
   const flushPixelBuffer = async () => {
     const bufferedPixels = pixelBufferRef.current;
-  
+
     if (Object.keys(bufferedPixels).length === 0) return;
-  
+
     const updates: { [key: string]: any } = {};
     for (const [key, pixel] of Object.entries(bufferedPixels)) {
       if (pixel === null) {
@@ -644,7 +644,7 @@ useEffect(() => {
         updates[`canvas/${key}`] = pixel;
       }
     }
-  
+
     try {
       await update(ref(db), updates);
       console.log("Batch update successful:", updates);
@@ -652,7 +652,7 @@ useEffect(() => {
       console.error("Batch update failed:", error);
       customAlert("Failed to update pixels. Please try again.", "error");
     }
-  
+
     pixelBufferRef.current = {};
     setLocalPixels([]);
   };
@@ -764,19 +764,19 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault();
-  
+
       const canvas = canvasRef.current;
       if (!canvas) return;
-  
+
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-  
+
       const zoomFactor = 1.1;
       let newScale = scale;
-  
+
       const currentMinScale = adminModalOpen ? ADMIN_MIN_SCALE : BASE_MIN_SCALE;
-  
+
       if (e.deltaY < 0) {
         // Zoom in
         newScale = scale * zoomFactor;
@@ -784,14 +784,14 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
         // Zoom out
         newScale = scale / zoomFactor;
       }
-  
+
       newScale = Math.max(currentMinScale, Math.min(MAX_SCALE, newScale));
-  
+
       const scaleRatio = newScale / scale;
-  
+
       const newOffsetX = mouseX - scaleRatio * (mouseX - offset.x);
       const newOffsetY = mouseY - scaleRatio * (mouseY - offset.y);
-  
+
       setScale(newScale);
       setOffset({ x: newOffsetX, y: newOffsetY });
     },
@@ -831,45 +831,45 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
   // Function to handle username updates from SidePanel
   const handleUpdateUsername = async (newUsername: string) => {
     const normalizedNewUsername = newUsername.trim().toLowerCase();
-  
+
     if (!normalizedNewUsername) {
       customAlert("Please enter a valid username!", "error");
       return;
     }
-  
+
     if (normalizedNewUsername === userData.username.toLowerCase()) {
       customAlert("This is already your username!", "info");
       return;
     }
-  
+
     try {
       const currentUserRef = ref(db, `users/${userData.username}`);
       const newUserRef = ref(db, `users/${normalizedNewUsername}`);
-  
+
       const newUserSnapshot = await get(newUserRef);
       if (newUserSnapshot.exists()) {
         customAlert("This username is already taken. Please choose another.", "error");
         return;
       }
-  
+
       const currentUserSnapshot = await get(currentUserRef);
       if (!currentUserSnapshot.exists()) {
         customAlert("No user data found to update!", "error");
         return;
       }
-  
+
       const oldOnlineRef = ref(db, `users/${userData.username}/online`);
       await onDisconnect(oldOnlineRef).cancel();
-  
+
       const { username, ...currentUserData } = currentUserSnapshot.val();
-  
+
       await update(newUserRef, currentUserData);
       await remove(currentUserRef);
-  
+
       const newOnlineRef = ref(db, `users/${normalizedNewUsername}/online`);
       await set(newOnlineRef, true);
       onDisconnect(newOnlineRef).set(false);
-  
+
       setUserData((prev) => ({
         ...prev,
         username: normalizedNewUsername,
@@ -894,7 +894,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
         setOnlinePlayers(0);
       }
     });
-  
+
     return () => unsubscribe();
   }, []);
 
@@ -904,31 +904,31 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(date);
-  }; 
-  
+  };
+
   const exportCanvasAsPNG = () => {
     const canvas = canvasRef.current;
     if (!canvas) {
       customAlert("Canvas not available!", "error");
       return;
     }
-  
+
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       customAlert("Failed to access canvas context!", "error");
       return;
     }
-  
+
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  
+
     let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
     const data = imageData.data;
-  
+
     for (let y = 0; y < canvas.height; y++) {
       for (let x = 0; x < canvas.width; x++) {
         const index = (y * canvas.width + x) * 4;
         const a = data[index + 3];
-  
+
         if (a !== 0) {
           if (x < minX) minX = x;
           if (y < minY) minY = y;
@@ -937,43 +937,43 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
         }
       }
     }
-  
+
     if (minX > maxX || minY > maxY) {
       customAlert("Canvas is empty!", "info");
       return;
     }
-  
+
     const croppedWidth = maxX - minX + 1;
     const croppedHeight = maxY - minY + 1;
     const croppedCanvas = document.createElement("canvas");
     const croppedCtx = croppedCanvas.getContext("2d");
-  
+
     if (!croppedCtx) {
       customAlert("Failed to create cropped canvas!", "error");
       return;
     }
-  
+
     croppedCanvas.width = croppedWidth;
     croppedCanvas.height = croppedHeight;
-  
+
     croppedCtx.putImageData(
       ctx.getImageData(minX, minY, croppedWidth, croppedHeight),
       0,
       0
     );
-  
+
     const dataUrl = croppedCanvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.download = "DemiffyPlaceCanvas.png";
     link.href = dataUrl;
     link.click();
-  
+
     customAlert("Canvas exported as PNG!", "success");
   };
 
   const exportCanvasAsSVG = () => {
     const SVG_NS = "http://www.w3.org/2000/svg";
-  
+
     const visibleStartX = Math.floor(-offset.x / (pixelSize * scale));
     const visibleEndX = Math.ceil(
       (viewport.width - offset.x) / (pixelSize * scale)
@@ -982,7 +982,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
     const visibleEndY = Math.ceil(
       (viewport.height - offset.y) / (pixelSize * scale)
     );
-  
+
     const visiblePixels = canvasData.filter((pixel) => {
       return (
         pixel.x >= visibleStartX &&
@@ -992,27 +992,27 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
         pixel.color !== -1
       );
     });
-  
+
     if (visiblePixels.length === 0) {
       customAlert("No pixels in the viewport to export!", "error");
       return;
     }
-  
+
     const minX = Math.min(...visiblePixels.map((p) => p.x));
     const maxX = Math.max(...visiblePixels.map((p) => p.x));
     const minY = Math.min(...visiblePixels.map((p) => p.y));
     const maxY = Math.max(...visiblePixels.map((p) => p.y));
-  
+
     const exportWidth = (maxX - minX + 1) * pixelSize;
     const exportHeight = (maxY - minY + 1) * pixelSize;
-  
+
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("xmlns", SVG_NS);
     svg.setAttribute("width", `${exportWidth}`);
     svg.setAttribute("height", `${exportHeight}`);
     svg.setAttribute("viewBox", `0 0 ${exportWidth} ${exportHeight}`);
     svg.setAttribute("style", "background-color: white;");
-  
+
     visiblePixels.forEach((pixel) => {
       const rect = document.createElementNS(SVG_NS, "rect");
       rect.setAttribute("x", `${(pixel.x - minX) * pixelSize}`);
@@ -1022,22 +1022,22 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
       rect.setAttribute("fill", colors[pixel.color]);
       svg.appendChild(rect);
     });
-  
+
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svg);
-  
+
     const blob = new Blob([svgString], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
-  
+
     const link = document.createElement("a");
     link.href = url;
     link.download = "DemiffyPlaceCanvas.svg";
     link.click();
-  
+
     URL.revokeObjectURL(url);
-  
+
     customAlert("Canvas exported as SVG!", "success");
-  };  
+  };
 
   const awardAchievement = async (achievementId: string) => {
     if (unlockedAchievements.includes(achievementId)) return;
@@ -1051,7 +1051,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
       customAlert("Failed to award achievement. Try again.", "error");
     }
   };
-  
+
   useEffect(() => {
     if (!userData.username) return;
     const achievementsRef = ref(db, `users/${userData.username}/achievements`);
@@ -1074,21 +1074,21 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
         console.log("No canvas data found.");
         return;
       }
-  
+
       const canvasData = snapshot.val();
       const userPixels = Object.values(canvasData).filter(
         (pixel: any) => pixel.placedBy === userData.username
       );
-  
+
       const pixelCount = userPixels.length;
-  
+
       // Logic for beginner achievements
       const achievementsToCheck = [
         { id: 'first_pixel', threshold: 1 },
         { id: 'five_pixels', threshold: 5 },
         { id: 'ten_pixels', threshold: 10 },
       ];
-  
+
       for (const achievement of achievementsToCheck) {
         if (
           pixelCount >= achievement.threshold &&
@@ -1114,7 +1114,10 @@ return (
   {isSignedIn && <ChatBox currentUsername={userData.username} />}
 
     {!isSignedIn && (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-75 z-50">
+        <h1 className="text-4xl font-extrabold text-white mb-6">
+          ASynC Place
+        </h1>
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
           <h3 className="text-lg font-semibold mb-4">Sign In</h3>
           <input
@@ -1320,7 +1323,7 @@ return (
     )}
 
     {/* Side Panel */}
-    <SidePanel
+    {isSignedIn && <SidePanel
       userData={userData}
       onSignIn={handleSignIn}
       isSignedIn={isSignedIn}
@@ -1328,10 +1331,10 @@ return (
       onTogglePixelInfo={() => setIsPixelInfoEnabled((prev) => !prev)}
       isPixelInfoEnabled={isPixelInfoEnabled}
       onAchievementsButtonClick={() => setShowAchievements(true)}
-    />
-    <SidePanelLookUp
+    />}
+    {isSignedIn && <SidePanelLookUp
       onJumpToCoords={jumpToCoords}
-    />
+    />}
 
     {/* Main Canvas Area */}
     <div className="relative w-full h-full overflow-hidden">
@@ -1358,15 +1361,15 @@ return (
         className="absolute bg-secondary-color/90 text-white p-4 rounded-lg shadow-lg z-50 text-sm backdrop-blur-md select-none"
         style={{
           left: `${
-            hoveredPixel 
-              ? (hoveredPixel.x + 0.5) * pixelSize * scale + offset.x 
+            hoveredPixel
+              ? (hoveredPixel.x + 0.5) * pixelSize * scale + offset.x
               : 0
-          }px`,          
+          }px`,
           top: `${
-            hoveredPixel 
-              ? (hoveredPixel.y + 0.5) * pixelSize * scale + offset.y 
+            hoveredPixel
+              ? (hoveredPixel.y + 0.5) * pixelSize * scale + offset.y
               : 0
-          }px`,          
+          }px`,
           transform: "translate(-50%, -140%)",
           maxWidth: "260px",
         }}
@@ -1496,4 +1499,4 @@ return (
 );
 };
 
-export default PlaceV2;
+export default ASynCPlace;

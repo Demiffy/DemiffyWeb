@@ -46,7 +46,7 @@ const SidePanel = ({
   useEffect(() => {
     setUpdatedUsername(username);
     setUpdatedPfpUrl(pfpurl);
-  }, [username, pfpurl]);  
+  }, [username, pfpurl]);
 
   const formatTimeOnPage = (seconds: number): string => {
     const days = Math.floor(seconds / 86400);
@@ -71,38 +71,33 @@ const SidePanel = ({
     setTimeOnPage(newTimeOnPage);
     timeOnPageRef.current = newTimeOnPage;
     startTimeRef.current = now;
-  };  
-  
+  };
+
   // Track time spent on the page
   useEffect(() => {
     if (!isSignedIn) return;
     setTimeOnPage(userData.timeOnPage);
     timeOnPageRef.current = userData.timeOnPage;
     startTimeRef.current = Math.floor(Date.now() / 1000);
-  
+
     const userRef = ref(db, `users/${userData.username}`);
-    
+
     const localInterval = setInterval(incrementTime, 1000);
     const pushInterval = setInterval(() => {
       update(userRef, { timeOnPage: timeOnPageRef.current }).catch((error) => {
         console.error("Error updating timeOnPage:", error);
       });
     }, 10000);
-  
+
     return () => {
       clearInterval(localInterval);
       clearInterval(pushInterval);
     };
   }, [db, userData.username, isSignedIn]);
-  
+
 // Detect mouse position
 useEffect(() => {
   const handleMouseMove = (event: MouseEvent) => {
-    if (!isSignedIn) {
-      setIsOpen(false);
-      return;
-    }
-
     if (event.clientX <= 50) {
       setIsOpen(true);
     } else if (event.clientX > 240) {
@@ -178,7 +173,7 @@ useEffect(() => {
       customAlert("Please enter a valid URL!", "error");
       return;
     }
-  
+
     try {
       const userRef = ref(db, `users/${username}`);
       await update(userRef, { pfpurl: newPfpUrl });

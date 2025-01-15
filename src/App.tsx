@@ -5,7 +5,7 @@ import Navbar from './components/ui/Navbar';
 import About from './components/About';
 import Home from './components/Home';
 import PlaceRetired from './components/Place';
-import Placev2 from './components/placev2';
+import ASynCPlace from './components/ASynCPlace';
 import ZoomedPlace from './components/ZoomedOutView';
 import Tetris from './components/Tetris';
 import Sudoku from './components/Sudoku';
@@ -35,8 +35,8 @@ const AnimatedRoutes = () => {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/placeretired" element={<PlaceRetired />} />
-          <Route path="/place" element={<Placev2 />} />
-          <Route path="/place/zoomedout" element={<ZoomedPlace />} />
+          <Route path="/ASynC" element={<ASynCPlace />} />
+          <Route path="/ASynC/zoomedout" element={<ZoomedPlace />} />
           <Route path="/games/tetris" element={<Tetris />} />
           <Route path="/games/sudoku" element={<Sudoku />} />
           <Route path="/games/2048" element={<TwoThousandFortyEightGame />} />
