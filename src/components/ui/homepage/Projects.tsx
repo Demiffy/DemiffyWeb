@@ -65,56 +65,70 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                 <h1 class="text-3xl font-bold text-sky-600 select-none">
                   ${projects[activeProject]?.title ?? 'Untitled Project'}
                 </h1>
-  
+
                 <!-- Main Image -->
                 <img
                   src="${projects[activeProject]?.image ?? ''}"
                   alt="${projects[activeProject]?.title ?? 'Image'}"
                   class="rounded-lg shadow-md"
                 />
-  
+
                 <!-- Description -->
                 <p class="text-base text-gray-300 text-justify leading-relaxed">
                   ${projects[activeProject]?.details ?? 'No details available.'}
                 </p>
-  
+
                 <!-- Additional Images Section -->
-                ${projects[activeProject]?.additionalImages?.length ? `
+                ${
+                  projects[activeProject]?.additionalImages?.length
+                    ? `
                 <div class="mt-6">
                   <h2 class="text-xl font-semibold text-indigo-400 mb-4 select-none">Additional Images</h2>
                   <div class="grid grid-cols-2 gap-4">
-                    ${projects[activeProject]?.additionalImages
-                      ?.map(
+                    ${projects[activeProject].additionalImages
+                      .map(
                         (img, index) => `
-                        <div>
-                          <a href="${img.src}" target="_blank" class="block">
-                            <img src="${img.src}" alt="Image ${index + 1}" class="rounded-md hover:opacity-90 transition-opacity" />
-                          </a>
-                          <p class="text-sm text-gray-400 mt-2 text-center">${img.title}</p>
-                        </div>
-                      `
+                      <div>
+                        <a href="${img.src}" target="_blank" class="block">
+                          <img src="${img.src}" alt="Image ${index + 1}" class="rounded-md hover:opacity-90 transition-opacity" />
+                        </a>
+                        <p class="text-sm text-gray-400 mt-2 text-center">${img.title}</p>
+                      </div>
+                    `
                       )
                       .join('')}
                   </div>
-                </div>` : ''}
-  
+                </div>
+                `
+                    : ''
+                }
+
                 <!-- Technologies Used Section -->
-                ${projects[activeProject]?.technologies?.length ? `
+                ${
+                  projects[activeProject]?.technologies?.length
+                    ? `
                 <div class="mt-8 select-none">
                   <h2 class="text-xl font-semibold text-sky-400 mb-4">Technologies Used</h2>
                   <ul class="list-none flex flex-wrap justify-center gap-4">
-                    ${projects[activeProject]?.technologies
-                      ?.map(
+                    ${projects[activeProject].technologies
+                      .map(
                         (tech) => `
-                        <li class="flex items-center space-x-2">
-                          ${tech.image ? `<img src="${tech.image}" alt="${tech.name}" class="w-8 h-8" />` : ''}
-                          <span class="text-gray-300">${tech.name}</span>
-                        </li>
-                      `
+                      <li class="flex items-center space-x-2">
+                        ${
+                          tech.image
+                            ? `<img src="${tech.image}" alt="${tech.name}" class="w-8 h-8" />`
+                            : ''
+                        }
+                        <span class="text-gray-300">${tech.name}</span>
+                      </li>
+                    `
                       )
                       .join('')}
                   </ul>
-                </div>` : ''}
+                </div>
+                `
+                    : ''
+                }
               </div>
             </body>
           </html>
@@ -125,7 +139,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
       setIsPopupOpen(true);
     }
   };
-  
+
   const handleClosePopup = () => {
     setIsPopupOpen(false);
   };
@@ -136,9 +150,17 @@ const Projects = ({ projects }: { projects: Project[] }) => {
     }
   };
 
+  const containerVariants = {
+    initial: { opacity: 0, x: -50 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 50 },
+  };
+
   return (
     <div className="container py-20 px-4 mx-auto">
-      <h3 className="text-2xl font-bold text-accent-color mb-6 text-center md:text-left select-none">Projects</h3>
+      <h3 className="text-2xl font-bold text-accent-color mb-6 text-center md:text-left select-none">
+        Projects
+      </h3>
       <div className="p-6 rounded-lg">
         <div className="flex flex-wrap justify-center md:justify-start mb-6">
           <div className="space-x-2 flex flex-wrap gap-2">
@@ -157,29 +179,58 @@ const Projects = ({ projects }: { projects: Project[] }) => {
             ))}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <img
-              src={projects[activeProject].image}
-              alt={projects[activeProject].title}
-              className="w-full h-64 object-cover rounded-md"
-            />
-          </div>
-          <div>
-            <h4 className="text-xl font-bold mb-4 text-center md:text-left">
-              {projects[activeProject].title}
-            </h4>
-            <p className="text-base text-gray-300 mb-6">
-              {projects[activeProject].description}
-            </p>
-            <button
-              onClick={handleViewDetails}
-              className="w-full bg-gradient-to-r from-accent-color/90 to-accent-color-light/90 text-white py-3 rounded-lg hover:from-accent-color hover:to-accent-color-light transition-colors select-none"
-            >
-              View Details
-            </button>
-          </div>
-        </div>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeProject} 
+            variants={containerVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            <div>
+              <motion.img
+                src={projects[activeProject].image}
+                alt={projects[activeProject].title}
+                className="w-full h-64 object-cover rounded-md"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+            <div>
+              <motion.h4
+                className="text-xl font-bold mb-4 text-center md:text-left"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+              >
+                {projects[activeProject].title}
+              </motion.h4>
+              <motion.p
+                className="text-base text-gray-300 mb-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                {projects[activeProject].description}
+              </motion.p>
+              <motion.button
+                onClick={handleViewDetails}
+                className="w-full bg-gradient-to-r from-accent-color/90 to-accent-color-light/90 text-white py-3 rounded-lg hover:from-accent-color hover:to-accent-color-light transition-colors select-none"
+                whileHover={{ scale: 1.05, zIndex: 10 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                View Details
+              </motion.button>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <AnimatePresence>
@@ -198,14 +249,13 @@ const Projects = ({ projects }: { projects: Project[] }) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
               transition={{ duration: 0.3 }}
-              className="bg-slate-950 p-6 rounded-lg shadow-lg max-w-4xl w-full relative overflow-hidden"
+              className="bg-secondary-color p-6 rounded-lg shadow-lg max-w-4xl w-full relative overflow-hidden"
               style={{ maxHeight: '90vh' }}
             >
               {/* Exit Button */}
               <button
                 onClick={handleClosePopup}
                 className="absolute top-3 right-3 p-2 bg-transparent hover:bg-slate-700 text-white rounded-full z-50"
-                style={{ zIndex: 50 }}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -214,12 +264,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
 
@@ -233,10 +278,11 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                     projects[activeProject].additionalImages.map((img, index) => (
                       <div key={index} className="flex flex-col items-center">
                         <a href={img.src} target="_blank" rel="noopener noreferrer">
-                          <img
+                          <motion.img
                             src={img.src}
                             alt={`Additional image ${index + 1}`}
                             className="w-full h-auto object-cover rounded-md hover:opacity-90 transition-opacity"
+                            whileHover={{ scale: 1.05 }}
                           />
                         </a>
                         <p className="text-center text-sm text-gray-400 mt-2">{img.title}</p>
@@ -253,7 +299,7 @@ const Projects = ({ projects }: { projects: Project[] }) => {
                     {projects[activeProject].details}
                   </p>
 
-                  {/* Tools and Technologies Used */}
+                  {/* Technologies Used */}
                   {projects[activeProject].technologies && (
                     <div className="mb-6">
                       <h4 className="text-lg font-semibold text-accent-color mb-2">
