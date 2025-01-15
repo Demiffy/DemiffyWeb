@@ -28,7 +28,7 @@ const categories: Category[] = [
     links: [
       { to: '/', title: 'Home', description: 'Go back to the homepage' },
       { to: '/about', title: 'About', description: 'Learn about me' },
-      { to: '/place', title: 'Place', description: 'Small r/place replica' },
+      { to: '/ASynC', title: 'ASynC', description: 'Art Synchronized Canvas - Drawing Canvas' },
     ],
   },
   {

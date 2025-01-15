@@ -86,15 +86,15 @@ const skills = [
         ]
       },
       {
-        title: "PlaceV2",
+        title: "ASynC - Art Synchronized Canvas",
         description: "A collaborative pixel art canvas where users can create, edit, and share their pixel art creations in real time.",
         image: "/placev2.png",
-        details: "PlaceV2 allows users to interact with a shared canvas to place and remove pixels. Featuring real-time collaboration, zooming, and customizable colors, this project emphasizes user engagement and creative expression.",
+        details: "ASynC allows users to interact with a shared canvas to place and remove pixels. Featuring real-time collaboration, zooming, and customizable colors, this project emphasizes user engagement and creative expression.",
         additionalImages: [
           { src: "/placev2.png", title: "Fully working Canvas" }
         ],
         buttons: [
-          { label: "Website", onClick: () => window.open('https://demiffy.com/place', '_blank') },
+          { label: "Website", onClick: () => window.open('https://demiffy.com/ASynC', '_blank') },
           { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/DemiffyWeb', '_blank') }
         ],
         technologies: [
