@@ -8,6 +8,7 @@ const SidePanel = ({
   onTogglePixelInfo,
   isPixelInfoEnabled,
   onAchievementsButtonClick,
+  onBlueprintsButtonClick,
 }: {
   userData: {
     username: string;
@@ -21,6 +22,7 @@ const SidePanel = ({
   onTogglePixelInfo: () => void;
   isPixelInfoEnabled: boolean;
   onAchievementsButtonClick: () => void;
+  onBlueprintsButtonClick: () => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { username, role, pfpurl } = userData;
@@ -252,9 +254,15 @@ useEffect(() => {
           </div>
           <button
             onClick={handleDeleteAllPixels}
-            className="mt-4 py-2 px-4 w-full rounded bg-red-600 hover:bg-red-500 text-white font-bold"
+            className="mt-4 py-2 px-4 w-full rounded bg-red-600 hover:bg-red-500 text-white font-bold my-10"
           >
             Delete All My Pixels
+          </button>
+          <button
+            onClick={onBlueprintsButtonClick}
+            className="mt-4 py-2 px-4 w-full rounded bg-blue-600 hover:bg-blue-500 text-white font-bold"
+          >
+            Blueprints
           </button>
         </div>
         <div className="flex flex-col px-4 py-6 border-t border-gray-700">

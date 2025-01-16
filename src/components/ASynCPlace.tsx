@@ -22,6 +22,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+type Blueprint = {
+  id: string;
+  name: string;
+  imgSrc: string;
+  coords: { x: number; y: number };
+};
+
 const colors = [
   '#6d001a', '#be0039', '#ff4500', '#ffa800', '#ffd635', '#fff8b8',
   '#00a368', '#00cc78', '#7eed56', '#00756f', '#009eaa', '#00ccc0',
@@ -60,6 +67,7 @@ const ASynCPlace: React.FC = () => {
   const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
   const [pasteCoords, setPasteCoords] = useState<{ x: number | null; y: number | null }>({x: null,y : null,});  
   const [isPreviewActive, setIsPreviewActive] = useState<boolean>(false);
+  const [showBlueprints, setShowBlueprints] = useState(false);
   const [canvasData, setCanvasData] = useState<any[]>([]);
   const pixelBufferRef = useRef<{ [key: string]: any }>({});
   const [localPixels, setLocalPixels] = useState<{
@@ -82,6 +90,10 @@ const ASynCPlace: React.FC = () => {
     role: "Guest",
     timeOnPage: 0,
     pfpurl: "https://demiffy.com/defaultuser.png",
+  });
+  const [savedBlueprints, setSavedBlueprints] = useState<Blueprint[]>(() => {
+    const saved = localStorage.getItem('savedBlueprints');
+    return saved ? JSON.parse(saved) : [];
   });
   const canAccessAdminModal = userData.role === "Developer";
   const [brushSize, setBrushSize] = useState<number>(1);
@@ -315,14 +327,58 @@ useEffect(() => {
     reader.readAsDataURL(file);
   };
 
-const hexToRgb = (hex: string) => {
-  const bigint = parseInt(hex.slice(1), 16);
-  return {
-    r: (bigint >> 16) & 255,
-    g: (bigint >> 8) & 255,
-    b: bigint & 255,
+  const handleUpdatePreview = () => {
+    if (pasteCoords.x !== null && pasteCoords.y !== null && uploadedImage) {
+      setIsPreviewActive(true);
+    } else {
+      setIsPreviewActive(false);
+    }
   };
-};
+
+  const saveCurrentBlueprint = () => {
+    if (!uploadedImage || pasteCoords.x === null || pasteCoords.y === null) {
+      alert("Please upload an image and set coordinates before saving.");
+      return;
+    }
+
+    const newBlueprint: Blueprint = {
+      id: `bp_${Date.now()}`,
+      name: `Blueprint ${savedBlueprints.length + 1}`,
+      imgSrc: uploadedImage.src,
+      coords: { x: pasteCoords.x, y: pasteCoords.y },
+    };
+
+    const updatedBlueprints = [...savedBlueprints, newBlueprint];
+    setSavedBlueprints(updatedBlueprints);
+    localStorage.setItem('savedBlueprints', JSON.stringify(updatedBlueprints));
+  };
+
+  // Load a saved blueprint for preview
+  const loadBlueprintForPreview = (blueprint: Blueprint) => {
+    const img = new Image();
+    img.onload = () => {
+      setUploadedImage(img);
+      setPasteCoords({ x: blueprint.coords.x, y: blueprint.coords.y });
+      setIsPreviewActive(true);
+    };
+    img.src = blueprint.imgSrc;
+  };
+
+  const deleteBlueprint = (blueprintId: string) => {
+    const updatedBlueprints = savedBlueprints.filter(bp => bp.id !== blueprintId);
+    setSavedBlueprints(updatedBlueprints);
+    localStorage.setItem('savedBlueprints', JSON.stringify(updatedBlueprints));
+  };
+
+
+  const hexToRgb = (hex: string) => {
+    const bigint = parseInt(hex.slice(1), 16);
+    return {
+      r: (bigint >> 16) & 255,
+      g: (bigint >> 8) & 255,
+      b: bigint & 255,
+    };
+  };
 
 const findClosestColorIndex = (r: number, g: number, b: number) => {
   let closestIndex = 0;
@@ -1285,6 +1341,106 @@ return (
     </div>
   )}
 
+  {/* Blueprints Modal */}
+  {showBlueprints && (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm z-50 transition-opacity duration-300">
+      <div className="bg-secondary-color p-8 rounded-xl shadow-2xl text-white max-w-5xl w-full transform scale-100 transition-transform duration-300">
+        <h3 className="text-3xl font-extrabold mb-6 text-center border-b pb-3 border-gray-700">
+          Blueprints
+        </h3>
+
+        {/* Image Upload and Preview UI */}
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold mb-2">Upload Blueprint Image</h4>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="mb-3 p-2 bg-tertiary-color rounded text-xs w-full"
+          />
+          <div className="flex space-x-2 mb-3">
+            <input
+              type="number"
+              placeholder="X Coord"
+              value={pasteCoords.x ?? ''}
+              onChange={(e) => {
+                const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                setPasteCoords((prev) => ({ ...prev, x: value }));
+                handleUpdatePreview();
+              }}
+              className="w-1/2 p-2 bg-tertiary-color rounded text-xs"
+            />
+            <input
+              type="number"
+              placeholder="Y Coord"
+              value={pasteCoords.y ?? ''}
+              onChange={(e) => {
+                const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                setPasteCoords((prev) => ({ ...prev, y: value }));
+                handleUpdatePreview();
+              }}
+              className="w-1/2 p-2 bg-tertiary-color rounded text-xs"
+            />
+          </div>
+          <button
+            onClick={handleUpdatePreview}
+            className="w-32 py-4 px-10 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs mb-2"
+          >
+            Preview Blueprint Image
+          </button>
+          <button
+            onClick={saveCurrentBlueprint}
+            className="w-32 py-4 px-10 rounded bg-green-600 hover:bg-green-500 text-white font-semibold text-xs"
+          >
+            Save Blueprint
+          </button>
+        </div>
+
+        {/* Display saved blueprints */}
+        {savedBlueprints.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold mb-2">Saved Blueprints</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {savedBlueprints.map(bp => (
+              <div key={bp.id} className="relative">
+                <div
+                  className="cursor-pointer border border-accent-color p-2 rounded hover:shadow-lg"
+                  onClick={() => loadBlueprintForPreview(bp)}
+                >
+                  <img src={bp.imgSrc} alt={bp.name} className="w-full h-20 object-contain bg-transparent" />
+                  <div className="p-2 text-center">
+                    <p className="text-sm font-semibold">{bp.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteBlueprint(bp.id);
+                  }}
+                  className="absolute top-2 right-2 text-white rounded-full p-1 focus:outline-none"
+                  aria-label="Delete Blueprint"
+                >
+                  ✖️
+                </button>
+              </div>
+            ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => {
+            setShowBlueprints(false);
+          }}
+          className="w-full py-4 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )}
+
+
       {/* Brush Size Context Menu */}
       {showBrushMenu && (
       <div
@@ -1434,6 +1590,7 @@ return (
       onTogglePixelInfo={() => setIsPixelInfoEnabled((prev) => !prev)}
       isPixelInfoEnabled={isPixelInfoEnabled}
       onAchievementsButtonClick={() => setShowAchievements(true)}
+      onBlueprintsButtonClick={() => setShowBlueprints(true)}
     />}
     {isSignedIn && <SidePanelLookUp
       onJumpToCoords={jumpToCoords}
