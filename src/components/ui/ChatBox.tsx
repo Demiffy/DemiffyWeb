@@ -13,6 +13,7 @@ import {
 interface Message {
   id: string;
   username: string;
+  profilePic?: string;
   content: string;
   timestamp: number;
   fading?: boolean;
@@ -20,9 +21,11 @@ interface Message {
 
 interface ChatBoxProps {
   currentUsername: string;
+  currentUserProfilePic: string;
 }
 
-const ChatBox: React.FC<ChatBoxProps> = ({ currentUsername }) => {
+const ChatBox: React.FC<ChatBoxProps> = (props) => {
+  const { currentUsername, currentUserProfilePic } = props;
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState<string>("");
   const [hidden, setHidden] = useState<boolean>(false);
@@ -36,6 +39,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ currentUsername }) => {
       const message: Message = {
         id: snapshot.key,
         username: data.username,
+        profilePic: data.profilePic,
         content: data.content,
         timestamp: data.timestamp || Date.now(),
       };
@@ -96,6 +100,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ currentUsername }) => {
       username: currentUsername || "Anonymous",
       content: inputValue,
       timestamp: serverTimestamp(),
+      profilePic: currentUserProfilePic,
     };
 
     try {
@@ -171,8 +176,15 @@ const ChatBox: React.FC<ChatBoxProps> = ({ currentUsername }) => {
                             backdrop-blur-sm border border-gray-300 shadow-sm 
                             bg-white/40 ${msg.fading ? "opacity-0" : "opacity-100"}`}
               >
-                <div className="flex justify-between">
-                  <div className="font-semibold text-lg text-gray-800">
+                <div className="flex items-center space-x-2">
+                  {msg.profilePic && (
+                    <img
+                      src={msg.profilePic}
+                      alt={`${msg.username}'s profile`}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  )}
+                  <div className="font-semibold text-lg text-secondary-color flex-grow">
                     {msg.username}
                   </div>
                   <div className="text-xs text-gray-500">

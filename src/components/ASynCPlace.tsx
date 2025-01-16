@@ -1209,7 +1209,7 @@ const handleMouseUp = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) =
 return (
   <div className="h-screen bg-gray-900 text-white">
 
-  {isSignedIn && <ChatBox currentUsername={userData.username} />}
+  {isSignedIn && <ChatBox currentUsername={userData.username} currentUserProfilePic={userData.pfpurl} />}
 
     {!isSignedIn && (
       <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-75 z-50">
