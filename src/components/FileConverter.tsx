@@ -1,8 +1,8 @@
 // FileConverter.tsx
 
 import React, { useState, ChangeEvent, DragEvent, useRef } from 'react';
-import { ArrowUpTrayIcon, LinkIcon } from '@heroicons/react/24/solid';
-import Footer from './ui/Footer';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/solid';
+import DragAndDropArea from './ui/DragAndDropArea';
 
 type SupportedFormats =
   | 'avif'
@@ -29,10 +29,7 @@ const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const FileConverter: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileData[]>([]);
   const [outputFormat, setOutputFormat] = useState<SupportedFormats>('png');
-  const [globalError, setGlobalError] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [urlError, setUrlError] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,18 +73,6 @@ const FileConverter: React.FC = () => {
     ico: 'image/x-icon',
   };
 
-  const mimeTypeToExtension: { [key: string]: SupportedFormats } = {
-    'image/avif': 'avif',
-    'image/webp': 'webp',
-    'image/jpeg': 'jpeg',
-    'image/png': 'png',
-    'image/bmp': 'bmp',
-    'image/gif': 'gif',
-    'image/svg+xml': 'svg',
-    'image/x-icon': 'ico',
-    'image/vnd.microsoft.icon': 'ico',
-  };
-
   const outputExtensionMapping: { [key in SupportedFormats]: string } = {
     avif: 'avif',
     webp: 'webp',
@@ -103,7 +88,6 @@ const FileConverter: React.FC = () => {
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setGlobalError('');
     const files = e.target.files;
     if (files) {
       const filesArray: FileData[] = Array.from(files).map((file) => {
@@ -166,7 +150,6 @@ const FileConverter: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    setGlobalError('');
     const files = e.dataTransfer.files;
     if (files) {
       const filesArray: FileData[] = Array.from(files).map((file) => {
@@ -198,53 +181,6 @@ const FileConverter: React.FC = () => {
         };
       });
       setSelectedFiles((prev) => [...prev, ...filesArray]);
-    }
-  };
-
-  const handleImageUrlChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setImageUrl(e.target.value);
-    setUrlError('');
-  };
-
-  const handleAddImageFromUrl = async (): Promise<void> => {
-    if (!imageUrl) {
-      setUrlError('Please enter a valid image URL.');
-      return;
-    }
-
-    try {
-      const response = await fetch(imageUrl, { mode: 'cors' });
-      if (!response.ok) {
-        throw new Error('Failed to fetch the image. Please check the URL.');
-      }
-
-      const blob = await response.blob();
-      const fileExtension = mimeTypeToExtension[blob.type];
-      if (!fileExtension || !supportedInputFormats.includes(fileExtension)) {
-        setUrlError('Unsupported image format.');
-        return;
-      }
-
-      if (blob.size > MAX_FILE_SIZE) {
-        setUrlError('Image size exceeds 5MB limit.');
-        return;
-      }
-
-      const file = new File(
-        [blob],
-        `image_from_url.${outputExtensionMapping[fileExtension] || fileExtension}`,
-        { type: blob.type }
-      );
-      const newFile: FileData = {
-        file,
-        convertedUrl: '',
-        error: '',
-        isConverting: false,
-      };
-      setSelectedFiles((prev) => [...prev, newFile]);
-      setImageUrl('');
-    } catch (error: any) {
-      setUrlError(error.message || 'Failed to add image from URL.');
     }
   };
 
@@ -379,54 +315,33 @@ const FileConverter: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen text-white">
-      <section className="min-h-screen flex flex-col items-center text-white p-12">
-        <h2 className="text-3xl font-bold mb-6 text-accent-color">IMG Converter</h2>
-
-        <div className="flex flex-col lg:flex-row w-full max-w-5xl space-y-6 lg:space-y-0 lg:space-x-6">
-          {/* Drag and Drop Area */}
-          <div
-            onClick={handleUploadAreaClick}
-            onDragOverCapture={handleDragOver}
-            onDragEnterCapture={handleDragEnter}
-            onDragLeaveCapture={handleDragLeave}
-            onDropCapture={handleDrop}
-            role="button"
-            aria-label="File Upload Area"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                fileInputRef.current?.click();
-              }
-            }}
-            className={`flex flex-col items-center justify-center w-full lg:w-1/2 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer ${
-              isDragging
-                ? 'border-blue-400 bg-black'
-                : 'border-gray-500 bg-primary-color hover:bg-tertiary-color'
-            }`}
-          >
-            <ArrowUpTrayIcon className="h-12 w-12 text-accent-color mb-4" />
-            <p className="text-center mb-4">
-              {isDragging
-                ? 'Release to upload your files'
-                : 'Drag and drop image files here, or click to select files.'}
-            </p>
-            <input
-              type="file"
-              accept={supportedInputFormats.map((fmt) => `.${fmt}`).join(', ')}
-              multiple
-              onChange={handleFileChange}
-              className="hidden"
-              ref={fileInputRef}
-            />
-          </div>
-
-          {/* Output Format Selection and Convert Button */}
-          <div className="flex flex-col w-full lg:w-1/2 space-y-4">
-            <div className="bg-primary-color p-6 rounded shadow-md">
+    <div className="min-h-screen flex flex-col items-center pt-5 text-white">
+      {selectedFiles.length === 0 ? (
+        <DragAndDropArea
+          isDragging={isDragging}
+          supportedInputFormats={supportedInputFormats}
+          fileInputRef={fileInputRef}
+          onClick={handleUploadAreaClick}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onFileChange={handleFileChange}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              fileInputRef.current?.click();
+            }
+          }}
+          text="Drag and drop image files here, or click to select files"
+        />
+      ) : (
+        <div className="w-full max-w-5xl space-y-6">
+          {/* Settings Panel */}
+          <div className="w-full max-w-md bg-primary-color p-6 rounded-lg shadow-md mx-auto">
+            <div className="mb-4">
               <label
                 htmlFor="outputFormat"
-                className="block mb-2 text-sm font-medium"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Select Output Format
               </label>
@@ -434,7 +349,7 @@ const FileConverter: React.FC = () => {
                 id="outputFormat"
                 value={outputFormat}
                 onChange={handleOutputFormatChange}
-                className="w-full p-2 bg-tertiary-color border border-accent-color rounded text-white"
+                className="w-full p-2 bg-tertiary-color border border-quaternary-color rounded text-white"
               >
                 {outputFormatOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -443,92 +358,69 @@ const FileConverter: React.FC = () => {
                 ))}
               </select>
             </div>
-
-            {/* Add Image from URL */}
-            <div className="bg-primary-color p-6 rounded shadow-md flex flex-col">
-              <label
-                htmlFor="imageUrl"
-                className="block mb-2 text-sm font-medium"
-              >
-                Add Image from URL
-              </label>
-              <div className="flex">
-                <input
-                  type="text"
-                  id="imageUrl"
-                  value={imageUrl}
-                  onChange={handleImageUrlChange}
-                  placeholder="Enter image URL"
-                  className="flex-grow p-2 bg-tertiary-color border border-accent-color rounded-l text-white focus:outline-none"
-                />
-                <button
-                  onClick={handleAddImageFromUrl}
-                  className="py-2 px-4 bg-green-600 text-white rounded-l hover:bg-green-700 transition-colors duration-200 flex items-center"
-                >
-                  <LinkIcon className="h-5 w-5 mr-2" />
-                  Add
-                </button>
-              </div>
-              {urlError && <p className="text-red-400 mt-2">{urlError}</p>}
-            </div>
-
-            {/* Convert Button */}
-            {selectedFiles.length > 0 && (
+            <div className="flex justify-between items-center">
               <button
                 onClick={convertAllImages}
-                disabled={
-                  selectedFiles.every((file) => file.error || file.convertedUrl) ||
-                  selectedFiles.some((file) => file.isConverting)
-                }
-                className={`w-full py-2 px-4 bg-blue-600 text-white rounded ${
-                  selectedFiles.every((file) => file.error || file.convertedUrl) ||
-                  selectedFiles.some((file) => file.isConverting)
+                disabled={selectedFiles.some(
+                  (file) => file.isConverting || file.error
+                )}
+                className={`py-2 px-4 bg-blue-600 text-white rounded ${
+                  selectedFiles.some((file) => file.isConverting || file.error)
                     ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:bg-blue-700 transition-colors duration-200'
+                    : 'hover:bg-blue-500'
                 }`}
               >
-                Convert All Images
+                Convert Images
               </button>
-            )}
+              <button
+                onClick={handleUploadAreaClick}
+                className="py-2 px-4 bg-orange-700 text-white rounded hover:bg-orange-600"
+              >
+                Upload More
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Global Error */}
-        {globalError && <p className="text-red-400 mb-4">{globalError}</p>}
-
-        {/* Selected Files List */}
-        {selectedFiles.length > 0 && (
-          <div className="w-full max-w-5xl mt-6">
-            <h3 className="text-xl font-semibold mb-2">Selected Files:</h3>
-            <ul className="space-y-2">
+          {/* Selected Files List */}
+          <div className="w-full max-w-5xl mx-auto">
+            <h3 className="text-xl font-semibold mb-4 text-center">
+              Uploaded Images:
+            </h3>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {selectedFiles.map((fileData, index) => (
                 <li
                   key={index}
-                  className="relative flex items-center justify-between bg-primary-color p-3 rounded"
+                  className="relative flex flex-col items-center bg-primary-color p-3 rounded shadow"
                 >
-                  <div>
-                    <p className="font-medium">{fileData.file.name}</p>
-                    {fileData.error && (
-                      <p className="text-red-400 text-sm">{fileData.error}</p>
-                    )}
-                    {fileData.isConverting && (
-                      <p className="text-yellow-400 text-sm">Converting...</p>
-                    )}
-                    {fileData.convertedUrl && (
-                      <p className="text-green-400 text-sm">
-                        Conversion Complete
-                      </p>
-                    )}
-                  </div>
+                  <p className="font-medium text-center mb-2">
+                    {fileData.convertedUrl
+                      ? `${fileData.file.name.substring(
+                          0,
+                          fileData.file.name.lastIndexOf('.')
+                        )}.${outputFormat}`
+                      : fileData.file.name}
+                  </p>
+                  {fileData.error && (
+                    <p className="text-red-400 text-sm text-center">{fileData.error}</p>
+                  )}
+                  {fileData.isConverting && (
+                    <p className="text-yellow-400 text-sm text-center">
+                      Converting...
+                    </p>
+                  )}
+                  {fileData.convertedUrl && (
+                    <p className="text-green-400 text-sm text-center">
+                      Conversion Complete
+                    </p>
+                  )}
                   <button
                     onClick={() => removeFile(index)}
-                    className="absolute top-1.2 right-3 p-2 bg-transparent hover:bg-slate-700 text-white rounded-full"
-                    style={{ zIndex: 50 }}
+                    className="absolute top-10 right-2 p-1 bg-transparent hover:bg-tertiary-color text-red-600 rounded-full"
                     title="Remove File"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
+                      className="h-5 w-5"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -545,49 +437,58 @@ const FileConverter: React.FC = () => {
               ))}
             </ul>
           </div>
-        )}
 
-        {/* Converted Files Display */}
-        {selectedFiles.some((file) => file.convertedUrl) && (
-          <div className="w-full max-w-5xl mt-6">
-            <h3 className="text-2xl font-semibold mb-4">Converted Images:</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {selectedFiles.map((fileData, index) =>
-                fileData.convertedUrl ? (
-                  <div
-                    key={index}
-                    className="bg-primary-color p-4 rounded shadow-md"
-                  >
-                    <img
-                      src={fileData.convertedUrl}
-                      alt={`Converted ${fileData.file.name}`}
-                      className="w-full h-auto mb-2 rounded"
-                      loading="lazy"
-                    />
-                    <a
-                      href={fileData.convertedUrl}
-                      download={`${
-                        fileData.file.name.substring(
-                          0,
-                          fileData.file.name.lastIndexOf('.')
-                        )
-                      }_${outputExtensionMapping[outputFormat] || outputFormat}.${
-                        outputExtensionMapping[outputFormat] || outputFormat
-                      }`}
-                      className="inline-flex items-center py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200"
-                      style={{ color: 'white' }}
-                    >
-                      <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
-                      Download {outputFormat.toUpperCase()}
-                    </a>
-                  </div>
-                ) : null
-              )}
+          {/* Converted Files Display */}
+          {selectedFiles.some((file) => file.convertedUrl) && (
+            <div className="w-full max-w-5xl mx-auto mt-6">
+              <h3 className="text-2xl font-semibold mb-4 text-center">
+                Converted Images:
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {selectedFiles.map(
+                  (fileData, index) =>
+                    fileData.convertedUrl && (
+                      <div
+                        key={index}
+                        className="p-4"
+                      >
+                        <div className="font-medium text-center bg-primary-color rounded-t p-2">
+                          {fileData.convertedUrl
+                            ? `${fileData.file.name.substring(
+                                0,
+                                fileData.file.name.lastIndexOf('.')
+                              )}.${outputFormat}`
+                            : fileData.file.name}
+                        </div>
+                        <img
+                          src={fileData.convertedUrl}
+                          alt={`Converted ${fileData.file.name}`}
+                          className="w-full h-auto"
+                          loading="lazy"
+                        />
+                        <a
+                          href={fileData.convertedUrl}
+                          download={`${
+                            fileData.file.name.substring(
+                              0,
+                              fileData.file.name.lastIndexOf('.')
+                            )
+                          }_${outputExtensionMapping[outputFormat] || outputFormat}.${
+                            outputExtensionMapping[outputFormat] || outputFormat
+                          }`}
+                          className="inline-flex items-center justify-center w-full py-2 px-4 bg-green-600 text-white rounded-b hover:bg-green-700 transition-colors duration-200 mb-2"
+                        >
+                          <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                          Download {outputFormat.toUpperCase()}
+                        </a>
+                      </div>
+                    )
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </section>
-      <Footer />
+          )}
+        </div>
+      )}
     </div>
   );
 };

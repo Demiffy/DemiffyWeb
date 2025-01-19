@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { ArrowUpTrayIcon, ArrowsRightLeftIcon, ArrowPathIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
-import Footer from './ui/Footer';
+import DragAndDropArea from './ui/DragAndDropArea';
 
 const MAX_PREVIEW_SIZE = 500;
 
@@ -202,9 +202,6 @@ const ImageResizer: React.FC = () => {
 
   return (
     <div className="min-h-screen text-white flex flex-col pt-12">
-      <header className="p-6">
-        <h1 className="text-3xl font-bold text-center text-accent-color">Image Resizer</h1>
-      </header>
 
       {/* Main Content */}
       <main className="flex-grow p-6 overflow-auto">
@@ -214,32 +211,23 @@ const ImageResizer: React.FC = () => {
           }`}
         >
           {/* Upload Area */}
-          <div
+          <DragAndDropArea
+            isDragging={false}
+            supportedInputFormats={['image/*']}
+            fileInputRef={fileInputRef}
             onClick={handleUploadAreaClick}
-            role="button"
-            aria-label="File Upload Area"
-            tabIndex={0}
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={(e) => e.preventDefault()}
+            onDragLeave={(e) => e.preventDefault()}
+            onDrop={(e) => e.preventDefault()}
+            onFileChange={handleImageChange}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 fileInputRef.current?.click();
               }
             }}
-            className={`flex flex-col items-center justify-center w-full h-64 p-6 border-2 border-dashed rounded-lg transition-colors duration-200 cursor-pointer border-gray-500 bg-primary-color hover:bg-tertiary-color ${
-              selectedImage ? 'lg:w-1/2' : ''
-            }`}
-          >
-            <ArrowUpTrayIcon className="h-12 w-12 text-accent-color mb-4" />
-            <p className="text-center">
-              Drag and drop an image here, or click to select a file.
-            </p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-              ref={fileInputRef}
-            />
-          </div>
+            text="Drag and drop an image here, or click to select a file."
+          />
 
           {/* Settings and Controls */}
           {selectedImage && width && height && (
@@ -426,7 +414,6 @@ const ImageResizer: React.FC = () => {
           </div>
         )}
       </main>
-      <Footer />
     </div>
   );
 };

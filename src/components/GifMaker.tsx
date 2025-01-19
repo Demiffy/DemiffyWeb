@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { ArrowUpTrayIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
-import Footer from './ui/Footer';
+import DragAndDropArea from './ui/DragAndDropArea';
 import GIF from 'gif.js.optimized';
 
 interface ImageData {
@@ -289,29 +289,24 @@ const GifMaker: React.FC = () => {
 
         <div className="flex flex-col lg:flex-row w-full max-w-7xl space-y-6 lg:space-y-0 lg:space-x-6">
           {/* Upload Area */}
-          <div
+          <DragAndDropArea
+            isDragging={false}
+            supportedInputFormats={supportedFormats}
+            fileInputRef={fileInputRef}
             onClick={handleUploadAreaClick}
-            role="button"
-            aria-label="File Upload Area"
-            tabIndex={0}
+            onDragOver={() => {}}
+            onDragEnter={() => {}}
+            onDragLeave={() => {}}
+            onDrop={() => {}}
+            onFileChange={handleFileChange}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 fileInputRef.current?.click();
               }
             }}
-            className="flex flex-col items-center justify-center w-full lg:w-1/3 h-64 p-6 border-2 border-dashed rounded transition-colors duration-200 cursor-pointer border-gray-500 bg-primary-color hover:bg-tertiary-color"
+            text="Drag and drop images here, or click to select files"
           >
-            <ArrowUpTrayIcon className="h-12 w-12 text-blue-400 mb-4" />
-            <p className="text-center mb-4">Drag and drop images here, or click to select files.</p>
-            <input
-              type="file"
-              accept={supportedFormats.map((fmt) => `.${fmt}`).join(', ')}
-              multiple
-              onChange={handleFileChange}
-              className="hidden"
-              ref={fileInputRef}
-            />
-          </div>
+          </DragAndDropArea>
 
           {/* Settings and Generate Button */}
           <div className="flex flex-col w-full lg:w-2/3 space-y-4">
@@ -565,7 +560,6 @@ const GifMaker: React.FC = () => {
           </div>
         )}
       </section>
-      <Footer />
     </div>
   );
 };

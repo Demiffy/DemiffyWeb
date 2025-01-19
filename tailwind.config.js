@@ -20,6 +20,9 @@ export default {
         'accent-color-darker': '#133E7D',
         'accent-color-darkest': '#0D2E5C',
       },
+      fontFamily: {
+        roboto: ['Roboto', 'sans-serif'],
+      },
     },
   },
   plugins: [],

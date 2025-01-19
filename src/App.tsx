@@ -13,15 +13,13 @@ import TwoThousandFortyEightGame from './components/2048Game';
 import SowwyProto from './components/SowwyProto';
 import CarDatabase from './components/CarDatabase';
 import CarDetails from './components/CarDetails';
-import FileConverter from './components/FileConverter';
-import GifMaker from './components/GifMaker';
 import AllLinks from './components/AllLinks';
-import ImageResizer from './components/ImageResizer';
 import DemiNotes from './components/DemiNotes';
 import Destabilize from './components/Desinote';
 import DiscordUser from './components/DiscordUser';
 import CanvasTest from './components/canvastest';
 import DCars from './components/DCars';
+import ImageEditor from './components/ImageEditor';
 import NotFound from '../NotFound';
 import './App.css';
 
@@ -43,10 +41,8 @@ const AnimatedRoutes = () => {
           <Route path="/proto/sowwy" element={<SowwyProto />} />
           <Route path="/cdata" element={<CarDatabase />} />
           <Route path="/cdata/cid/:carId" Component={CarDetails} />
-          <Route path="/ic" element={<FileConverter />} />
-          <Route path="/gif" element={<GifMaker />} />
           <Route path="/links" element={<AllLinks />} />
-          <Route path="/img" element={<ImageResizer />} />
+          <Route path="/imedit" element={<ImageEditor />} />
           <Route path="/discord" element={<DiscordUser />} />
           <Route path="/deminotes" element={<DemiNotes />} />
           <Route path="/DN" element={<Destabilize />} />
