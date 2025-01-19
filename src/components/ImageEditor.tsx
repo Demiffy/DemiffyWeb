@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PuzzlePieceIcon, FilmIcon, ArrowsPointingOutIcon } from '@heroicons/react/24/outline'; 
 import ImageResizer from './ImageResizer';
 import GifMaker from './GifMaker';
-import FileConverter from './FileConverter';
+import ImageConverter from './ImageConverter';
 import Footer from './ui/Footer';
 
 enum Tab {
@@ -42,7 +42,7 @@ const ImageEditor: React.FC = () => {
       case Tab.GIFMAKER:
         return <GifMaker />;
       case Tab.CONVERTER:
-        return <FileConverter />;
+        return <ImageConverter />;
       default:
         return null;
     }

@@ -30,8 +30,9 @@ const FileConverter: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileData[]>([]);
   const [outputFormat, setOutputFormat] = useState<SupportedFormats>('png');
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isConversionComplete, setIsConversionComplete] = useState<boolean>(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const supportedInputFormats: SupportedFormats[] = [
     'avif',
@@ -304,18 +305,46 @@ const FileConverter: React.FC = () => {
         convertImage(fileData, index);
       }
     });
+    setIsConversionComplete(true);
   };
 
   const removeFile = (index: number): void => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setSelectedFiles((prev) => {
+      const updatedFiles = prev.filter((_, i) => i !== index);
+
+      if (updatedFiles.length === 0) {
+        setIsConversionComplete(false);
+      }
+
+      return updatedFiles;
+    });
   };
 
   const handleUploadAreaClick = (): void => {
-    fileInputRef.current?.click();
+    if (!isConversionComplete) {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const setFileInputRef = (node: HTMLInputElement | null) => {
+    if (fileInputRef.current !== node) {
+      fileInputRef.current = node;
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center pt-5 text-white">
+
+      {/* Hidden Input */}
+      <input
+        type="file"
+        ref={setFileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        multiple
+        accept=".avif,.webp,.jpeg,.jpg,.jpe,.jfif,.png,.bmp,.gif,.svg,.ico"
+      />
+
       {selectedFiles.length === 0 ? (
         <DragAndDropArea
           isDragging={isDragging}
@@ -349,7 +378,12 @@ const FileConverter: React.FC = () => {
                 id="outputFormat"
                 value={outputFormat}
                 onChange={handleOutputFormatChange}
-                className="w-full p-2 bg-tertiary-color border border-quaternary-color rounded text-white"
+                disabled={isConversionComplete}
+                className={`w-full p-2 ${
+                  isConversionComplete
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-tertiary-color border-quaternary-color text-white'
+                } border rounded`}
               >
                 {outputFormatOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -374,7 +408,12 @@ const FileConverter: React.FC = () => {
               </button>
               <button
                 onClick={handleUploadAreaClick}
-                className="py-2 px-4 bg-orange-700 text-white rounded hover:bg-orange-600"
+                disabled={isConversionComplete}
+                className={`py-2 px-4 ${
+                  isConversionComplete
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-orange-700 hover:bg-orange-600 text-white'
+                } rounded`}
               >
                 Upload More
               </button>
