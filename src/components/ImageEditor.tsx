@@ -7,8 +7,8 @@ import Footer from './ui/Footer';
 
 enum Tab {
   RESIZER = 'Resizer',
-  GIFMAKER = 'GIF Maker',
-  CONVERTER = 'Image Converter',
+  GIFMAKER = 'GIF',
+  CONVERTER = 'Converter',
 }
 
 const tabIcons: Record<Tab, React.ReactNode> = {

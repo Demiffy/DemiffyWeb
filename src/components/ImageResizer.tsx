@@ -201,67 +201,60 @@ const ImageResizer: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen text-white flex flex-col pt-12">
+    <div className="min-h-screen flex flex-col items-center pt-5 text-white">
+      {!selectedImage ? (
+        <DragAndDropArea
+          isDragging={false}
+          supportedInputFormats={['image/*']}
+          fileInputRef={fileInputRef}
+          onClick={handleUploadAreaClick}
+          onDragOver={(e) => e.preventDefault()}
+          onDragEnter={(e) => e.preventDefault()}
+          onDragLeave={(e) => e.preventDefault()}
+          onDrop={(e) => e.preventDefault()}
+          onFileChange={handleImageChange}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              fileInputRef.current?.click();
+            }
+          }}
+          text="Drag and drop an image here, or click to select a file."
+        />
+      ) : (
+        <div className="w-full max-w-7xl px-6 space-y-8">
+          {/* Settings and Controls Panel */}
+          <div className="w-full bg-primary-color p-8 rounded-lg shadow-md">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left: Sizing Controls */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="flex items-center">
+                    <label htmlFor="width" className="w-32 text-sm font-medium">
+                      Width (px):
+                    </label>
+                    <input
+                      type="number"
+                      id="width"
+                      value={width ?? ''}
+                      onChange={handleWidthChange}
+                      className="flex-1 p-2 bg-tertiary-color border border-accent-color rounded text-white"
+                      min={1}
+                    />
+                  </div>
 
-      {/* Main Content */}
-      <main className="flex-grow p-6 overflow-auto">
-        <div
-          className={`flex flex-col lg:flex-row lg:space-x-6 ${
-            !selectedImage ? 'items-center justify-center' : ''
-          }`}
-        >
-          {/* Upload Area */}
-          <DragAndDropArea
-            isDragging={false}
-            supportedInputFormats={['image/*']}
-            fileInputRef={fileInputRef}
-            onClick={handleUploadAreaClick}
-            onDragOver={(e) => e.preventDefault()}
-            onDragEnter={(e) => e.preventDefault()}
-            onDragLeave={(e) => e.preventDefault()}
-            onDrop={(e) => e.preventDefault()}
-            onFileChange={handleImageChange}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                fileInputRef.current?.click();
-              }
-            }}
-            text="Drag and drop an image here, or click to select a file."
-          />
-
-          {/* Settings and Controls */}
-          {selectedImage && width && height && (
-            <div className="w-full lg:w-1/2 mt-6 lg:mt-0 bg-primary-color p-6 rounded-lg shadow-md max-h-full overflow-auto">
-              <h2 className="text-2xl font-semibold mb-4">Resize & Transform Settings</h2>
-              <div className="space-y-4">
-                {/* Width Input */}
-                <div className="flex items-center">
-                  <label htmlFor="width" className="w-24 text-sm font-medium">
-                    Width (px):
-                  </label>
-                  <input
-                    type="number"
-                    id="width"
-                    value={width}
-                    onChange={handleWidthChange}
-                    className="flex-1 p-2 bg-tertiary-color border border-accent-color rounded text-white"
-                    min={1}
-                  />
-                </div>
-
-                {/* Height Input */}
-                <div className="flex items-center">
-                  <label htmlFor="height" className="w-24 text-sm font-medium">
-                    Height (px):
-                  </label>
-                  <input
-                    type="number"
-                    id="height"
-                    value={height}
-                    onChange={handleHeightChange}
-                    className="flex-1 p-2 bg-tertiary-color border border-accent-color rounded text-white"
-                    min={1}
-                  />
+                  <div className="flex items-center">
+                    <label htmlFor="height" className="w-32 text-sm font-medium">
+                      Height (px):
+                    </label>
+                    <input
+                      type="number"
+                      id="height"
+                      value={height ?? ''}
+                      onChange={handleHeightChange}
+                      className="flex-1 p-2 bg-tertiary-color border border-accent-color rounded text-white"
+                      min={1}
+                    />
+                  </div>
                 </div>
 
                 {/* Lock Aspect Ratio */}
@@ -271,149 +264,145 @@ const ImageResizer: React.FC = () => {
                     id="lockAspectRatio"
                     checked={lockAspectRatio}
                     onChange={handleLockAspectRatioChange}
-                    className="mr-2"
+                    className="mr-2 h-5 w-5 accent-accent-color"
                   />
                   <label htmlFor="lockAspectRatio" className="text-sm font-medium">
                     Lock Aspect Ratio
                   </label>
                 </div>
+              </div>
 
-                {/* Transformation Controls */}
-                <div className="mt-4">
-                  <h3 className="text-xl font-semibold mb-2">Transformations</h3>
-                  <div className="flex flex-wrap space-x-2">
-                    <button
-                      onClick={handleRotateLeft}
-                      className="flex items-center justify-center py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200 mb-2"
-                      aria-label="Rotate Left"
-                      title="Rotate Left"
-                    >
-                      <ArrowPathIcon className="h-5 w-5 mr-2 transform rotate-180" />
-                      Rotate Left
-                    </button>
-                    <button
-                      onClick={handleRotateRight}
-                      className="flex items-center justify-center py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200 mb-2"
-                      aria-label="Rotate Right"
-                      title="Rotate Right"
-                    >
-                      <ArrowPathIcon className="h-5 w-5 mr-2" />
-                      Rotate Right
-                    </button>
-                    <button
-                      onClick={handleFlipHorizontal}
-                      className="flex items-center justify-center py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors duration-200 mb-2"
-                      aria-label="Flip Horizontal"
-                      title="Flip Horizontal"
-                    >
-                      <ArrowsRightLeftIcon className="h-5 w-5 mr-2" />
-                      Flip H
-                    </button>
-                    <button
-                      onClick={handleFlipVertical}
-                      className="flex items-center justify-center py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors duration-200 mb-2"
-                      aria-label="Flip Vertical"
-                      title="Flip Vertical"
-                    >
-                      <ArrowDownIcon className="h-5 w-5 mr-2" />
-                      Flip V
-                    </button>
-                  </div>
+              {/* Right: Transformation Controls */}
+              <div>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={handleRotateLeft}
+                    className="flex items-center justify-center py-3 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
+                    aria-label="Rotate Left"
+                    title="Rotate Left"
+                  >
+                    <ArrowPathIcon className="h-5 w-5 mr-2 transform rotate-180" />
+                    Rotate Left
+                  </button>
+                  <button
+                    onClick={handleRotateRight}
+                    className="flex items-center justify-center py-3 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
+                    aria-label="Rotate Right"
+                    title="Rotate Right"
+                  >
+                    <ArrowPathIcon className="h-5 w-5 mr-2" />
+                    Rotate Right
+                  </button>
+                  <button
+                    onClick={handleFlipHorizontal}
+                    className="flex items-center justify-center py-3 px-6 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors duration-200"
+                    aria-label="Flip Horizontal"
+                    title="Flip Horizontal"
+                  >
+                    <ArrowsRightLeftIcon className="h-5 w-5 mr-2" />
+                    Flip H
+                  </button>
+                  <button
+                    onClick={handleFlipVertical}
+                    className="flex items-center justify-center py-3 px-6 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors duration-200"
+                    aria-label="Flip Vertical"
+                    title="Flip Vertical"
+                  >
+                    <ArrowDownIcon className="h-5 w-5 mr-2" />
+                    Flip V
+                  </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
+
+          {/* Resized Image Preview */}
+          {resizedImage && width && height && (
+            <div className="w-full">
+              <h2 className="text-2xl font-semibold mb-6 text-center">Resized Image</h2>
+              <div className="flex flex-col lg:flex-row lg:space-x-8">
+                {/* Resized Image Section */}
+                <div className="w-full lg:w-1/2 p-6 flex flex-col items-center">
+                  <div
+                    className="bg-primary-color p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
+                    style={{
+                      width: width > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : width,
+                      height: height > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : height,
+                      maxWidth: '100%',
+                      maxHeight: '60vh',
+                    }}
+                  >
+                    <img
+                      src={resizedImage}
+                      alt="Resized"
+                      style={{
+                        width: width > MAX_PREVIEW_SIZE ? '100%' : `${width}px`,
+                        height: height > MAX_PREVIEW_SIZE ? '100%' : `${height}px`,
+                        objectFit: 'contain',
+                      }}
+                    />
+                  </div>
+                  <p className="mt-2 text-sm">
+                    Dimensions: {width}px &times; {height}px
+                  </p>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center justify-center py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200 mt-4"
+                  >
+                    <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                    Download Image
+                  </button>
+                </div>
+
+                {/* Original Image Section */}
+                {selectedImage && originalDimensions && (
+                  <div className="w-full lg:w-1/2 flex flex-col items-center mt-6 lg:mt-0">
+                    <h2 className="text-2xl font-semibold mb-6">Original Image</h2>
+                    <div
+                      className="bg-primary-color p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
+                      style={{
+                        width:
+                          originalDimensions.width > MAX_PREVIEW_SIZE
+                            ? MAX_PREVIEW_SIZE
+                            : originalDimensions.width,
+                        height:
+                          originalDimensions.height > MAX_PREVIEW_SIZE
+                            ? MAX_PREVIEW_SIZE
+                            : originalDimensions.height,
+                        maxWidth: '100%',
+                        maxHeight: '60vh',
+                      }}
+                    >
+                      <img
+                        src={URL.createObjectURL(selectedImage)}
+                        alt="Original"
+                        style={{
+                          width:
+                            originalDimensions.width > MAX_PREVIEW_SIZE
+                              ? '100%'
+                              : `${originalDimensions.width}px`,
+                          height:
+                            originalDimensions.height > MAX_PREVIEW_SIZE
+                              ? '100%'
+                              : `${originalDimensions.height}px`,
+                          objectFit: 'contain',
+                        }}
+                      />
+                    </div>
+                    <p className="mt-2 text-sm">
+                      Dimensions: {originalDimensions.width}px &times;{' '}
+                      {originalDimensions.height}px
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
-
-        {/* Error Message */}
-        {error && (
-          <p className="text-red-400 mt-4 text-center lg:text-left">{error}</p>
-        )}
-
-        {/* Resized Image Preview */}
-        {resizedImage && width && height && (
-          <div className="flex flex-col lg:flex-row lg:space-x-6 mt-6">
-            {/* Resized Image */}
-            <div className="w-full lg:w-1/2 p-6 flex flex-col items-center">
-              <h2 className="text-2xl font-semibold mb-4">Resized Image</h2>
-              <div
-                className="bg-primary-color p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
-                style={{
-                  width:
-                    width > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : width,
-                  height:
-                    height > MAX_PREVIEW_SIZE ? MAX_PREVIEW_SIZE : height,
-                  maxWidth: '100%',
-                  maxHeight: '60vh',
-                }}
-              >
-                <img
-                  src={resizedImage}
-                  alt="Resized"
-                  style={{
-                    width: width > MAX_PREVIEW_SIZE ? '100%' : `${width}px`,
-                    height:
-                      height > MAX_PREVIEW_SIZE ? '100%' : `${height}px`,
-                    objectFit: 'contain',
-                  }}
-                />
-              </div>
-              <p className="mt-2 text-sm">
-                Dimensions: {width}px &times; {height}px
-              </p>
-              <button
-                onClick={handleDownload}
-                className="flex items-center justify-center py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200 mt-4"
-              >
-                <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
-                Download Image
-              </button>
-            </div>
-
-            {/* Original Image Preview */}
-            {selectedImage && originalDimensions && (
-              <div className="w-full lg:w-1/2 flex flex-col items-center mt-6 lg:mt-0">
-                <h2 className="text-2xl font-semibold mb-4">Original Image</h2>
-                <div
-                  className="bg-primary-color p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
-                  style={{
-                    width:
-                      originalDimensions.width > MAX_PREVIEW_SIZE
-                        ? MAX_PREVIEW_SIZE
-                        : originalDimensions.width,
-                    height:
-                      originalDimensions.height > MAX_PREVIEW_SIZE
-                        ? MAX_PREVIEW_SIZE
-                        : originalDimensions.height,
-                    maxWidth: '100%',
-                    maxHeight: '60vh',
-                  }}
-                >
-                  <img
-                    src={URL.createObjectURL(selectedImage)}
-                    alt="Original"
-                    style={{
-                      width:
-                        originalDimensions.width > MAX_PREVIEW_SIZE
-                          ? '100%'
-                          : `${originalDimensions.width}px`,
-                      height:
-                        originalDimensions.height > MAX_PREVIEW_SIZE
-                          ? '100%'
-                          : `${originalDimensions.height}px`,
-                      objectFit: 'contain',
-                    }}
-                  />
-                </div>
-                <p className="mt-2 text-sm">
-                  Dimensions: {originalDimensions.width}px &times;{' '}
-                  {originalDimensions.height}px
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+      )}
     </div>
   );
 };

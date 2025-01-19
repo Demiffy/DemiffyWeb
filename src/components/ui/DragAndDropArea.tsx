@@ -1,5 +1,5 @@
 import React, { DragEvent, ChangeEvent, KeyboardEvent, MouseEvent, RefObject } from 'react';
-import { ArrowUpTrayIcon } from '@heroicons/react/24/solid';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 
 interface DragAndDropAreaProps {
   isDragging?: boolean;
@@ -49,7 +49,7 @@ const DragAndDropArea: React.FC<DragAndDropAreaProps> = ({
           : 'border-gray-500 bg-primary-color hover:bg-tertiary-color'
       }`}
     >
-      <ArrowUpTrayIcon className="h-12 w-12 text-accent-color mb-4" />
+      <ArrowDownTrayIcon className="h-12 w-12 text-accent-color mb-4" />
       <p className="text-center mb-4">
         {isDragging ? 'Release to upload your files' : text}
       </p>
