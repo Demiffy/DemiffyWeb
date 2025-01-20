@@ -69,6 +69,26 @@ const skills = [
         ]
       },
       {
+        "title": "WarThunder Analyzer",
+        "description": "A real-time in-game event analyzer for War Thunder with a dynamic web-based dashboard.",
+        "image": "/wta-main.png",
+        "details": "WarThunderAnalyzer is a Python-based tool that utilizes OCR to analyze in-game events, track session statistics, and provide real-time updates via a web interface. It tracks hits, crits, kills, and other key metrics, allowing players to monitor their performance effectively. The tool is designed for educational and analytical purposes and is not affiliated with or endorsed by War Thunder.",
+        "additionalImages": [
+          { "src": "/wta-1.png", "title": "Real-Time Dashboard" },
+          { "src": "/wta-2.png", "title": "In-Game Detection" },
+        ],
+        "buttons": [
+          { "label": "GitHub Repo", "onClick": () => window.open('https://github.com/Demiffy/WarThunderAnalyzer', '_blank') }
+        ],
+        "technologies": [
+          { "name": "Python", "image": "/python-icon.png" },
+          { "name": "Flask", "image": "/flask-icon.png" },
+          { "name": "Tesseract OCR", "image": "/tesseract-icon.png" },
+          { "name": "Bootstrap", "image": "/bootstrap-icon.png" },
+          { "name": "JavaScript", "image": "/js-icon.png" }
+        ]
+      },
+      {
         title: "Horizon Control - WIP",
         description: "A strategic airport management game where players oversee flight operations, reroute planes, and handle airport capacity to maintain passenger satisfaction.",
         image: "/phcmain.png",
