@@ -53,6 +53,7 @@ const ASynCPlace: React.FC = () => {
   const [mouseCoords, setMouseCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
   const [alertMessage, setAlertMessage] = useState<{ text: string; type: "success" | "error" | "info" | "tip" } | null>(null);
+  const alertTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [adminModalOpen, setAdminModalOpen] = useState(false);
@@ -533,10 +534,25 @@ useEffect(() => {
   };
 }, [isSignedIn, userData.username]);
 
-  const customAlert = (text: string, type: "success" | "error" | "info" | "tip") => {
-    setAlertMessage({ text, type });
-    setTimeout(() => setAlertMessage(null), 7000);
+const customAlert = (text: string, type: "success" | "error" | "info" | "tip") => {
+  setAlertMessage({ text, type });
+
+  if (alertTimeoutRef.current) {
+    clearTimeout(alertTimeoutRef.current);
+  }
+
+  alertTimeoutRef.current = setTimeout(() => {
+    setAlertMessage(null);
+  }, 7000);
+};
+
+useEffect(() => {
+  return () => {
+    if (alertTimeoutRef.current) {
+      clearTimeout(alertTimeoutRef.current);
+    }
   };
+}, []);
 
   // FPS Tracking
   const [fps, setFps] = useState<number>(0);
@@ -1568,20 +1584,37 @@ return (
     {/* Alert Popup */}
     {alertMessage && (
       <div
-        className={`fixed top-4 left-1/2 transform -translate-x-1/2 p-4 max-w-lg text-center rounded-lg shadow-lg z-50 ${
+        className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-4 max-w-md rounded-lg shadow-xl z-50 text-sm font-medium flex items-center gap-4 select-none ${
           alertMessage.type === "success"
-            ? "bg-green-500 text-white"
+            ? "bg-green-100 text-green-800 border border-green-300"
             : alertMessage.type === "error"
-            ? "bg-red-500 text-white"
-            : "bg-blue-500 text-white"
+            ? "bg-red-100 text-red-800 border border-red-300"
+            : alertMessage.type === "info"
+            ? "bg-blue-100 text-blue-800 border border-blue-300"
+            : "bg-yellow-100 text-yellow-800 border border-yellow-300"
         }`}
         style={{
-          animation: "fadeIn 0.5s, fadeOut 0.5s 6.5s",
+          animation: "fadeIn 0.3s ease-in, fadeOut 0.5s ease-out 6.5s",
+          animationFillMode: "forwards",
+        }}
+        onAnimationEnd={(e) => {
+          if (e.animationName === "fadeOut") {
+            setAlertMessage(null);
+          }
         }}
       >
-        <p>{alertMessage.text}</p>
+        <p className="flex-1">{alertMessage.text}</p>
+        <button
+          className="text-current hover:opacity-80 transition-opacity"
+          onClick={() => setAlertMessage(null)}
+          aria-label="Close Alert"
+        >
+          ✖
+        </button>
       </div>
     )}
+
+
 
     {/* Side Panel */}
     {isSignedIn && <SidePanel
