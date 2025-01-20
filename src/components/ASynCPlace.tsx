@@ -1268,10 +1268,12 @@ return (
   {isSignedIn && <ChatBox currentUsername={userData.username} currentUserProfilePic={userData.pfpurl} />}
 
     {!isSignedIn && (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-75 z-50">
-        <h1 className="text-4xl font-extrabold text-white mb-6">
-          ASynC Place
-        </h1>
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-75 z-50 select-none">
+        <img
+          src="/Async.png"
+          alt="Demiffy Logo"
+          className="absolute top-32 w-[480px] object-contain"
+        />
         <div className="bg-secondary-color p-6 rounded-lg shadow-lg text-white">
           <h3 className="text-lg font-semibold mb-4">Sign In</h3>
           <input

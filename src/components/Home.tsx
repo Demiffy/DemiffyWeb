@@ -17,7 +17,7 @@ const skills = [
     { name: 'C#', level: 40, focus: 'Object-Oriented Programming & Application Development' },
     { name: 'Python', level: 15, focus: 'Scripting, Automation & General-Purpose Programming' },
     { name: 'Unity', level: 45, focus: 'Game Development & Interactive Simulations' },
-    ];      
+    ];
 
 
     const projects = [
@@ -44,6 +44,28 @@ const skills = [
           { name: "CSS3", image: "/css3-icon.png" },
           { name: "JavaScript", image: "/js-icon.png" },
           { name: "C#", image: "/c-icon.png" }
+        ]
+      },
+      {
+        title: "ASynC. - Art Synchronized Canvas",
+        description: "A collaborative pixel art canvas where users can chat, create and edit their pixel art creations in real time.",
+        image: "/AsyncPlaceHeader.png",
+        details: "ASynCPlace is a web-based platform designed for real-time collaborative pixel art creation, powered by Firebase's robust database and React. Users can interact on a shared canvas to place, edit, and remove pixels, with support for precise tools like brushes and an eraser. The platform includes a rich color palette and adjustable brush sizes, allowing for intricate and detailed artwork. Additionally, users can upload and integrate images as blueprints, enabling complex designs to come to life. The app features a live chat system for real-time communication and a gamified experience with unlockable achievements to encourage engagement. Designed with accessibility and scalability in mind, ASynCPlace also tracks user activity, supports custom usernames. Whether you're an artist or a casual creator, ASynCPlace fosters a collaborative environment for creativity and community.",
+        additionalImages: [
+          { src: "/AsyncPlace.png", title: "Sign-In Screen" },
+          { src: "/AsyncPlaceMain.png", title: "Canvas Interface" },
+          { src: "/AsyncPlaceSidebar.png", title: "Sidebar Interface" },
+          { src: "/AsyncPlaceLookup.png", title: "Sidebar Look-Up Interface" },
+          { src: "/AsyncPlaceAchievement.png", title: "Achievements Interface" },
+        ],
+        buttons: [
+          { label: "Website", onClick: () => window.open('https://demiffy.com/ASynC', '_blank') },
+          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/DemiffyWeb', '_blank') }
+        ],
+        technologies: [
+          { name: "React", image: "/react-icon.png" },
+          { name: "Firebase", image: "/firebase-icon.png" },
+          { name: "TypeScript", image: "/typescript-icon.png" }
         ]
       },
       {
@@ -85,26 +107,8 @@ const skills = [
           { name: "C#", image: "/c-icon.png" },
         ]
       },
-      {
-        title: "ASynC - Art Synchronized Canvas",
-        description: "A collaborative pixel art canvas where users can create, edit, and share their pixel art creations in real time.",
-        image: "/placev2.png",
-        details: "ASynC allows users to interact with a shared canvas to place and remove pixels. Featuring real-time collaboration, zooming, and customizable colors, this project emphasizes user engagement and creative expression.",
-        additionalImages: [
-          { src: "/placev2.png", title: "Fully working Canvas" }
-        ],
-        buttons: [
-          { label: "Website", onClick: () => window.open('https://demiffy.com/ASynC', '_blank') },
-          { label: "GitHub Repo", onClick: () => window.open('https://github.com/Demiffy/DemiffyWeb', '_blank') }
-        ],
-        technologies: [
-          { name: "React", image: "/react-icon.png" },
-          { name: "Firebase", image: "/firebase-icon.png" },
-          { name: "TypeScript", image: "/typescript-icon.png" }
-        ]
-      }
     ];
-    
+
 
   const milestones = [
     { date: "2027", title: "Start at Brno UNOB", description: "Beginning studies at the University of Defence with a focus on aviation and military technology.", image: "/UNOBLogo.png" },
