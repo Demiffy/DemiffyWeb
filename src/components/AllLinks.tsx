@@ -45,9 +45,7 @@ const categories: Category[] = [
     icon: <FaTools className="text-4xl text-yellow-400 mb-2" />,
     links: [
       { to: '/cdata', title: 'Car Database', description: 'Check out the car database' },
-      { to: '/ic', title: 'File Converter', description: 'Convert your files easily' },
-      { to: '/gif', title: 'GIF Maker', description: 'Create GIFs easily' },
-      { to: '/img', title: 'Image Resizer & Rotater', description: 'Resize and rotate images easily' },
+      { to: '/imedit', title: 'Image Editor', description: 'Edit images easily' },
       { to: '/discord', title: 'Discord Profile Fetcher', description: 'Fetch Discord profiles' },
     ],
   },
@@ -57,7 +55,6 @@ const categories: Category[] = [
     links: [
       { to: '/deminotes', title: 'Demi Notes', description: 'Your notes organized' },
       { to: '/dn', title: 'Notes Editor', description: 'Create and edit notes' },
-      { to: '/dcars', title: 'Dream Cars', description: 'Explore dream cars' },
     ],
   },
   {
