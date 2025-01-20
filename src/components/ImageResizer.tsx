@@ -1,7 +1,7 @@
 // ImageResizer.tsx
 
 import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
-import { ArrowUpTrayIcon, ArrowsRightLeftIcon, ArrowPathIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
+import { ArrowDownTrayIcon, ArrowsRightLeftIcon, ArrowPathIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
 import DragAndDropArea from './ui/DragAndDropArea';
 
 const MAX_PREVIEW_SIZE = 500;
@@ -83,23 +83,39 @@ const ImageResizer: React.FC = () => {
 
   // Handle width change with aspect ratio lock
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const newWidth = Number(e.target.value);
+    const inputValue = e.target.value;
+
+    if (inputValue === '') {
+      setWidth(1);
+      if (lockAspectRatio && aspectRatio !== 0 && originalDimensions) {
+        setHeight(Math.round(1 / aspectRatio));
+      }
+      return;
+    }
+    const newWidth = Math.max(1, Number(inputValue));
+    setWidth(newWidth);
+
     if (lockAspectRatio && aspectRatio !== 0 && originalDimensions) {
-      setWidth(newWidth);
       setHeight(Math.round(newWidth / aspectRatio));
-    } else {
-      setWidth(newWidth);
     }
   };
 
   // Handle height change with aspect ratio lock
   const handleHeightChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const newHeight = Number(e.target.value);
+    const inputValue = e.target.value;
+
+    if (inputValue === '') {
+      setHeight(1);
+      if (lockAspectRatio && aspectRatio !== 0 && originalDimensions) {
+        setWidth(Math.round(1 * aspectRatio));
+      }
+      return;
+    }
+    const newHeight = Math.max(1, Number(inputValue));
+    setHeight(newHeight);
+
     if (lockAspectRatio && aspectRatio !== 0 && originalDimensions) {
-      setHeight(newHeight);
       setWidth(Math.round(newHeight * aspectRatio));
-    } else {
-      setHeight(newHeight);
     }
   };
 
@@ -117,10 +133,9 @@ const ImageResizer: React.FC = () => {
     if (selectedImage && width && height) {
       handleAutoResize();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height, selectedImage, rotation, flipH, flipV]);
 
-  // Function to handle automatic resizing and transformations
+  // Handle automatic resizing and transformations
   const handleAutoResize = () => {
     setIsResizing(true);
     setError('');
@@ -130,12 +145,10 @@ const ImageResizer: React.FC = () => {
     img.src = URL.createObjectURL(selectedImage!);
 
     img.onload = () => {
-      // Apply rotation and flipping to canvas
       const radians = (rotation * Math.PI) / 180;
       const sin = Math.abs(Math.sin(radians));
       const cos = Math.abs(Math.cos(radians));
 
-      // Calculate new canvas size to accommodate rotation
       const newWidth = Math.floor(width! * cos + height! * sin);
       const newHeight = Math.floor(width! * sin + height! * cos);
       canvas.width = newWidth;
@@ -322,10 +335,10 @@ const ImageResizer: React.FC = () => {
           {/* Resized Image Preview */}
           {resizedImage && width && height && (
             <div className="w-full">
-              <h2 className="text-2xl font-semibold mb-6 text-center">Resized Image</h2>
               <div className="flex flex-col lg:flex-row lg:space-x-8">
                 {/* Resized Image Section */}
-                <div className="w-full lg:w-1/2 p-6 flex flex-col items-center">
+                <div className="w-full lg:w-1/2 flex flex-col items-center">
+                <h2 className="text-2xl font-semibold mb-6">Resized Image</h2>
                   <div
                     className="bg-primary-color p-2 rounded border border-gray-600 flex items-center justify-center overflow-hidden"
                     style={{
@@ -352,7 +365,7 @@ const ImageResizer: React.FC = () => {
                     onClick={handleDownload}
                     className="flex items-center justify-center py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-200 mt-4"
                   >
-                    <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                    <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                     Download Image
                   </button>
                 </div>
