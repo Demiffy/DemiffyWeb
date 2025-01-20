@@ -224,7 +224,7 @@ useEffect(() => {
       }}
     >
       <div className="panel-content flex flex-col h-full">
-        <div className="user-info flex flex-col items-center justify-center py-14 border-b border-gray-700">
+        <div className="user-info flex flex-col items-center justify-center py-6 border-b border-gray-700">
           <img
             src={updatedPfpUrl}
             alt={`${username}'s profile`}
@@ -254,7 +254,7 @@ useEffect(() => {
           </div>
           <button
             onClick={handleDeleteAllPixels}
-            className="mt-4 py-2 px-4 w-full rounded bg-red-600 hover:bg-red-500 text-white font-bold my-10"
+            className="mt-4 py-2 px-4 w-full rounded bg-red-600 hover:bg-red-500 text-white font-bold"
           >
             Delete All My Pixels
           </button>
