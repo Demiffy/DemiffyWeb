@@ -38,6 +38,9 @@ interface DrawableText {
   text: string;
   isDragging: boolean;
   isEditing: boolean;
+  fontSize: number;
+  fontFamily: string;
+  color: string;
 }
 
 const Desinote: React.FC = () => {
@@ -48,9 +51,10 @@ const Desinote: React.FC = () => {
   const [scale, setScale] = useState(1);
   const [isHoveringText, setIsHoveringText] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>(
-    { width: window.innerWidth, height: window.innerHeight }
-  );
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
   const [gridEnabled, setGridEnabled] = useState(false);
   const gridSize = 20;
 
@@ -71,6 +75,19 @@ const Desinote: React.FC = () => {
 
   const [dragStart, setDragStart] = useState<{x: number, y: number} | null>(null);
   const [initialPositions, setInitialPositions] = useState<{ [id: string]: {x: number, y: number} }>({});
+
+  const [showProperties, setShowProperties] = useState<boolean>(false);
+  const [propertyValues, setPropertyValues] = useState<{
+    fontSize: number;
+    fontFamily: string;
+    color: string;
+  }>({
+    fontSize: 16,
+    fontFamily: "Arial",
+    color: "#FFFFFF"
+  });
+
+  const newNoteIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -110,7 +127,7 @@ const Desinote: React.FC = () => {
   }, []);
 
   // Handle zooming with the mouse wheel
-  const handleWheel = (event: WheelEvent) => {
+  const handleWheel = useCallback((event: WheelEvent) => {
     event.preventDefault();
   
     const zoomFactor = 0.1;
@@ -135,14 +152,13 @@ const Desinote: React.FC = () => {
   
       return newScale;
     });
-  };
+  }, [scale, viewportOffset]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
   
     const handleWheelNative = (event: WheelEvent) => {
-      event.preventDefault();
       handleWheel(event);
     };
   
@@ -197,8 +213,8 @@ const Desinote: React.FC = () => {
     // Draw notes
     Object.values(notes).forEach(note => {
       if (!note.isEditing) {
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "white";
+        ctx.font = `${note.fontSize}px ${note.fontFamily}`;
+        ctx.fillStyle = note.color;
         ctx.textBaseline = "top";
 
         const x = (note.x - viewportOffset.x);
@@ -208,7 +224,7 @@ const Desinote: React.FC = () => {
 
         if (selectedNotes.has(note.id)) {
           const textWidth = ctx.measureText(note.text).width;
-          const textHeight = 20;
+          const textHeight = note.fontSize;
 
           const borderRadius = 6;
           const padding = 8;
@@ -294,7 +310,6 @@ const Desinote: React.FC = () => {
     notes,
     canvasSize,
     scale,
-    selectedNoteId,
     viewportOffset,
     gridEnabled,
     isSelecting,
@@ -314,6 +329,9 @@ const Desinote: React.FC = () => {
     const newNoteRef = push(notesRef);
     const newNoteId = newNoteRef.key;
     if (newNoteId) {
+      // Mark this ID as a new note to prevent premature saving
+      newNoteIdsRef.current.add(newNoteId);
+
       const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
       const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
       const newNote: DrawableText = {
@@ -323,12 +341,18 @@ const Desinote: React.FC = () => {
         text: "",
         isDragging: false,
         isEditing: true,
+        fontSize: 16,
+        fontFamily: "Arial",
+        color: "#FFFFFF"
       };
       set(newNoteRef, {
         id: newNote.id,
         content: newNote.text,
         x: newNote.x,
         y: newNote.y,
+        fontSize: newNote.fontSize,
+        fontFamily: newNote.fontFamily,
+        color: newNote.color
       })
         .then(() => {
           setNotes((prev) => ({
@@ -337,13 +361,24 @@ const Desinote: React.FC = () => {
           }));
           setSelectedNoteId(newNoteId);
           setSelectedNotes(new Set([newNoteId]));
-          setDragStart({ x: 0, y: 0 });
+          setDragStart(null);
           setInitialPositions({
             [newNoteId]: { x: newNote.x, y: newNote.y }
           });
+          setShowProperties(true);
+          setPropertyValues({
+            fontSize: newNote.fontSize,
+            fontFamily: newNote.fontFamily,
+            color: newNote.color
+          });
+
+          setTimeout(() => {
+            newNoteIdsRef.current.delete(newNoteId);
+          }, 0);
         })
         .catch((error) => {
           console.error("Error adding new lesson note:", error);
+          newNoteIdsRef.current.delete(newNoteId);
         });
     }
   };
@@ -373,9 +408,9 @@ const Desinote: React.FC = () => {
       if (!note.isEditing) {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
-        ctx.font = "16px Arial";
+        ctx.font = `${note.fontSize}px ${note.fontFamily}`;
         const textWidth = ctx.measureText(note.text).width;
-        const textHeight = 20;
+        const textHeight = note.fontSize;
 
         if (
           x >= note.x - 7 &&
@@ -406,6 +441,12 @@ const Desinote: React.FC = () => {
         setDragStart({ x: event.clientX, y: event.clientY });
         setInitialPositions({
           [clickedNoteId]: { x: notes[clickedNoteId].x, y: notes[clickedNoteId].y }
+        });
+        setShowProperties(true);
+        setPropertyValues({
+          fontSize: notes[clickedNoteId].fontSize,
+          fontFamily: notes[clickedNoteId].fontFamily,
+          color: notes[clickedNoteId].color
         });
       }
     } else {
@@ -486,9 +527,9 @@ const Desinote: React.FC = () => {
     Object.values(notes).forEach(note => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      ctx.font = "16px Arial";
+      ctx.font = `${note.fontSize}px ${note.fontFamily}`;
       const textWidth = ctx.measureText(note.text).width;
-      const textHeight = 20;
+      const textHeight = note.fontSize;
 
       if (
         x >= note.x &&
@@ -512,10 +553,19 @@ const Desinote: React.FC = () => {
 
     if (dragStart) {
       // Finalize dragging
-      // Save all selectedNotes' new positions
+      // Save all selectedNotes' new positions, excluding newly added notes
       selectedNotes.forEach(id => {
         const note = notes[id];
-        saveLessonNote(note);
+        if (note) { 
+          if (newNoteIdsRef.current.has(id)) {
+            // Skip saving newly added notes
+            console.log(`Skipping save for new note ID: ${id}`);
+            return;
+          }
+          saveLessonNote(note);
+        } else {
+          console.error(`Cannot save note ${id} because it is undefined.`);
+        }
       });
 
       // Clear dragging state
@@ -534,6 +584,7 @@ const Desinote: React.FC = () => {
       if (movement < CLICK_THRESHOLD) {
         // Treat as a click to deselect
         setSelectedNotes(new Set());
+        setShowProperties(false);
       } else {
         // Perform selection
         const newSelectedNotes = new Set<string>();
@@ -543,9 +594,9 @@ const Desinote: React.FC = () => {
           const noteY = note.y;
           const ctx = canvasRef.current?.getContext("2d");
           if (!ctx) return;
-          ctx.font = "16px Arial";
+          ctx.font = `${note.fontSize}px ${note.fontFamily}`;
           const textWidth = ctx.measureText(note.text).width;
-          const textHeight = 20;
+          const textHeight = note.fontSize;
 
           if (
             noteX >= selX1 &&
@@ -558,6 +609,22 @@ const Desinote: React.FC = () => {
         });
 
         setSelectedNotes(newSelectedNotes);
+        setShowProperties(newSelectedNotes.size > 0);
+        if (newSelectedNotes.size === 1) {
+          const singleId = Array.from(newSelectedNotes)[0];
+          const singleNote = notes[singleId];
+          setPropertyValues({
+            fontSize: singleNote.fontSize,
+            fontFamily: singleNote.fontFamily,
+            color: singleNote.color
+          });
+        } else {
+          setPropertyValues({
+            fontSize: 16,
+            fontFamily: "Arial",
+            color: "#FFFFFF"
+          });
+        }
       }
 
       setIsSelecting(false);
@@ -595,9 +662,9 @@ const Desinote: React.FC = () => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      ctx.font = "16px Arial";
+      ctx.font = `${note.fontSize}px ${note.fontFamily}`;
       const textWidth = ctx.measureText(note.text).width;
-      const textHeight = 20;
+      const textHeight = note.fontSize;
 
       if (
         x >= note.x - 7 &&
@@ -615,6 +682,12 @@ const Desinote: React.FC = () => {
         ...prev,
         [foundId!]: { ...prev[foundId!], isEditing: true, isDragging: false }
       }));
+      setShowProperties(true);
+      setPropertyValues({
+        fontSize: notes[foundId!].fontSize,
+        fontFamily: notes[foundId!].fontFamily,
+        color: notes[foundId!].color
+      });
       setTimeout(() => {
         if (foundId !== null) {
           inputRefs.current[foundId]?.focus();
@@ -646,7 +719,7 @@ const Desinote: React.FC = () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      ctx.font = "16px Arial";
+      ctx.font = `${notes[id].fontSize}px ${notes[id].fontFamily}`;
       const textWidth = ctx.measureText(text).width;
       setInputWidths(prev => ({
         ...prev,
@@ -666,6 +739,7 @@ const Desinote: React.FC = () => {
     } else {
       deleteLessonNote(id);
     }
+    setShowProperties(selectedNotes.size > 0);
   };
 
   // Handle key presses within the input
@@ -680,6 +754,7 @@ const Desinote: React.FC = () => {
       } else {
         deleteLessonNote(id);
       }
+      setShowProperties(selectedNotes.size > 0);
     }
   };
 
@@ -733,6 +808,11 @@ const Desinote: React.FC = () => {
 
   // Function to save lesson note to Firebase
   const saveLessonNote = (note: DrawableText) => {
+    if (!note) {
+      console.error(`Attempted to save an undefined note.`);
+      return;
+    }
+
     if (typeof note.text !== 'string') {
       console.error(`Cannot save note ${note.id} with undefined or non-string 'text'`);
       return;
@@ -749,6 +829,9 @@ const Desinote: React.FC = () => {
       content: note.text,
       x: note.x,
       y: note.y,
+      fontSize: note.fontSize,
+      fontFamily: note.fontFamily,
+      color: note.color
     }).catch((error) => {
       console.error("Error saving lesson note:", error);
     });
@@ -770,30 +853,35 @@ const Desinote: React.FC = () => {
       (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          const validatedNotes: { [id: string]: DrawableText } = {};
-          const newInputWidths: { [id: string]: number } = {};
-          Object.keys(data).forEach((id) => {
-            const note = data[id];
-            validatedNotes[id] = {
-              id: note.id || id,
-              x: typeof note.x === "number" ? note.x : 100,
-              y: typeof note.y === "number" ? note.y : 100,
-              text: typeof note.content === "string" ? note.content : "",
-              isDragging: false,
-              isEditing: false,
-            };
-  
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d");
-            if (ctx) {
-              ctx.font = "16px Arial";
-              const textWidth = ctx.measureText(note.content || "").width;
-              newInputWidths[id] = Math.max(100, textWidth + 20);
-            }
-          });
+          setNotes(prevNotes => {
+            const validatedNotes: { [id: string]: DrawableText } = {};
+            const newInputWidths: { [id: string]: number } = {};
+            Object.keys(data).forEach((id) => {
+              const note = data[id];
+              validatedNotes[id] = {
+                id: note.id || id,
+                x: typeof note.x === "number" ? note.x : 100,
+                y: typeof note.y === "number" ? note.y : 100,
+                text: typeof note.content === "string" ? note.content : "",
+                isDragging: false,
+                isEditing: prevNotes[id]?.isEditing || false,
+                fontSize: typeof note.fontSize === "number" ? note.fontSize : 16,
+                fontFamily: typeof note.fontFamily === "string" ? note.fontFamily : "Arial",
+                color: typeof note.color === "string" ? note.color : "#FFFFFF",
+              };
 
-          setNotes(validatedNotes);
-          setInputWidths(newInputWidths);
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
+              if (ctx) {
+                ctx.font = `${validatedNotes[id].fontSize}px ${validatedNotes[id].fontFamily}`;
+                const textWidth = ctx.measureText(note.content || "").width;
+                newInputWidths[id] = Math.max(100, textWidth + 20);
+              }
+            });
+
+            setInputWidths(newInputWidths);
+            return validatedNotes;
+          });
         } else {
           setNotes({});
         }
@@ -808,7 +896,7 @@ const Desinote: React.FC = () => {
     return () => {
       off(notesRef, "value", listener);
     };
-  };  
+  };
 
   // Load lesson notes on component mount
   useEffect(() => {
@@ -827,6 +915,26 @@ const Desinote: React.FC = () => {
       }
     }
   }, [selectedNoteId, notes]);  
+
+  // Handle changes in the properties panel
+  const handlePropertyChange = (property: keyof typeof propertyValues, value: any) => {
+    setPropertyValues(prev => ({
+      ...prev,
+      [property]: value
+    }));
+
+    // Update all selected notes with the new property, excluding newly added notes
+    const updatedNotes: { [id: string]: DrawableText } = { ...notes };
+    selectedNotes.forEach(id => {
+      if (!newNoteIdsRef.current.has(id)) { // **Skip newly added notes**
+        updatedNotes[id] = {
+          ...updatedNotes[id],
+          [property]: value
+        };
+      }
+    });
+    setNotes(updatedNotes);
+  };
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
@@ -851,8 +959,48 @@ const Desinote: React.FC = () => {
 
       {/* Display selected notes count */}
       {selectedNotes.size > 0 && (
-        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-20 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg select-none">
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-20 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg">
           <span className="text-sm text-white">{selectedNotes.size} note(s) selected</span>
+        </div>
+      )}
+
+      {/* Properties Panel */}
+      {showProperties && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-30 bg-opacity-75 backdrop-filter backdrop-blur-lg p-4 rounded shadow-lg flex space-x-4 items-center">
+          <label className="flex items-center space-x-2">
+            <span className="text-white">Size:</span>
+            <input
+              type="number"
+              min="16"
+              max="72"
+              value={propertyValues.fontSize}
+              onChange={(e) => handlePropertyChange("fontSize", parseInt(e.target.value) || 16)}
+              className="w-16 p-1 rounded text-white font-bold"
+            />
+          </label>
+          <label className="flex items-center space-x-2">
+            <span className="text-white">Font:</span>
+            <select
+              value={propertyValues.fontFamily}
+              onChange={(e) => handlePropertyChange("fontFamily", e.target.value)}
+              className="p-1 rounded text-white font-bold"
+            >
+              <option value="Arial">Arial</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Verdana">Verdana</option>
+            </select>
+          </label>
+          <label className="flex items-center space-x-2">
+            <span className="text-white">Color:</span>
+            <input
+              type="color"
+              value={propertyValues.color}
+              onChange={(e) => handlePropertyChange("color", e.target.value)}
+              className="p-1 rounded"
+            />
+          </label>
         </div>
       )}
 
@@ -888,9 +1036,10 @@ const Desinote: React.FC = () => {
               left: inputPositions[note.id]?.left || 0,
               transform: `scale(${scale})`,
               transformOrigin: "top left",
-              fontSize: "16px",
-              fontFamily: "Arial",
-              lineHeight: "20px",
+              fontSize: `${notes[note.id].fontSize}px`,
+              fontFamily: notes[note.id].fontFamily,
+              color: notes[note.id].color,
+              lineHeight: `${notes[note.id].fontSize + 4}px`,
               outline: "none",
               border: "none",
               caretColor: "white",
