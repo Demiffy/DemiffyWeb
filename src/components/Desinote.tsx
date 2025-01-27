@@ -47,7 +47,6 @@ const Desinote: React.FC = () => {
   const [inputWidths, setInputWidths] = useState<{ [id: string]: number }>({});
   const [scale, setScale] = useState(1);
   const [isHoveringText, setIsHoveringText] = useState(false);
-  const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>(
     { width: window.innerWidth, height: window.innerHeight }
@@ -62,6 +61,16 @@ const Desinote: React.FC = () => {
 
   const inputRefs = useRef<{ [id: string]: HTMLInputElement | null }>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
+  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
+
+  const CLICK_THRESHOLD = 5;
+
+  const [dragStart, setDragStart] = useState<{x: number, y: number} | null>(null);
+  const [initialPositions, setInitialPositions] = useState<{ [id: string]: {x: number, y: number} }>({});
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -127,7 +136,7 @@ const Desinote: React.FC = () => {
       return newScale;
     });
   };
-  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -167,6 +176,25 @@ const Desinote: React.FC = () => {
     ctx.save();
     ctx.scale(scale, scale);
 
+    // Draw grid if enabled
+    if (gridEnabled) {
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x < canvas.width / scale; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height / scale);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height / scale; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width / scale, y);
+        ctx.stroke();
+      }
+    }
+
+    // Draw notes
     Object.values(notes).forEach(note => {
       if (!note.isEditing) {
         ctx.font = "16px Arial";
@@ -178,7 +206,7 @@ const Desinote: React.FC = () => {
 
         ctx.fillText(note.text, x, y);
 
-        if (selectedNoteId === note.id) {
+        if (selectedNotes.has(note.id)) {
           const textWidth = ctx.measureText(note.text).width;
           const textHeight = 20;
 
@@ -231,9 +259,51 @@ const Desinote: React.FC = () => {
     });
 
     ctx.restore();
-  }, [notes, canvasSize, scale, selectedNoteId, viewportOffset, gridEnabled]);
 
-  // Redraw the canvas when the notes or scale change
+    // Draw selection rectangle if selecting
+    if (isSelecting && selectionStart && selectionEnd) {
+      const ctxSel = canvas.getContext("2d");
+      if (ctxSel) {
+        ctxSel.save();
+        ctxSel.scale(scale, scale);
+        ctxSel.strokeStyle = "rgba(0, 123, 255, 0.5)";
+        ctxSel.lineWidth = 1;
+        ctxSel.setLineDash([6]);
+        ctxSel.fillStyle = "rgba(0, 123, 255, 0.2)";
+
+        // Adjust for viewport offset
+        const x1 = selectionStart.x - viewportOffset.x;
+        const y1 = selectionStart.y - viewportOffset.y;
+        const x2 = selectionEnd.x - viewportOffset.x;
+        const y2 = selectionEnd.y - viewportOffset.y;
+
+        const rectX = Math.min(x1, x2);
+        const rectY = Math.min(y1, y2);
+        const rectWidth = Math.abs(x2 - x1);
+        const rectHeight = Math.abs(y2 - y1);
+
+        ctxSel.beginPath();
+        ctxSel.rect(rectX, rectY, rectWidth, rectHeight);
+        ctxSel.fill();
+        ctxSel.stroke();
+        ctxSel.setLineDash([]);
+        ctxSel.restore();
+      }
+    }
+  }, [
+    notes,
+    canvasSize,
+    scale,
+    selectedNoteId,
+    viewportOffset,
+    gridEnabled,
+    isSelecting,
+    selectionStart,
+    selectionEnd,
+    selectedNotes
+  ]);
+
+  // Redraw the canvas when dependencies change
   useEffect(() => {
     drawCanvas();
   }, [drawCanvas]);
@@ -266,6 +336,11 @@ const Desinote: React.FC = () => {
             [newNoteId]: newNote,
           }));
           setSelectedNoteId(newNoteId);
+          setSelectedNotes(new Set([newNoteId]));
+          setDragStart({ x: 0, y: 0 });
+          setInitialPositions({
+            [newNoteId]: { x: newNote.x, y: newNote.y }
+          });
         })
         .catch((error) => {
           console.error("Error adding new lesson note:", error);
@@ -273,76 +348,140 @@ const Desinote: React.FC = () => {
     }
   };
 
-  // Handle mouse down for dragging or panning
+  // Handle mouse down for dragging or panning or selecting
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (event.button !== 0) return;
+
     if (isSpacePressed) {
       setIsPanning(true);
       setPanStart({ x: event.clientX, y: event.clientY });
       return;
     }
-  
-    if (Object.values(notes).some(note => note.isEditing)) return;
-  
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     const rect = canvas.getBoundingClientRect();
-  
+
     const x = (event.clientX - rect.left) / scale + viewportOffset.x;
     const y = (event.clientY - rect.top) / scale + viewportOffset.y;
-  
-    let found = false;
+
+    // Check if clicked on a note to start dragging
+    let clickedOnNote = false;
+    let clickedNoteId: string | null = null;
     Object.values(notes).forEach(note => {
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-  
-      ctx.font = "16px Arial";
-      const textWidth = ctx.measureText(note.text).width;
-      const textHeight = 20;
-  
-      if (
-        x >= note.x - 7 &&
-        x <= note.x + textWidth + 7 &&
-        y >= note.y - 7 &&
-        y <= note.y + textHeight + 7
-      ) {
-        setSelectedNoteId(note.id);
-        setNotes(prev => ({
-          ...prev,
-          [note.id]: { ...prev[note.id], isDragging: true }
-        }));
-        setOffset({ x: x - note.x, y: y - note.y });
-        found = true;
+      if (!note.isEditing) {
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.font = "16px Arial";
+        const textWidth = ctx.measureText(note.text).width;
+        const textHeight = 20;
+
+        if (
+          x >= note.x - 7 &&
+          x <= note.x + textWidth + 7 &&
+          y >= note.y - 7 &&
+          y <= note.y + textHeight + 7
+        ) {
+          clickedOnNote = true;
+          clickedNoteId = note.id;
+        }
       }
     });
-  
-    if (!found) {
+
+    if (clickedOnNote && clickedNoteId) {
+      if (selectedNotes.has(clickedNoteId)) {
+        // Start dragging all selected notes
+        setDragStart({ x: event.clientX, y: event.clientY });
+
+        const initialPos: { [id: string]: { x: number; y: number } } = {};
+        selectedNotes.forEach(id => {
+          const note = notes[id];
+          initialPos[id] = { x: note.x, y: note.y };
+        });
+        setInitialPositions(initialPos);
+      } else {
+        // Select only the clicked note
+        setSelectedNotes(new Set([clickedNoteId]));
+        setDragStart({ x: event.clientX, y: event.clientY });
+        setInitialPositions({
+          [clickedNoteId]: { x: notes[clickedNoteId].x, y: notes[clickedNoteId].y }
+        });
+      }
+    } else {
+      // Start selection
+      setIsSelecting(true);
+      setSelectionStart({ x, y });
+      setSelectionEnd({ x, y });
+
+      // Deselect all notes when starting a new selection
+      setSelectedNotes(new Set());
+
+      // Reset dragging state
       setSelectedNoteId(null);
     }
-  };  
+  };
 
-  // Handle mouse move for dragging or panning
+  // Handle mouse move for dragging or panning or selecting
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (isPanning) {
       const deltaX = event.clientX - panStart.x;
       const deltaY = event.clientY - panStart.y;
       setPanStart({ x: event.clientX, y: event.clientY });
-  
+
       setViewportOffset(prev => ({
         x: prev.x - deltaX / scale,
         y: prev.y - deltaY / scale,
       }));
       return;
     }
-  
+
+    if (isSelecting) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / scale + viewportOffset.x;
+      const y = (event.clientY - rect.top) / scale + viewportOffset.y;
+      setSelectionEnd({ x, y });
+      return;
+    }
+
+    if (dragStart) {
+      const currentX = event.clientX;
+      const currentY = event.clientY;
+
+      const deltaX = currentX - dragStart.x;
+      const deltaY = currentY - dragStart.y;
+
+      // Update positions based on delta
+      const updatedNotes: { [id: string]: DrawableText } = { ...notes };
+      selectedNotes.forEach(id => {
+        const initialPos = initialPositions[id];
+        if (initialPos) {
+          const newX = initialPos.x + deltaX / scale;
+          const newY = initialPos.y + deltaY / scale;
+
+          updatedNotes[id] = {
+            ...updatedNotes[id],
+            x: gridEnabled ? Math.round(newX / gridSize) * gridSize : newX,
+            y: gridEnabled ? Math.round(newY / gridSize) * gridSize : newY,
+          };
+        }
+      });
+
+      setNotes(updatedNotes);
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     const rect = canvas.getBoundingClientRect();
-  
+
     const x = (event.clientX - rect.left) / scale + viewportOffset.x;
     const y = (event.clientY - rect.top) / scale + viewportOffset.y;
-  
+
     let hovering = false;
     Object.values(notes).forEach(note => {
       const ctx = canvas.getContext("2d");
@@ -350,7 +489,7 @@ const Desinote: React.FC = () => {
       ctx.font = "16px Arial";
       const textWidth = ctx.measureText(note.text).width;
       const textHeight = 20;
-  
+
       if (
         x >= note.x &&
         x <= note.x + textWidth &&
@@ -360,65 +499,106 @@ const Desinote: React.FC = () => {
         hovering = true;
       }
     });
-  
-    setIsHoveringText(hovering);
-  
-    if (selectedNoteId && notes[selectedNoteId]?.isDragging) {
-      let newX = x - offset.x;
-      let newY = y - offset.y;
-  
-      if (gridEnabled) {
-        newX = Math.round(newX / gridSize) * gridSize;
-        newY = Math.round(newY / gridSize) * gridSize;
-      }
-  
-      setNotes(prev => ({
-        ...prev,
-        [selectedNoteId]: { ...prev[selectedNoteId], x: newX, y: newY },
-      }));
-    }
-  };  
 
-  // Handle mouse up to stop dragging or panning
+    setIsHoveringText(hovering);
+  };
+
+  // Handle mouse up to stop dragging or panning or finalize selection
   const handleMouseUp = () => {
     if (isPanning) {
       setIsPanning(false);
       return;
     }
-  
+
+    if (dragStart) {
+      // Finalize dragging
+      // Save all selectedNotes' new positions
+      selectedNotes.forEach(id => {
+        const note = notes[id];
+        saveLessonNote(note);
+      });
+
+      // Clear dragging state
+      setDragStart(null);
+      setInitialPositions({});
+    }
+
+    if (isSelecting && selectionStart && selectionEnd) {
+      const selX1 = Math.min(selectionStart.x, selectionEnd.x);
+      const selY1 = Math.min(selectionStart.y, selectionEnd.y);
+      const selX2 = Math.max(selectionStart.x, selectionEnd.x);
+      const selY2 = Math.max(selectionStart.y, selectionEnd.y);
+
+      const movement = Math.hypot(selectionEnd.x - selectionStart.x, selectionEnd.y - selectionStart.y);
+
+      if (movement < CLICK_THRESHOLD) {
+        // Treat as a click to deselect
+        setSelectedNotes(new Set());
+      } else {
+        // Perform selection
+        const newSelectedNotes = new Set<string>();
+
+        Object.values(notes).forEach(note => {
+          const noteX = note.x;
+          const noteY = note.y;
+          const ctx = canvasRef.current?.getContext("2d");
+          if (!ctx) return;
+          ctx.font = "16px Arial";
+          const textWidth = ctx.measureText(note.text).width;
+          const textHeight = 20;
+
+          if (
+            noteX >= selX1 &&
+            noteX + textWidth <= selX2 &&
+            noteY >= selY1 &&
+            noteY + textHeight <= selY2
+          ) {
+            newSelectedNotes.add(note.id);
+          }
+        });
+
+        setSelectedNotes(newSelectedNotes);
+      }
+
+      setIsSelecting(false);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      return;
+    }
+
     if (selectedNoteId && notes[selectedNoteId]?.isDragging) {
       setNotes(prev => ({
         ...prev,
         [selectedNoteId]: { ...prev[selectedNoteId], isDragging: false },
       }));
-  
+
       if (notes[selectedNoteId]?.text) {
         saveLessonNote(notes[selectedNoteId]);
       } else if (notes[selectedNoteId]) {
         deleteLessonNote(selectedNoteId);
       }
     }
-  };  
+  };
 
   // Handle double click to start editing or add a new note
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     const rect = canvas.getBoundingClientRect();
-  
+
     const x = (event.clientX - rect.left) / scale + viewportOffset.x;
     const y = (event.clientY - rect.top) / scale + viewportOffset.y;
-  
+
     let foundId: string | null = null;
     Object.values(notes).forEach(note => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-  
+
       ctx.font = "16px Arial";
       const textWidth = ctx.measureText(note.text).width;
       const textHeight = 20;
-  
+
       if (
         x >= note.x - 7 &&
         x <= note.x + textWidth + 7 &&
@@ -428,7 +608,7 @@ const Desinote: React.FC = () => {
         foundId = note.id;
       }
     });
-  
+
     if (foundId) {
       setSelectedNoteId(foundId);
       setNotes(prev => ({
@@ -611,7 +791,7 @@ const Desinote: React.FC = () => {
               newInputWidths[id] = Math.max(100, textWidth + 20);
             }
           });
-  
+
           setNotes(validatedNotes);
           setInputWidths(newInputWidths);
         } else {
@@ -624,7 +804,7 @@ const Desinote: React.FC = () => {
         setIsLoading(false);
       }
     );
-  
+
     return () => {
       off(notesRef, "value", listener);
     };
@@ -669,6 +849,13 @@ const Desinote: React.FC = () => {
         </div>
       </div>
 
+      {/* Display selected notes count */}
+      {selectedNotes.size > 0 && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-20 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg select-none">
+          <span className="text-sm text-white">{selectedNotes.size} note(s) selected</span>
+        </div>
+      )}
+
       <canvas
         ref={canvasRef}
         width={canvasSize.width}
@@ -676,7 +863,7 @@ const Desinote: React.FC = () => {
         className="block"
         style={{
           background: "#121212",
-          cursor: isHoveringText ? "move" : (isPanning ? "grab" : "default"),
+          cursor: dragStart ? "grabbing" : (isSelecting ? "crosshair" : (isHoveringText ? "move" : (isPanning ? "grab" : "default"))),
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
