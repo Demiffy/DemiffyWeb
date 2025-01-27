@@ -1361,103 +1361,107 @@ return (
 
   {/* Blueprints Modal */}
   {showBlueprints && (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm z-50 transition-opacity duration-300">
-      <div className="bg-secondary-color p-8 rounded-xl shadow-2xl text-white max-w-5xl w-full transform scale-100 transition-transform duration-300">
-        <h3 className="text-3xl font-extrabold mb-6 text-center border-b pb-3 border-gray-700">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm z-50">
+      <div className="bg-secondary-color p-6 sm:p-10 rounded-xl shadow-2xl text-white max-w-4xl w-full transform transition-all duration-300">
+        <h3 className="text-4xl font-bold mb-8 text-center border-b pb-4 border-gray-600">
           Blueprints
         </h3>
 
-        {/* Image Upload and Preview UI */}
-        <div className="mb-6">
-          <h4 className="text-lg font-semibold mb-2">Upload Blueprint Image</h4>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="mb-3 p-2 bg-tertiary-color rounded text-xs w-full"
-          />
-          <div className="flex space-x-2 mb-3">
+        {/* Image Upload and Preview */}
+        <div className="mb-8">
+          <h4 className="text-xl font-semibold mb-3">Upload Blueprint Image</h4>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
             <input
-              type="number"
-              placeholder="X Coord"
-              value={pasteCoords.x ?? ''}
-              onChange={(e) => {
-                const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
-                setPasteCoords((prev) => ({ ...prev, x: value }));
-                handleUpdatePreview();
-              }}
-              className="w-1/2 p-2 bg-tertiary-color rounded text-xs"
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="p-3 bg-tertiary-color rounded text-sm w-full sm:w-2/3"
             />
-            <input
-              type="number"
-              placeholder="Y Coord"
-              value={pasteCoords.y ?? ''}
-              onChange={(e) => {
-                const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
-                setPasteCoords((prev) => ({ ...prev, y: value }));
-                handleUpdatePreview();
-              }}
-              className="w-1/2 p-2 bg-tertiary-color rounded text-xs"
-            />
+            <div className="flex space-x-2 mt-3 sm:mt-0">
+              <input
+                type="number"
+                placeholder="X Coord"
+                value={pasteCoords.x ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                  setPasteCoords((prev) => ({ ...prev, x: value }));
+                  handleUpdatePreview();
+                }}
+                className="w-1/2 p-2 bg-tertiary-color rounded text-sm"
+              />
+              <input
+                type="number"
+                placeholder="Y Coord"
+                value={pasteCoords.y ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+                  setPasteCoords((prev) => ({ ...prev, y: value }));
+                  handleUpdatePreview();
+                }}
+                className="w-1/2 p-2 bg-tertiary-color rounded text-sm"
+              />
+            </div>
           </div>
-          <button
-            onClick={handleUpdatePreview}
-            className="w-32 py-4 px-10 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs mb-2"
-          >
-            Preview Blueprint Image
-          </button>
-          <button
-            onClick={saveCurrentBlueprint}
-            className="w-32 py-4 px-10 rounded bg-green-600 hover:bg-green-500 text-white font-semibold text-xs"
-          >
-            Save Blueprint
-          </button>
+          <div className="flex space-x-4 mt-4">
+            <button
+              onClick={handleUpdatePreview}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold text-sm transition"
+            >
+              Preview
+            </button>
+            <button
+              onClick={saveCurrentBlueprint}
+              className="px-6 py-3 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-sm transition"
+            >
+              Save
+            </button>
+          </div>
         </div>
 
-        {/* Display saved blueprints */}
+        {/* Saved Blueprints */}
         {savedBlueprints.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-lg font-semibold mb-2">Saved Blueprints</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {savedBlueprints.map(bp => (
-              <div key={bp.id} className="relative">
-                <div
-                  className="cursor-pointer border border-accent-color p-2 rounded hover:shadow-lg"
-                  onClick={() => loadBlueprintForPreview(bp)}
-                >
-                  <img src={bp.imgSrc} alt={bp.name} className="w-full h-20 object-contain bg-transparent" />
-                  <div className="p-2 text-center">
-                    <p className="text-sm font-semibold">{bp.name}</p>
+          <div className="mb-8">
+            <h4 className="text-xl font-semibold mb-3">Saved Blueprints</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+              {savedBlueprints.map((bp) => (
+                <div key={bp.id} className="relative group">
+                  <div
+                    className="cursor-pointer border border-gray-500 p-4 rounded-lg hover:shadow-lg bg-opacity-50 hover:bg-opacity-100 transition"
+                    onClick={() => loadBlueprintForPreview(bp)}
+                  >
+                    <img
+                      src={bp.imgSrc}
+                      alt={bp.name}
+                      className="w-full h-24 object-contain mb-2 bg-gray-800"
+                    />
+                    <p className="text-sm font-semibold text-center">{bp.name}</p>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteBlueprint(bp.id);
+                    }}
+                    className="absolute top-2 right-2 text-sm text-white bg-red-500 hover:bg-red-600 rounded-full p-2"
+                    aria-label="Delete Blueprint"
+                  >
+                    ✖️
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteBlueprint(bp.id);
-                  }}
-                  className="absolute top-2 right-2 text-white rounded-full p-1 focus:outline-none"
-                  aria-label="Delete Blueprint"
-                >
-                  ✖️
-                </button>
-              </div>
-            ))}
+              ))}
             </div>
           </div>
         )}
 
+        {/* Close Button */}
         <button
-          onClick={() => {
-            setShowBlueprints(false);
-          }}
-          className="w-full py-4 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold transition-colors"
+          onClick={() => setShowBlueprints(false)}
+          className="w-full py-3 rounded-lg bg-red-600 hover:bg-red-500 font-semibold text-lg transition"
         >
           Close
         </button>
       </div>
     </div>
   )}
-
 
       {/* Brush Size Context Menu */}
       {showBrushMenu && (
