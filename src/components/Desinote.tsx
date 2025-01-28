@@ -13,13 +13,6 @@ import {
   off,
   remove
 } from "firebase/database";
-// Removed Firebase Storage imports since we're not using it anymore
-// import {
-//   getStorage,
-//   ref as storageRef,
-//   uploadBytes,
-//   getDownloadURL
-// } from "firebase/storage";
 import {
   FiMove,
   FiCheckSquare,
@@ -27,7 +20,7 @@ import {
   FiImage,
   FiGrid,
   FiSquare
-} from "react-icons/fi"; // Importing icons from react-icons
+} from "react-icons/fi";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -45,8 +38,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const db = getDatabase(app);
-// Removed Firebase Storage initialization
-// const storage = getStorage(app); // Initialize Firebase Storage
 
 // Define the type for drawable items
 interface TextItem {
@@ -69,7 +60,7 @@ interface ImageItem {
   y: number;
   imageUrl: string;
   isDragging: boolean;
-  isEditing: boolean; // Typically false for images
+  isEditing: boolean;
 }
 
 type DrawableItem = TextItem | ImageItem;
@@ -80,7 +71,7 @@ const Desinote: React.FC = () => {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [inputWidths, setInputWidths] = useState<{ [id: string]: number }>({});
   const [scale, setScale] = useState(1);
-  const [isHoveringText, setIsHoveringText] = useState(false);
+  const [isHoveringItem, setIsHoveringItem] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({
     width: window.innerWidth,
@@ -102,7 +93,7 @@ const Desinote: React.FC = () => {
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
 
-  // Threshold to differentiate between click and drag (in pixels)
+  // Threshold to differentiate between click and drag
   const CLICK_THRESHOLD = 5;
 
   // State variables for dragging multiple notes
@@ -135,6 +126,10 @@ const Desinote: React.FC = () => {
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef<boolean>(false);
 
+  // **Image Cache to Prevent Flashing**
+  const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  // --------------------- Keyboard Event Handlers ---------------------
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
@@ -164,6 +159,7 @@ const Desinote: React.FC = () => {
     };
   }, [currentTool]);
 
+  // --------------------- Canvas Size and Zoom Handlers ---------------------
   // Function to update canvas size
   const updateCanvasSize = useCallback(() => {
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -225,6 +221,7 @@ const Desinote: React.FC = () => {
     return () => window.removeEventListener("resize", updateCanvasSize);
   }, [updateCanvasSize]);
 
+  // --------------------- Drawing Logic ---------------------
   // Draw the text and images on the canvas
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -259,81 +256,101 @@ const Desinote: React.FC = () => {
       }
     }
 
-    // Draw items
-    Object.values(items).forEach(item => {
-      if (item.type === 'text' && !item.isEditing) {
-        ctx.font = `${item.fontSize}px ${item.fontFamily}`;
-        ctx.fillStyle = item.color;
-        ctx.textBaseline = "top";
+    // **Determine Drawing Order: Images First, Then Texts**
+    const itemsArray = Object.values(items);
+    const images = itemsArray.filter(item => item.type === 'image');
+    const texts = itemsArray.filter(item => item.type === 'text');
 
+    // Draw images
+    images.forEach(item => {
+      const cachedImage = imageCacheRef.current.get(item.imageUrl);
+      if (cachedImage && cachedImage.complete) {
         const x = (item.x - viewportOffset.x);
         const y = (item.y - viewportOffset.y);
+        ctx.drawImage(cachedImage, x, y, cachedImage.width, cachedImage.height);
 
-        ctx.fillText(item.text, x, y);
-
+        // Draw selection border if selected
         if (selectedNotes.has(item.id)) {
-          const textWidth = ctx.measureText(item.text).width;
-          const textHeight = item.fontSize; // Approximation based on font size
-
-          const borderRadius = 6;
-          const padding = 8;
-          const paddingTop = 6;
-          const paddingBottom = 1;
-
-          ctx.shadowColor = "rgba(0, 123, 255, 0.5)";
-          ctx.shadowBlur = 10;
-
           ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
           ctx.lineWidth = 2;
-
-          ctx.beginPath();
-          ctx.moveTo(x - padding + borderRadius, y - paddingTop);
-          ctx.arcTo(
-            x + textWidth + padding,
-            y - paddingTop,
-            x + textWidth + padding,
-            y + textHeight + paddingBottom,
-            borderRadius
-          );
-          ctx.arcTo(
-            x + textWidth + padding,
-            y + textHeight + paddingBottom,
-            x - padding,
-            y + textHeight + paddingBottom,
-            borderRadius
-          );
-          ctx.arcTo(
-            x - padding,
-            y + textHeight + paddingBottom,
-            x - padding,
-            y - paddingTop,
-            borderRadius
-          );
-          ctx.arcTo(
-            x - padding,
-            y - paddingTop,
-            x + textWidth + padding,
-            y - paddingTop,
-            borderRadius
-          );
-          ctx.closePath();
-
-          ctx.stroke();
+          ctx.setLineDash([6]);
+          ctx.strokeRect(x - 4, y - 4, cachedImage.width + 8, cachedImage.height + 8);
+          ctx.setLineDash([]);
         }
-      }
-
-      if (item.type === 'image') {
+      } else {
+        // If image is not cached yet, create and cache it
         const img = new Image();
-        img.crossOrigin = "anonymous"; // To handle CORS for images from external sources
+        img.crossOrigin = "anonymous";
         img.src = item.imageUrl;
         img.onload = () => {
-          const x = (item.x - viewportOffset.x);
-          const y = (item.y - viewportOffset.y);
-          ctx.drawImage(img, x, y);
+          imageCacheRef.current.set(item.imageUrl, img);
+          drawCanvas();
         };
         img.onerror = () => {
           console.error(`Failed to load image at URL: ${item.imageUrl}`);
         };
+      }
+    });
+
+    // Draw texts
+    texts.forEach(item => {
+      ctx.font = `${item.fontSize}px ${item.fontFamily}`;
+      ctx.fillStyle = item.color;
+      ctx.textBaseline = "top";
+
+      const x = (item.x - viewportOffset.x);
+      const y = (item.y - viewportOffset.y);
+
+      ctx.fillText(item.text, x, y);
+
+      if (selectedNotes.has(item.id)) {
+        const textWidth = ctx.measureText(item.text).width;
+        const textHeight = item.fontSize;
+
+        const borderRadius = 6;
+        const padding = 8;
+        const paddingTop = 6;
+        const paddingBottom = 1;
+
+        ctx.shadowColor = "rgba(0, 123, 255, 0.5)";
+        ctx.shadowBlur = 10;
+
+        ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.moveTo(x - padding + borderRadius, y - paddingTop);
+        ctx.arcTo(
+          x + textWidth + padding,
+          y - paddingTop,
+          x + textWidth + padding,
+          y + textHeight + paddingBottom,
+          borderRadius
+        );
+        ctx.arcTo(
+          x + textWidth + padding,
+          y + textHeight + paddingBottom,
+          x - padding,
+          y + textHeight + paddingBottom,
+          borderRadius
+        );
+        ctx.arcTo(
+          x - padding,
+          y + textHeight + paddingBottom,
+          x - padding,
+          y - paddingTop,
+          borderRadius
+        );
+        ctx.arcTo(
+          x - padding,
+          y - paddingTop,
+          x + textWidth + padding,
+          y - paddingTop,
+          borderRadius
+        );
+        ctx.closePath();
+
+        ctx.stroke();
       }
     });
 
@@ -382,11 +399,150 @@ const Desinote: React.FC = () => {
     gridSize
   ]);
 
-  // Redraw the canvas when dependencies change
   useEffect(() => {
     drawCanvas();
   }, [drawCanvas]);
 
+  // --------------------- Loading Lesson Notes ---------------------
+  // Function to load lesson notes from Firebase
+  const loadLessonNotes = () => {
+    const notesRef = dbRef(db, `lessonNotes`);
+    const listener = onValue(
+      notesRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const validatedNotes: { [id: string]: DrawableItem } = {};
+          const newInputWidths: { [id: string]: number } = {};
+          Object.keys(data).forEach((id) => {
+            const note = data[id];
+            validatedNotes[id] = {
+              id: note.id || id,
+              type: 'text',
+              x: typeof note.x === "number" ? note.x : 100,
+              y: typeof note.y === "number" ? note.y : 100,
+              text: typeof note.content === "string" ? note.content : "",
+              isDragging: false,
+              isEditing: false,
+              fontSize: typeof note.fontSize === "number" ? note.fontSize : 16,
+              fontFamily: typeof note.fontFamily === "string" ? note.fontFamily : "Arial",
+              color: typeof note.color === "string" ? note.color : "#FFFFFF",
+            };
+
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.font = `${validatedNotes[id].fontSize}px ${validatedNotes[id].fontFamily}`;
+              const textWidth = ctx.measureText(note.content || "").width;
+              newInputWidths[id] = Math.max(100, textWidth + 20);
+            }
+          });
+
+          setItems(prevNotes => ({
+            ...prevNotes,
+            ...validatedNotes
+          }));
+          setInputWidths(prev => ({
+            ...prev,
+            ...newInputWidths
+          }));
+        } else {
+          setItems(prevNotes => {
+            const updated = { ...prevNotes };
+            Object.keys(updated).forEach(id => {
+              if (updated[id].type === 'text') {
+                delete updated[id];
+              }
+            });
+            return updated;
+          });
+        }
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error loading lesson notes:", error);
+        setIsLoading(false);
+      }
+    );
+
+    return () => {
+      off(notesRef, "value", listener);
+    };
+  };
+
+  // Function to load lesson images from Firebase
+  const loadLessonImages = () => {
+    const imagesRef = dbRef(db, `lessonImages`);
+    const listenerImages = onValue(
+      imagesRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const validatedImages: { [id: string]: DrawableItem } = {};
+          Object.keys(data).forEach((id) => {
+            const image = data[id];
+            validatedImages[id] = {
+              id: image.id || id,
+              type: 'image',
+              x: typeof image.x === "number" ? image.x : 100,
+              y: typeof image.y === "number" ? image.y : 100,
+              imageUrl: typeof image.imageUrl === "string" ? image.imageUrl : "",
+              isDragging: false,
+              isEditing: false,
+            };
+
+            // **Preload and Cache Images**
+            if (image.imageUrl) {
+              const cachedImage = imageCacheRef.current.get(image.imageUrl);
+              if (!cachedImage) {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = image.imageUrl;
+                img.onload = () => {
+                  imageCacheRef.current.set(image.imageUrl, img);
+                  drawCanvas();
+                };
+                img.onerror = () => {
+                  console.error(`Failed to load image at URL: ${image.imageUrl}`);
+                };
+              }
+            }
+          });
+
+          setItems(prevImages => ({
+            ...prevImages,
+            ...validatedImages
+          }));
+        } else {
+          setItems(prevImages => {
+            const updated = { ...prevImages };
+            Object.keys(updated).forEach(id => {
+              if (updated[id].type === 'image') {
+                delete updated[id];
+              }
+            });
+            return updated;
+          });
+        }
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error loading lesson images:", error);
+        setIsLoading(false);
+      }
+    );
+
+    return () => {
+      off(imagesRef, "value", listenerImages);
+    };
+  };
+
+  useEffect(() => {
+    loadLessonNotes();
+    loadLessonImages();
+  }, []);
+
+  // --------------------- Selection and Dragging Logic ---------------------
   // Function to add a new text note at a specific position
   const addTextNoteAtPosition = (x: number, y: number) => {
     const notesRef = dbRef(db, `lessonNotes`);
@@ -406,9 +562,9 @@ const Desinote: React.FC = () => {
         text: "",
         isDragging: false,
         isEditing: true,
-        fontSize: 16, // Default font size
-        fontFamily: "Arial", // Default font family
-        color: "#FFFFFF" // Default color (white)
+        fontSize: 16,
+        fontFamily: "Arial",
+        color: "#FFFFFF"
       };
       set(newNoteRef, {
         id: newNote.id,
@@ -427,33 +583,30 @@ const Desinote: React.FC = () => {
           }));
           setSelectedNoteId(newNoteId);
           setSelectedNotes(new Set([newNoteId]));
-          setDragStart(null); // Reset dragStart
+          setDragStart(null);
           setInitialPositions({
             [newNoteId]: { x: newNote.x, y: newNote.y }
           });
-          setShowProperties(true); // Show properties panel for the new note
+          setShowProperties(true);
           setPropertyValues({
             fontSize: newNote.fontSize,
             fontFamily: newNote.fontFamily,
             color: newNote.color
           });
-
-          // Remove from newItemIds after state update
-          // Using a timeout to ensure state has updated
           setTimeout(() => {
             newItemIdsRef.current.delete(newNoteId);
           }, 0);
         })
         .catch((error) => {
           console.error("Error adding new lesson note:", error);
-          newItemIdsRef.current.delete(newNoteId); // Clean up on error
+          newItemIdsRef.current.delete(newNoteId);
         });
     }
   };
 
-  // **Modified Function: Add Image Using URL Instead of File**
+  // Function to add a new image at a specific position
   const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
-    // Validate the URL (basic validation)
+    // Validate the URL
     if (!isValidImageUrl(imageUrl)) {
       alert("Please enter a valid image or GIF URL.");
       return;
@@ -500,7 +653,8 @@ const Desinote: React.FC = () => {
     return (url.match(/\.(jpeg|jpg|gif|png)$/) != null);
   };
 
-  // **Modified Mouse Down Handler**
+  // --------------------- Mouse Event Handlers ---------------------
+  // Mouse Down Handler
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
     // Only handle left mouse button
     if (event.button !== 0) return;
@@ -533,17 +687,25 @@ const Desinote: React.FC = () => {
       // Check if clicked on a note or image to start dragging
       let clickedOnItem = false;
       let clickedItemId: string | null = null;
+      let clickedItemType: 'text' | 'image' | null = null;
 
       // Preload images to get dimensions
       const checkImageClickPromises: Promise<void>[] = [];
 
-      for (const item of Object.values(items)) {
+      // **Determine Drawing Order: Texts Last, So Iterate in Reverse**
+      const itemsArray = Object.values(items);
+      const images = itemsArray.filter(item => item.type === 'image');
+      const texts = itemsArray.filter(item => item.type === 'text');
+      const orderedItems = [...texts, ...images];
+
+      for (let i = orderedItems.length - 1; i >= 0; i--) {
+        const item = orderedItems[i];
         if (item.type === 'text') {
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
           ctx.font = `${item.fontSize}px ${item.fontFamily}`;
           const textWidth = ctx.measureText(item.text).width;
-          const textHeight = item.fontSize; // Approximation based on font size
+          const textHeight = item.fontSize;
 
           if (
             x >= item.x - 7 &&
@@ -553,33 +715,51 @@ const Desinote: React.FC = () => {
           ) {
             clickedOnItem = true;
             clickedItemId = item.id;
+            clickedItemType = 'text';
             break;
           }
         }
 
         if (item.type === 'image') {
-          const img = new Image();
-          const promise = new Promise<void>((resolve) => {
-            img.onload = () => {
-              const imgWidth = img.width;
-              const imgHeight = img.height;
-              if (
-                x >= item.x &&
-                x <= item.x + imgWidth &&
-                y >= item.y &&
-                y <= item.y + imgHeight
-              ) {
-                clickedOnItem = true;
-                clickedItemId = item.id;
-              }
-              resolve();
-            };
-            img.onerror = () => {
-              resolve();
-            };
-          });
-          img.src = item.imageUrl;
-          checkImageClickPromises.push(promise);
+          const cachedImage = imageCacheRef.current.get(item.imageUrl);
+          if (cachedImage && cachedImage.complete) {
+            const imgWidth = cachedImage.width;
+            const imgHeight = cachedImage.height;
+            if (
+              x >= item.x &&
+              x <= item.x + imgWidth &&
+              y >= item.y &&
+              y <= item.y + imgHeight
+            ) {
+              clickedOnItem = true;
+              clickedItemId = item.id;
+              clickedItemType = 'image';
+              break;
+            }
+          } else {
+            const img = new Image();
+            const promise = new Promise<void>((resolve) => {
+              img.onload = () => {
+                imageCacheRef.current.set(item.imageUrl, img);
+                if (
+                  x >= item.x &&
+                  x <= item.x + img.width &&
+                  y >= item.y &&
+                  y <= item.y + img.height
+                ) {
+                  clickedOnItem = true;
+                  clickedItemId = item.id;
+                  clickedItemType = 'image';
+                }
+                resolve();
+              };
+              img.onerror = () => {
+                resolve();
+              };
+            });
+            img.src = item.imageUrl;
+            checkImageClickPromises.push(promise);
+          }
         }
       }
 
@@ -602,8 +782,9 @@ const Desinote: React.FC = () => {
             setInitialPositions({
               [clickedItemId]: { x: items[clickedItemId].x, y: items[clickedItemId].y }
             });
-            setShowProperties(true);
-            if (items[clickedItemId].type === 'text') {
+            // **Only show properties if the selected item is text**
+            setShowProperties(clickedItemType === 'text');
+            if (clickedItemType === 'text') {
               const textItem = items[clickedItemId] as TextItem;
               setPropertyValues({
                 fontSize: textItem.fontSize,
@@ -613,15 +794,11 @@ const Desinote: React.FC = () => {
             }
           }
         } else {
-          // Start selection
           setIsSelecting(true);
           setSelectionStart({ x, y });
           setSelectionEnd({ x, y });
-
-          // Deselect all items when starting a new selection
           setSelectedNotes(new Set());
 
-          // Reset dragging state
           setSelectedNoteId(null);
         }
       });
@@ -719,7 +896,7 @@ const Desinote: React.FC = () => {
         if (!ctx) continue;
         ctx.font = `${item.fontSize}px ${item.fontFamily}`;
         const textWidth = ctx.measureText(item.text).width;
-        const textHeight = item.fontSize; // Approximation based on font size
+        const textHeight = item.fontSize;
 
         if (
           x >= item.x &&
@@ -733,33 +910,47 @@ const Desinote: React.FC = () => {
       }
 
       if (item.type === 'image') {
-        const img = new Image();
-        img.crossOrigin = "anonymous"; // To handle CORS for images from external sources
-        const promise = new Promise<void>((resolve) => {
-          img.onload = () => {
-            const imgWidth = img.width;
-            const imgHeight = img.height;
-            if (
-              x >= item.x &&
-              x <= item.x + imgWidth &&
-              y >= item.y &&
-              y <= item.y + imgHeight
-            ) {
-              hovering = true;
-            }
-            resolve();
-          };
-          img.onerror = () => {
-            resolve();
-          };
-        });
-        img.src = item.imageUrl;
-        hoverPromises.push(promise);
+        const cachedImage = imageCacheRef.current.get(item.imageUrl);
+        if (cachedImage && cachedImage.complete) {
+          const imgWidth = cachedImage.width;
+          const imgHeight = cachedImage.height;
+          if (
+            x >= item.x &&
+            x <= item.x + imgWidth &&
+            y >= item.y &&
+            y <= item.y + imgHeight
+          ) {
+            hovering = true;
+            break;
+          }
+        } else {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          const promise = new Promise<void>((resolve) => {
+            img.onload = () => {
+              imageCacheRef.current.set(item.imageUrl, img);
+              if (
+                x >= item.x &&
+                x <= item.x + img.width &&
+                y >= item.y &&
+                y <= item.y + img.height
+              ) {
+                hovering = true;
+              }
+              resolve();
+            };
+            img.onerror = () => {
+              resolve();
+            };
+          });
+          img.src = item.imageUrl;
+          hoverPromises.push(promise);
+        }
       }
     }
 
     Promise.all(hoverPromises).then(() => {
-      setIsHoveringText(hovering);
+      setIsHoveringItem(hovering);
     });
   };
 
@@ -816,7 +1007,7 @@ const Desinote: React.FC = () => {
             if (!ctx) continue;
             ctx.font = `${item.fontSize}px ${item.fontFamily}`;
             const textWidth = ctx.measureText(item.text).width;
-            const textHeight = item.fontSize; // Approximation based on font size
+            const textHeight = item.fontSize;
 
             if (
               item.x >= selX1 &&
@@ -829,34 +1020,51 @@ const Desinote: React.FC = () => {
           }
 
           if (item.type === 'image') {
-            const img = new Image();
-            img.crossOrigin = "anonymous"; // To handle CORS
-            const promise = new Promise<void>((resolve) => {
-              img.onload = () => {
-                const imgWidth = img.width;
-                const imgHeight = img.height;
-                if (
-                  item.x >= selX1 &&
-                  item.x + imgWidth <= selX2 &&
-                  item.y >= selY1 &&
-                  item.y + imgHeight <= selY2
-                ) {
-                  newSelectedNotes.add(item.id);
-                }
-                resolve();
-              };
-              img.onerror = () => {
-                resolve();
-              };
-            });
-            img.src = item.imageUrl;
-            checkImageSelectionPromises.push(promise);
+            const cachedImage = imageCacheRef.current.get(item.imageUrl);
+            if (cachedImage && cachedImage.complete) {
+              const imgWidth = cachedImage.width;
+              const imgHeight = cachedImage.height;
+              if (
+                item.x >= selX1 &&
+                item.x + imgWidth <= selX2 &&
+                item.y >= selY1 &&
+                item.y + imgHeight <= selY2
+              ) {
+                newSelectedNotes.add(item.id);
+              }
+            } else {
+              const img = new Image();
+              img.crossOrigin = "anonymous";
+              const promise = new Promise<void>((resolve) => {
+                img.onload = () => {
+                  imageCacheRef.current.set(item.imageUrl, img);
+                  const imgWidth = img.width;
+                  const imgHeight = img.height;
+                  if (
+                    item.x >= selX1 &&
+                    item.x + imgWidth <= selX2 &&
+                    item.y >= selY1 &&
+                    item.y + imgHeight <= selY2
+                  ) {
+                    newSelectedNotes.add(item.id);
+                  }
+                  resolve();
+                };
+                img.onerror = () => {
+                  resolve();
+                };
+              });
+              img.src = item.imageUrl;
+              checkImageSelectionPromises.push(promise);
+            }
           }
         }
 
         Promise.all(checkImageSelectionPromises).then(() => {
           setSelectedNotes(newSelectedNotes);
-          setShowProperties(newSelectedNotes.size > 0);
+          // **Only show properties if at least one text item is selected**
+          const hasTextSelected = Array.from(newSelectedNotes).some(id => items[id].type === 'text');
+          setShowProperties(hasTextSelected);
           if (newSelectedNotes.size === 1) {
             const singleId = Array.from(newSelectedNotes)[0];
             const singleItem = items[singleId];
@@ -867,8 +1075,7 @@ const Desinote: React.FC = () => {
                 color: singleItem.color
               });
             }
-          } else {
-            // For multiple items, set default values or handle differently
+          } else if (newSelectedNotes.size > 1) {
             setPropertyValues({
               fontSize: 16,
               fontFamily: "Arial",
@@ -885,8 +1092,6 @@ const Desinote: React.FC = () => {
       mouseDownPosRef.current = null;
       return;
     }
-
-    // No additional handling needed for text items as editing is managed elsewhere
   }, [isPanning, dragStart, selectedNotes, items, isSelecting, selectionStart, selectionEnd]);
 
   useEffect(() => {
@@ -905,7 +1110,8 @@ const Desinote: React.FC = () => {
     };
   }, [isSelecting, dragStart, isPanning, handleMouseUp]);
 
-  // Handle double click to start editing or add a new text/image
+  // --------------------- Double Click Handler ---------------------
+  // Double Click Handler to integrate editing functionality
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -915,19 +1121,135 @@ const Desinote: React.FC = () => {
     const x = (event.clientX - rect.left) / scale + viewportOffset.x;
     const y = (event.clientY - rect.top) / scale + viewportOffset.y;
 
-    if (currentTool === 'text') {
-      addTextNoteAtPosition(x, y);
-    }
+    // **Check if double-click is on a selected item**
+    let doubleClickedItemId: string | null = null;
+    let doubleClickedItemType: 'text' | 'image' | null = null;
 
-    if (currentTool === 'image') {
-      // **Modified: Prompt for Image URL Instead of Opening File Dialog**
-      const imageUrl = prompt("Enter the Image or GIF URL:");
-      if (imageUrl) {
-        addImageAtPosition(x, y, imageUrl.trim());
+    const itemsArray = Object.values(items);
+    const images = itemsArray.filter(item => item.type === 'image');
+    const texts = itemsArray.filter(item => item.type === 'text');
+    const orderedItems = [...texts, ...images];
+
+    for (let i = orderedItems.length - 1; i >= 0; i--) {
+      const item = orderedItems[i];
+      if (!selectedNotes.has(item.id)) continue;
+
+      if (item.type === 'text') {
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
+        ctx.font = `${item.fontSize}px ${item.fontFamily}`;
+        const textWidth = ctx.measureText(item.text).width;
+        const textHeight = item.fontSize;
+
+        if (
+          x >= item.x - 7 &&
+          x <= item.x + textWidth + 7 &&
+          y >= item.y - 7 &&
+          y <= item.y + textHeight + 7
+        ) {
+          doubleClickedItemId = item.id;
+          doubleClickedItemType = 'text';
+          break;
+        }
+      }
+
+      if (item.type === 'image') {
+        const cachedImage = imageCacheRef.current.get(item.imageUrl);
+        if (cachedImage && cachedImage.complete) {
+          const imgWidth = cachedImage.width;
+          const imgHeight = cachedImage.height;
+          if (
+            x >= item.x &&
+            x <= item.x + imgWidth &&
+            y >= item.y &&
+            y <= item.y + imgHeight
+          ) {
+            doubleClickedItemId = item.id;
+            doubleClickedItemType = 'image';
+            break;
+          }
+        } else {
+          const img = new Image();
+          img.onload = () => {
+            imageCacheRef.current.set(item.imageUrl, img);
+            if (
+              x >= item.x &&
+              x <= item.x + img.width &&
+              y >= item.y &&
+              y <= item.y + img.height
+            ) {
+              doubleClickedItemId = item.id;
+              doubleClickedItemType = 'image';
+            }
+          };
+          img.onerror = () => {};
+          img.src = item.imageUrl;
+        }
       }
     }
-  };  
 
+    if (doubleClickedItemId && doubleClickedItemType) {
+      if (doubleClickedItemType === 'text') {
+        // Enter editing mode for text
+        setItems(prev => ({
+          ...prev,
+          [doubleClickedItemId!]: { ...prev[doubleClickedItemId!], isEditing: true }
+        }));
+        setSelectedNoteId(doubleClickedItemId);
+      } else if (doubleClickedItemType === 'image') {
+        // Prompt to edit image URL
+        const newImageUrl = prompt("Enter the new Image or GIF URL:");
+        if (newImageUrl && isValidImageUrl(newImageUrl.trim())) {
+          const updatedItem: ImageItem = {
+            ...(items[doubleClickedItemId!] as ImageItem),
+            imageUrl: newImageUrl.trim(),
+          };
+          set(dbRef(db, `lessonImages/${doubleClickedItemId}`), {
+            id: updatedItem.id,
+            type: updatedItem.type,
+            imageUrl: updatedItem.imageUrl,
+            x: updatedItem.x,
+            y: updatedItem.y
+          }).then(() => {
+            setItems(prev => ({
+              ...prev,
+              [doubleClickedItemId!]: updatedItem,
+            }));
+            // Reload the image to update cache and redraw
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = updatedItem.imageUrl;
+            img.onload = () => {
+              imageCacheRef.current.set(updatedItem.imageUrl, img);
+              drawCanvas();
+            };
+            img.onerror = () => {
+              console.error(`Failed to load image at URL: ${updatedItem.imageUrl}`);
+            };
+          }).catch(error => {
+            console.error("Error updating image URL:", error);
+          });
+        } else if (newImageUrl) {
+          alert("Please enter a valid image or GIF URL.");
+        }
+      }
+    } else {
+      // **Handle Double-Click to Add New Item Based on Current Tool**
+      if (currentTool === 'text') {
+        addTextNoteAtPosition(x, y);
+      }
+
+      if (currentTool === 'image') {
+        // **Prompt for Image URL Instead of Opening File Dialog**
+        const imageUrl = prompt("Enter the Image or GIF URL:");
+        if (imageUrl) {
+          addImageAtPosition(x, y, imageUrl.trim());
+        }
+      }
+    }
+  };
+
+  // --------------------- Text Editing Handlers ---------------------
   // Handle input change for text notes
   const handleInputChange = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const text = event.target.value;
@@ -958,7 +1280,7 @@ const Desinote: React.FC = () => {
         }));
       }
     }
-  };  
+  };
 
   // Handle input blur to stop editing
   const handleInputBlur = (id: string) => {
@@ -974,7 +1296,8 @@ const Desinote: React.FC = () => {
         deleteLessonItem(id);
       }
     }
-    setShowProperties(selectedNotes.size > 0);
+    // **Only show properties if at least one text item is selected**
+    setShowProperties(Array.from(selectedNotes).some(id => items[id].type === 'text'));
   };
 
   // Handle key presses within the input
@@ -992,7 +1315,8 @@ const Desinote: React.FC = () => {
           deleteLessonItem(id);
         }
       }
-      setShowProperties(selectedNotes.size > 0);
+      // **Only show properties if at least one text item is selected**
+      setShowProperties(Array.from(selectedNotes).some(id => items[id].type === 'text'));
     }
   };
 
@@ -1016,7 +1340,8 @@ const Desinote: React.FC = () => {
               deleteLessonItem(id);
             }
           }
-          setShowProperties(selectedNotes.size > 0);
+          // **Only show properties if at least one text item is selected**
+          setShowProperties(Array.from(selectedNotes).some(id => items[id].type === 'text'));
         }
       });
     };
@@ -1032,6 +1357,7 @@ const Desinote: React.FC = () => {
     };
   }, [items, selectedNotes]);
 
+  // --------------------- Input Positioning ---------------------
   // Calculate input positions
   const [inputPositions, setInputPositions] = useState<{ [id: string]: { top: number; left: number } }>({});
 
@@ -1049,6 +1375,7 @@ const Desinote: React.FC = () => {
     setInputPositions(newPositions);
   }, [items, scale, viewportOffset]);
 
+  // --------------------- Firebase Operations ---------------------
   // Function to save lesson item to Firebase
   const saveLessonItem = (item: DrawableItem) => {
     if (!item) {
@@ -1124,107 +1451,7 @@ const Desinote: React.FC = () => {
     });
   };
 
-  // Function to load lesson items from Firebase
-  const loadLessonItems = () => {
-    const notesRef = dbRef(db, `lessonNotes`);
-    const imagesRef = dbRef(db, `lessonImages`);
-
-    const listenerNotes = onValue(
-      notesRef,
-      (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setItems(prevNotes => {
-            const validatedNotes: { [id: string]: DrawableItem } = { ...prevNotes };
-            Object.keys(data).forEach((id) => {
-              const note = data[id];
-              validatedNotes[id] = {
-                id: note.id || id,
-                type: 'text',
-                x: typeof note.x === "number" ? note.x : 100,
-                y: typeof note.y === "number" ? note.y : 100,
-                text: typeof note.content === "string" ? note.content : "",
-                isDragging: false,
-                isEditing: prevNotes[id]?.isEditing || false, // Preserve isEditing
-                fontSize: typeof note.fontSize === "number" ? note.fontSize : 16,
-                fontFamily: typeof note.fontFamily === "string" ? note.fontFamily : "Arial",
-                color: typeof note.color === "string" ? note.color : "#FFFFFF",
-              };
-            });
-            return validatedNotes;
-          });
-        } else {
-          setItems(prevNotes => {
-            // Remove all text notes if none are present in Firebase
-            const updated = { ...prevNotes };
-            Object.keys(updated).forEach(id => {
-              if (updated[id].type === 'text') {
-                delete updated[id];
-              }
-            });
-            return updated;
-          });
-        }
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error("Error loading lesson notes:", error);
-        setIsLoading(false);
-      }
-    );
-
-    const listenerImages = onValue(
-      imagesRef,
-      (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setItems(prevImages => {
-            const validatedImages: { [id: string]: DrawableItem } = { ...prevImages };
-            Object.keys(data).forEach((id) => {
-              const image = data[id];
-              validatedImages[id] = {
-                id: image.id || id,
-                type: 'image',
-                x: typeof image.x === "number" ? image.x : 100,
-                y: typeof image.y === "number" ? image.y : 100,
-                imageUrl: typeof image.imageUrl === "string" ? image.imageUrl : "",
-                isDragging: false,
-                isEditing: false,
-              };
-            });
-            return validatedImages;
-          });
-        } else {
-          setItems(prevImages => {
-            // Remove all image items if none are present in Firebase
-            const updated = { ...prevImages };
-            Object.keys(updated).forEach(id => {
-              if (updated[id].type === 'image') {
-                delete updated[id];
-              }
-            });
-            return updated;
-          });
-        }
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error("Error loading lesson images:", error);
-        setIsLoading(false);
-      }
-    );
-
-    return () => {
-      off(notesRef, "value", listenerNotes);
-      off(imagesRef, "value", listenerImages);
-    };
-  };
-
-  // Load lesson items on component mount
-  useEffect(() => {
-    loadLessonItems();
-  }, []);
-
+  // --------------------- Focus on Editing Input ---------------------
   // Focus on the input field when a new text note is selected for editing
   useEffect(() => {
     if (selectedNoteId && items[selectedNoteId]?.isEditing && items[selectedNoteId].type === 'text') {
@@ -1238,6 +1465,7 @@ const Desinote: React.FC = () => {
     }
   }, [selectedNoteId, items]);
 
+  // --------------------- Properties Panel Handler ---------------------
   // Handle changes in the properties panel
   const handlePropertyChange = (property: keyof typeof propertyValues, value: any) => {
     setPropertyValues(prev => ({
@@ -1248,7 +1476,7 @@ const Desinote: React.FC = () => {
     // Update all selected text notes with the new property, excluding newly added items
     const updatedItems: { [id: string]: DrawableItem } = { ...items };
     selectedNotes.forEach(id => {
-      if (!newItemIdsRef.current.has(id) && updatedItems[id].type === 'text') { // **Skip newly added items and only update text items**
+      if (!newItemIdsRef.current.has(id) && updatedItems[id].type === 'text') {
         updatedItems[id] = {
           ...updatedItems[id],
           [property]: value
@@ -1364,7 +1592,7 @@ const Desinote: React.FC = () => {
         style={{
           background: "#121212",
           cursor: currentTool === 'pan' ? (isPanning ? "grabbing" : "grab") :
-                  currentTool === 'select' ? (isHoveringText ? "move" : (isSelecting && hasDraggedRef.current ? "crosshair" : "default")) :
+                  currentTool === 'select' ? (isHoveringItem ? "move" : (isSelecting && hasDraggedRef.current ? "crosshair" : "default")) :
                   "default",
         }}
         onMouseDown={handleMouseDown}
