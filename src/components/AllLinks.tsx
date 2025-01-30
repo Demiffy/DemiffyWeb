@@ -27,7 +27,6 @@ const categories: Category[] = [
     icon: <FaGlobe className="text-4xl text-blue-400 mb-2" />,
     links: [
       { to: '/', title: 'Home', description: 'Go back to the homepage' },
-      { to: '/about', title: 'About', description: 'Learn about me' },
       { to: '/ASynC', title: 'ASynC', description: 'Art Synchronized Canvas - Drawing Canvas' },
     ],
   },
@@ -35,8 +34,8 @@ const categories: Category[] = [
     name: 'Games',
     icon: <FaGamepad className="text-4xl text-green-400 mb-2" />,
     links: [
-      { to: '/games/tetris', title: 'Tetris Game', description: 'Play Tetris' },
-      { to: '/games/sudoku', title: 'Sudoku Game', description: 'Play Sudoku' },
+      { to: '/games/tetris', title: 'Tetris Game', description: 'Play Tetris - STYLING WIP' },
+      { to: '/games/sudoku', title: 'Sudoku Game', description: 'Play Sudoku - STYLING WIP' },
       { to: '/games/2048', title: '2048 Game', description: 'Play 2048' },
     ],
   },
@@ -53,7 +52,7 @@ const categories: Category[] = [
     name: 'Notes',
     icon: <FaBook className="text-4xl text-red-400 mb-2" />,
     links: [
-      { to: '/deminotes', title: 'Demi Notes', description: 'Your notes organized' },
+      { to: '/deminotes', title: 'Demi Notes', description: 'Your notes organized - STYLING WIP' },
       { to: '/dn', title: 'Notes Editor', description: 'Create and edit notes' },
     ],
   },
