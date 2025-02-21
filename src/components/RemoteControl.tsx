@@ -47,7 +47,7 @@ const RemoteControl: React.FC = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const socket = new WebSocket("ws://109.80.40.13:8765");
+    const socket = new WebSocket("wss://ws.demiffy.com:8443/");
     setWs(socket);
 
     socket.onopen = () => {
