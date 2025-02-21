@@ -20,6 +20,7 @@ import DiscordUser from './components/DiscordUser';
 import CanvasTest from './components/canvastest';
 import DCars from './components/DCars';
 import ImageEditor from './components/ImageEditor';
+import RemoteControl from './components/RemoteControl';
 import NotFound from '../NotFound';
 import './App.css';
 
@@ -48,6 +49,7 @@ const AnimatedRoutes = () => {
           <Route path="/DN" element={<Destabilize />} />
           <Route path="/canvas" element={<CanvasTest />} />
           <Route path="/dcars" element={<DCars />} />
+          <Route path="/remotepc" element={<RemoteControl />} />
           <Route path="/404" element={<NotFound />} />
 
           <Route path="*" element={<NotFound />} />

