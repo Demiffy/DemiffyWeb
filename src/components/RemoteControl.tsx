@@ -1,4 +1,3 @@
-// RemoteControl.tsx
 import React, { useEffect, useState, useCallback } from "react";
 
 interface SysInfo {
@@ -32,28 +31,23 @@ const RemoteControl: React.FC = () => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [selectedMonitor, setSelectedMonitor] = useState<number | null>(null);
   const [frameRate, setFrameRate] = useState("10");
-
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showFullScreenControls, setShowFullScreenControls] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [processDisplayCount, setProcessDisplayCount] = useState(10);
 
-  useEffect(() => {
-    if (monitorList.length > 0 && selectedMonitor === null) {
-      setSelectedMonitor(monitorList.length > 1 ? 1 : 0);
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "command", command: "select_monitor", index: monitorList.length > 1 ? 1 : 0 }));
-      }
-    }
-  }, [monitorList, selectedMonitor, ws]);
-
-  // Initialize WebSocket connection
-  useEffect(() => {
+  const connectWebSocket = useCallback(() => {
     const socket = new WebSocket("wss://ws.demiffy.com:8443/");
     setWs(socket);
 
     socket.onopen = () => {
       setStatus("Authenticating...");
+      setIsConnected(true);
       socket.send("secret");
       socket.send(JSON.stringify({ type: "command", command: "list_monitors" }));
+      socket.send(JSON.stringify({ type: "command", command: "get_sysinfo" }));
+      socket.send(JSON.stringify({ type: "command", command: "list_processes" }));
+      socket.send(JSON.stringify({ type: "command", command: "file_cmd", cmd: "ls" }));
     };
 
     socket.onmessage = (event) => {
@@ -78,6 +72,7 @@ const RemoteControl: React.FC = () => {
             break;
           case "process_list":
             setProcList(msg.data);
+            setProcessDisplayCount(10);
             break;
           case "directory_list":
             setDirList(msg.data);
@@ -101,10 +96,33 @@ const RemoteControl: React.FC = () => {
       console.error("WebSocket Error:", error);
     };
 
-    return () => {
-      socket.close();
+    socket.onclose = () => {
+      setStatus("Disconnected");
+      setIsConnected(false);
     };
   }, []);
+
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      ws?.close();
+    };
+  }, [connectWebSocket]);
+
+  useEffect(() => {
+    if (monitorList.length > 0 && selectedMonitor === null) {
+      setSelectedMonitor(monitorList.length > 1 ? 1 : 0);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({
+            type: "command",
+            command: "select_monitor",
+            index: monitorList.length > 1 ? 1 : 0,
+          })
+        );
+      }
+    }
+  }, [monitorList, selectedMonitor, ws]);
 
   const sendCommand = useCallback(
     (commandObj: any) => {
@@ -174,8 +192,16 @@ const RemoteControl: React.FC = () => {
   const formatProcessList = (data: any[]) => (
     <ul className="list-disc ml-5 text-sm transition-all duration-300">
       {data.map((proc) => (
-        <li key={proc.pid}>
-          {proc.pid}: {proc.name}
+        <li key={proc.pid} className="flex items-center justify-between">
+          <span>
+            {proc.pid}: {proc.name}
+          </span>
+          <button
+            className="ml-2 px-2 py-1 bg-red-600 rounded hover:bg-red-700 transition-all duration-300"
+            onClick={() => sendCommand({ command: "kill_process", pid: proc.pid })}
+          >
+            Kill
+          </button>
         </li>
       ))}
     </ul>
@@ -440,6 +466,36 @@ const RemoteControl: React.FC = () => {
           </button>
         </div>
       </div>
+      {/* System Commands */}
+      <div>
+        <h3 className="text-lg font-medium mb-1">System Commands</h3>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="px-3 py-1 bg-purple-600 rounded hover:bg-purple-700 transition-all duration-300"
+            onClick={() => sendCommand({ command: "lock" })}
+          >
+            Lock
+          </button>
+          <button
+            className="px-3 py-1 bg-purple-600 rounded hover:bg-purple-700 transition-all duration-300"
+            onClick={() => sendCommand({ command: "shutdown" })}
+          >
+            Shutdown
+          </button>
+          <button
+            className="px-3 py-1 bg-purple-600 rounded hover:bg-purple-700 transition-all duration-300"
+            onClick={() => sendCommand({ command: "restart" })}
+          >
+            Restart
+          </button>
+          <button
+            className="px-3 py-1 bg-purple-600 rounded hover:bg-purple-700 transition-all duration-300"
+            onClick={() => sendCommand({ command: "sleep" })}
+          >
+            Sleep
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -477,32 +533,80 @@ const RemoteControl: React.FC = () => {
       <div className="flex-1 p-2 transition-all duration-300">{ControlsPanel}</div>
       {/* Info Panel */}
       <div className="flex-1 bg-gray-800 rounded-lg shadow p-2 space-y-4 transition-all duration-300">
-        <h2 className="text-2xl font-semibold border-b border-gray-600 pb-2">
-          Info
-        </h2>
+        <h2 className="text-2xl font-semibold border-b border-gray-600 pb-2">Info</h2>
         {/* System Info */}
         <div>
-          <h3 className="text-xl font-medium mb-2">System Info</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-medium mb-2">System Info</h3>
+            <button
+              className="px-2 py-1 bg-blue-600 rounded hover:bg-blue-700 transition-all duration-300 text-sm"
+              onClick={() => sendCommand({ command: "get_sysinfo" })}
+            >
+              Refresh
+            </button>
+          </div>
           <div>
-            {sysInfo ? formatSysInfo(sysInfo) : (
+            {sysInfo ? (
+              formatSysInfo(sysInfo)
+            ) : (
               <p className="text-sm text-gray-400">No data available</p>
             )}
           </div>
         </div>
         {/* Process List */}
         <div>
-          <h3 className="text-xl font-medium mb-2">Process List</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-medium mb-2">Process List</h3>
+            <button
+              className="px-2 py-1 bg-blue-600 rounded hover:bg-blue-700 transition-all duration-300 text-sm"
+              onClick={() => sendCommand({ command: "list_processes" })}
+            >
+              Refresh
+            </button>
+          </div>
           <div>
-            {procList.length > 0 ? formatProcessList(procList) : (
+            {procList.length > 0 ? (
+              <>
+                {formatProcessList(procList.slice(0, processDisplayCount))}
+                {processDisplayCount < procList.length && (
+                  <button
+                    className="mt-2 px-3 py-1 bg-blue-600 rounded hover:bg-blue-700 transition-all duration-300 text-sm"
+                    onClick={() =>
+                      setProcessDisplayCount(processDisplayCount + 10)
+                    }
+                  >
+                    Load More
+                  </button>
+                )}
+                {processDisplayCount > 10 && (
+                  <button
+                    className="mt-2 ml-2 px-3 py-1 bg-blue-600 rounded hover:bg-blue-700 transition-all duration-300 text-sm"
+                    onClick={() => setProcessDisplayCount(10)}
+                  >
+                    Collapse
+                  </button>
+                )}
+              </>
+            ) : (
               <p className="text-sm text-gray-400">No processes found</p>
             )}
           </div>
         </div>
         {/* Directory Listing */}
         <div>
-          <h3 className="text-xl font-medium mb-2">Directory Listing</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-medium mb-2">Directory Listing</h3>
+            <button
+              className="px-2 py-1 bg-blue-600 rounded hover:bg-blue-700 transition-all duration-300 text-sm"
+              onClick={() => sendCommand({ command: "file_cmd", cmd: "ls" })}
+            >
+              Refresh
+            </button>
+          </div>
           <div>
-            {dirList.length > 0 ? formatDirectoryList(dirList) : (
+            {dirList.length > 0 ? (
+              formatDirectoryList(dirList)
+            ) : (
               <p className="text-sm text-gray-400">No directory info</p>
             )}
           </div>
@@ -516,9 +620,19 @@ const RemoteControl: React.FC = () => {
         </div>
         {/* Monitor List */}
         <div>
-          <h3 className="text-xl font-medium mb-2">Monitor List</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-medium mb-2">Monitor List</h3>
+            <button
+              className="px-2 py-1 bg-blue-600 rounded hover:bg-blue-700 transition-all duration-300 text-sm"
+              onClick={() => sendCommand({ command: "list_monitors" })}
+            >
+              Refresh
+            </button>
+          </div>
           <div>
-            {monitorList.length > 0 ? formatMonitorList(monitorList) : (
+            {monitorList.length > 0 ? (
+              formatMonitorList(monitorList)
+            ) : (
               <p className="text-sm text-gray-400">No monitors detected</p>
             )}
           </div>
@@ -529,7 +643,10 @@ const RemoteControl: React.FC = () => {
           <div className="space-y-1 transition-all duration-300">
             {notifications.length > 0 ? (
               notifications.map((n, idx) => (
-                <div key={idx} className="bg-gray-700 p-2 rounded text-sm transition-all duration-300">
+                <div
+                  key={idx}
+                  className="bg-gray-700 p-2 rounded text-sm transition-all duration-300"
+                >
                   {n}
                 </div>
               ))
@@ -588,6 +705,18 @@ const RemoteControl: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative transition-all duration-300">
+      {/* Connection Status Banner */}
+      {!isConnected && (
+        <div className="p-4 bg-red-600 text-white flex items-center justify-between">
+          <span>{status}</span>
+          <button
+            onClick={connectWebSocket}
+            className="px-3 py-1 bg-blue-600 rounded hover:bg-blue-700 transition-all duration-300"
+          >
+            Rejoin
+          </button>
+        </div>
+      )}
       {isFullScreen ? FullScreenLayout : NormalLayout}
     </div>
   );
