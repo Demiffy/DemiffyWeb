@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref as dbRef, onValue } from 'firebase/database';
+import { getDatabase, ref as dbRef, onValue, set } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -205,6 +205,7 @@ const WebGLCanvas: React.FC = () => {
   const [mouseWorld, setMouseWorld] = useState({ x: 0, y: 0 });
   const [fps, setFps] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
+  const [isSpaceDown, setIsSpaceDown] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
   const [selectedColor, setSelectedColor] = useState<number>(0);
   const [isEraserSelected, setIsEraserSelected] = useState<boolean>(false);
@@ -221,29 +222,32 @@ const WebGLCanvas: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const pixelArray: Pixel[] = [];
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    Object.entries(pixels).forEach(([key, pixelData]) => {
-      const parts = key.split('_');
-      if (parts.length !== 2) return;
-      const x = parseInt(parts[0], 10);
-      const y = parseInt(parts[1], 10);
-      const colorIndex = parseInt(pixelData.color, 10);
-      const colorHex = colors[colorIndex] || '#000000';
-      if (colorHex.toLowerCase() === '#ffffff') return;
-      pixelArray.push({ x, y, color: colorHex });
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
-    });
-    if (minX === Infinity) {
-      minX = -1000; minY = -1000; maxX = 1000; maxY = 1000;
-    }
-    const boundary: Rect = { x: minX, y: minY, width: maxX - minX + pixelSize, height: maxY - minY + pixelSize };
-    const qt = new Quadtree(boundary, 16);
-    pixelArray.forEach((p) => qt.insert(p));
-    quadtreeRef.current = qt;
+    const timer = setTimeout(() => {
+      const pixelArray: Pixel[] = [];
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      Object.entries(pixels).forEach(([key, pixelData]) => {
+        const parts = key.split('_');
+        if (parts.length !== 2) return;
+        const x = parseInt(parts[0], 10);
+        const y = parseInt(parts[1], 10);
+        const colorIndex = parseInt(pixelData.color, 10);
+        const colorHex = colors[colorIndex] || '#000000';
+        if (colorHex.toLowerCase() === '#ffffff') return;
+        pixelArray.push({ x, y, color: colorHex });
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      });
+      if (minX === Infinity) {
+        minX = -1000; minY = -1000; maxX = 1000; maxY = 1000;
+      }
+      const boundary: Rect = { x: minX, y: minY, width: maxX - minX + pixelSize, height: maxY - minY + pixelSize };
+      const qt = new Quadtree(boundary, 16);
+      pixelArray.forEach((p) => qt.insert(p));
+      quadtreeRef.current = qt;
+    }, 50);
+    return () => clearTimeout(timer);
   }, [pixels]);
 
   useEffect(() => {
@@ -252,30 +256,31 @@ const WebGLCanvas: React.FC = () => {
     return () => window.removeEventListener('resize', updateViewport);
   }, []);
 
-  useEffect(() => {
-    const updateVisiblePixels = () => {
-      if (quadtreeRef.current) {
-        const marginX = viewport.width * 0.05;
-        const marginY = viewport.height * 0.05;
-        const effectiveWidth = viewport.width * 0.9;
-        const effectiveHeight = viewport.height * 0.9;
-        const effectiveViewportTopLeft = { x: (marginX - offset.x) / scale, y: (marginY - offset.y) / scale };
-        const effectiveViewportBottomRight = { x: ((marginX + effectiveWidth) - offset.x) / scale, y: ((marginY + effectiveHeight) - offset.y) / scale };
-        const gridEffectiveTopLeft = { x: Math.floor(effectiveViewportTopLeft.x / pixelSize), y: Math.floor(effectiveViewportTopLeft.y / pixelSize) };
-        const gridEffectiveBottomRight = { x: Math.floor(effectiveViewportBottomRight.x / pixelSize), y: Math.floor(effectiveViewportBottomRight.y / pixelSize) };
-        const queryRange: Rect = {
-          x: gridEffectiveTopLeft.x,
-          y: gridEffectiveTopLeft.y,
-          width: gridEffectiveBottomRight.x - gridEffectiveTopLeft.x,
-          height: gridEffectiveBottomRight.y - gridEffectiveTopLeft.y,
-        };
-        visiblePixelsRef.current = quadtreeRef.current.query(queryRange);
-      }
-    };
-    updateVisiblePixels();
-    const intervalId = setInterval(updateVisiblePixels, 50);
-    return () => clearInterval(intervalId);
+  const updateVisiblePixels = useCallback(() => {
+    if (quadtreeRef.current) {
+      const effectiveViewportTopLeft = { x: (0 - offset.x) / scale, y: (0 - offset.y) / scale };
+      const effectiveViewportBottomRight = { x: (viewport.width - offset.x) / scale, y: (viewport.height - offset.y) / scale };
+      const gridEffectiveTopLeft = { x: Math.floor(effectiveViewportTopLeft.x / pixelSize), y: Math.floor(effectiveViewportTopLeft.y / pixelSize) };
+      const gridEffectiveBottomRight = { x: Math.floor(effectiveViewportBottomRight.x / pixelSize), y: Math.floor(effectiveViewportBottomRight.y / pixelSize) };
+      const queryRange: Rect = {
+        x: gridEffectiveTopLeft.x,
+        y: gridEffectiveTopLeft.y,
+        width: gridEffectiveBottomRight.x - gridEffectiveTopLeft.x,
+        height: gridEffectiveBottomRight.y - gridEffectiveTopLeft.y,
+      };
+      visiblePixelsRef.current = quadtreeRef.current.query(queryRange);
+    }
   }, [offset, scale, viewport]);
+
+  useEffect(() => {
+    let animationFrameId: number;
+    const updateLoop = () => {
+      updateVisiblePixels();
+      animationFrameId = requestAnimationFrame(updateLoop);
+    };
+    updateLoop();
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [updateVisiblePixels]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -337,8 +342,53 @@ const WebGLCanvas: React.FC = () => {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") setIsSpaceDown(true);
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        setIsSpaceDown(false);
+        setIsPanning(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isSpaceDown) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const worldX = (mouseX - offset.x) / scale;
+    const worldY = (mouseY - offset.y) / scale;
+    const gridX = Math.floor(worldX / pixelSize);
+    const gridY = Math.floor(worldY / pixelSize);
+    const pixelKey = `${gridX}_${gridY}`;
+    const newColorIndex = isEraserSelected ? colors.indexOf('#ffffff') : selectedColor;
+
+    setPixels(prev => ({ ...prev, [pixelKey]: { x: gridX, y: gridY, color: newColorIndex, placedBy: "anon" } }));
+
+    if (quadtreeRef.current) {
+      const newPixel: Pixel = { x: gridX, y: gridY, color: colors[newColorIndex] || '#000000' };
+      if (rectContains(quadtreeRef.current.boundary, newPixel)) {
+        quadtreeRef.current.insert(newPixel);
+      }
+      updateVisiblePixels();
+    }
+
+    set(dbRef(db, `canvas/${pixelKey}`), { x: gridX, y: gridY, color: newColorIndex, placedBy: "anon" });
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (e.button === 0) {
+    if (e.button === 0 && isSpaceDown) {
       setIsPanning(true);
       lastMousePosRef.current = { x: e.clientX, y: e.clientY };
     }
@@ -394,7 +444,6 @@ const WebGLCanvas: React.FC = () => {
   }, [handleWheel]);
 
   const lastFrameTimeRef = useRef(0);
-
   useEffect(() => {
     if (!overlayCanvasRef.current) return;
     const ctx = overlayCanvasRef.current.getContext('2d');
@@ -465,6 +514,7 @@ const WebGLCanvas: React.FC = () => {
         ref={canvasRef}
         width={viewport.width}
         height={viewport.height}
+        onClick={handleCanvasClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -472,7 +522,7 @@ const WebGLCanvas: React.FC = () => {
           setIsHovering(false);
           handleMouseUp(e);
         }}
-        className={isPanning ? 'cursor-grabbing bg-white' : 'cursor-grab bg-white'}
+        className={isPanning ? 'cursor-grabbing bg-white' : 'cursor-pointer bg-white'}
       />
       <canvas
         ref={overlayCanvasRef}
@@ -492,8 +542,7 @@ const WebGLCanvas: React.FC = () => {
         </div>
         <div>
           <strong>Viewport (Grid):</strong> Top-Left: (
-          {Math.floor((viewport.width * 0.05 - offset.x) / (scale * pixelSize))}, {Math.floor((viewport.height * 0.05 - offset.y) / (scale * pixelSize))}) | Bottom-Right: (
-          {Math.floor(((viewport.width * 0.95 - offset.x) / (scale * pixelSize)))}, {Math.floor(((viewport.height * 0.95 - offset.y) / (scale * pixelSize)))})
+          {Math.floor((viewport.width - offset.x) / (scale * pixelSize))}, {Math.floor((viewport.height - offset.y) / (scale * pixelSize))})
         </div>
         <div>
           <strong>Mouse (Grid):</strong> ({Math.floor(mouseWorld.x / pixelSize)}, {Math.floor(mouseWorld.y / pixelSize)})
