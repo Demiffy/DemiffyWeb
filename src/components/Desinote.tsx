@@ -51,6 +51,9 @@ interface TextItem {
   fontSize: number;
   fontFamily: string;
   color: string;
+  isBold: boolean;
+  isUnderline: boolean;
+  isCrossedOut: boolean;
 }
 
 interface ImageItem {
@@ -116,10 +119,16 @@ const Desinote: React.FC = () => {
     fontSize: number;
     fontFamily: string;
     color: string;
+    bold: boolean;
+    underline: boolean;
+    crossedOut: boolean;
   }>({
     fontSize: 16,
     fontFamily: "Arial",
-    color: "#FFFFFF"
+    color: "#FFFFFF",
+    bold: false,
+    underline: false,
+    crossedOut: false,
   });
 
   // State to track newly added items to prevent premature saving
@@ -251,17 +260,24 @@ const Desinote: React.FC = () => {
     // Draw grid if enabled
     if (gridEnabled) {
       ctx.strokeStyle = "#333";
-      ctx.lineWidth = 0.5;
-      for (let x = 0; x < canvas.width / scale; x += gridSize) {
+      ctx.lineWidth = 0.5 / scale;
+
+      const startX = Math.floor(viewportOffset.x / gridSize) * gridSize;
+      const endX = viewportOffset.x + canvas.width / scale;
+      const startY = Math.floor(viewportOffset.y / gridSize) * gridSize;
+      const endY = viewportOffset.y + canvas.height / scale;
+
+      for (let x = startX; x <= endX; x += gridSize) {
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height / scale);
+        ctx.moveTo(x - viewportOffset.x, 0);
+        ctx.lineTo(x - viewportOffset.x, canvas.height / scale);
         ctx.stroke();
       }
-      for (let y = 0; y < canvas.height / scale; y += gridSize) {
+
+      for (let y = startY; y <= endY; y += gridSize) {
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width / scale, y);
+        ctx.moveTo(0, y - viewportOffset.y);
+        ctx.lineTo(canvas.width / scale, y - viewportOffset.y);
         ctx.stroke();
       }
     }
@@ -326,65 +342,80 @@ const Desinote: React.FC = () => {
 
     // Draw texts
     texts.forEach(item => {
-      ctx.font = `${item.fontSize}px ${item.fontFamily}`;
-      ctx.fillStyle = item.color;
-      ctx.textBaseline = "top";
+    const x = (item.x - viewportOffset.x);
+    const y = (item.y - viewportOffset.y);
 
-      const x = (item.x - viewportOffset.x);
-      const y = (item.y - viewportOffset.y);
+    ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
+    ctx.fillStyle = item.color;
+    ctx.textBaseline = "top";
 
-      ctx.fillText(item.text, x, y);
+    ctx.fillText(item.text, x, y);
 
-      if (selectedNotes.has(item.id)) {
-        const textWidth = ctx.measureText(item.text).width;
-        const textHeight = item.fontSize;
+    const textWidth = ctx.measureText(item.text).width;
 
-        const borderRadius = 6;
-        const padding = 8;
-        const paddingTop = 6;
-        const paddingBottom = 1;
+    if (item.isUnderline) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + item.fontSize);
+      ctx.lineTo(x + textWidth, y + item.fontSize);
+      ctx.strokeStyle = item.color;
+      ctx.lineWidth = 1 / scale;
+      ctx.stroke();
+    }
 
-        ctx.shadowColor = "rgba(0, 123, 255, 0.5)";
-        ctx.shadowBlur = 10;
+    if (item.isCrossedOut) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + item.fontSize / 2);
+      ctx.lineTo(x + textWidth, y + item.fontSize / 2);
+      ctx.strokeStyle = item.color;
+      ctx.lineWidth = 1 / scale;
+      ctx.stroke();
+    }
 
-        ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
-        ctx.lineWidth = 2;
+    if (selectedNotes.has(item.id)) {
+      const borderRadius = 6;
+      const padding = 8;
+      const paddingTop = 6;
+      const paddingBottom = 1;
 
-        ctx.beginPath();
-        ctx.moveTo(x - padding + borderRadius, y - paddingTop);
-        ctx.arcTo(
-          x + textWidth + padding,
-          y - paddingTop,
-          x + textWidth + padding,
-          y + textHeight + paddingBottom,
-          borderRadius
-        );
-        ctx.arcTo(
-          x + textWidth + padding,
-          y + textHeight + paddingBottom,
-          x - padding,
-          y + textHeight + paddingBottom,
-          borderRadius
-        );
-        ctx.arcTo(
-          x - padding,
-          y + textHeight + paddingBottom,
-          x - padding,
-          y - paddingTop,
-          borderRadius
-        );
-        ctx.arcTo(
-          x - padding,
-          y - paddingTop,
-          x + textWidth + padding,
-          y - paddingTop,
-          borderRadius
-        );
-        ctx.closePath();
+      ctx.shadowColor = "rgba(0, 123, 255, 0.5)";
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
+      ctx.lineWidth = 2;
 
-        ctx.stroke();
-      }
-    });
+      ctx.beginPath();
+      ctx.moveTo(x - padding + borderRadius, y - paddingTop);
+      ctx.arcTo(
+        x + textWidth + padding,
+        y - paddingTop,
+        x + textWidth + padding,
+        y + item.fontSize + paddingBottom,
+        borderRadius
+      );
+      ctx.arcTo(
+        x + textWidth + padding,
+        y + item.fontSize + paddingBottom,
+        x - padding,
+        y + item.fontSize + paddingBottom,
+        borderRadius
+      );
+      ctx.arcTo(
+        x - padding,
+        y + item.fontSize + paddingBottom,
+        x - padding,
+        y - paddingTop,
+        borderRadius
+      );
+      ctx.arcTo(
+        x - padding,
+        y - paddingTop,
+        x + textWidth + padding,
+        y - paddingTop,
+        borderRadius
+      );
+      ctx.closePath();
+      ctx.stroke();
+    }
+  });
 
     ctx.restore();
 
@@ -459,6 +490,9 @@ const Desinote: React.FC = () => {
               fontSize: typeof note.fontSize === "number" ? note.fontSize : 16,
               fontFamily: typeof note.fontFamily === "string" ? note.fontFamily : "Arial",
               color: typeof note.color === "string" ? note.color : "#FFFFFF",
+              isBold: typeof note.isBold === "boolean" ? note.isBold : false,
+              isUnderline: typeof note.isUnderline === "boolean" ? note.isUnderline : false,
+              isCrossedOut: typeof note.isCrossedOut === "boolean" ? note.isCrossedOut : false,
             };
 
             const canvas = document.createElement("canvas");
@@ -598,7 +632,10 @@ const Desinote: React.FC = () => {
         isEditing: true,
         fontSize: 16,
         fontFamily: "Arial",
-        color: "#FFFFFF"
+        color: "#FFFFFF",
+        isBold: false,
+        isUnderline: false,
+        isCrossedOut: false
       };
       set(newNoteRef, {
         id: newNote.id,
@@ -625,7 +662,10 @@ const Desinote: React.FC = () => {
           setPropertyValues({
             fontSize: newNote.fontSize,
             fontFamily: newNote.fontFamily,
-            color: newNote.color
+            color: newNote.color,
+            bold: newNote.isBold,
+            underline: newNote.isUnderline,
+            crossedOut: newNote.isCrossedOut
           });
           setTimeout(() => {
             newItemIdsRef.current.delete(newNoteId);
@@ -869,7 +909,10 @@ const Desinote: React.FC = () => {
               setPropertyValues({
                 fontSize: textItem.fontSize,
                 fontFamily: textItem.fontFamily,
-                color: textItem.color
+                color: textItem.color,
+                bold: textItem.isBold,
+                underline: textItem.isUnderline,
+                crossedOut: textItem.isCrossedOut
               });
             }
           }
@@ -1100,20 +1143,22 @@ const Desinote: React.FC = () => {
     }
 
     if (isSelecting && selectionStart && selectionEnd) {
-      const selX1 = Math.min(selectionStart.x, selectionEnd.x);
-      const selY1 = Math.min(selectionStart.y, selectionEnd.y);
-      const selX2 = Math.max(selectionStart.x, selectionEnd.x);
-      const selY2 = Math.max(selectionStart.y, selectionEnd.y);
+      const selLeft = Math.min(selectionStart.x, selectionEnd.x);
+      const selTop = Math.min(selectionStart.y, selectionEnd.y);
+      const selRight = Math.max(selectionStart.x, selectionEnd.x);
+      const selBottom = Math.max(selectionStart.y, selectionEnd.y);
 
       const movement = Math.hypot(selectionEnd.x - selectionStart.x, selectionEnd.y - selectionStart.y);
 
       if (movement < CLICK_THRESHOLD) {
-        // Treat as a click to deselect
         setSelectedNotes(new Set());
         setShowProperties(false);
       } else {
-        // Perform selection
         const newSelectedNotes = new Set<string>();
+
+        const checkIntersection = (itemLeft: number, itemTop: number, itemRight: number, itemBottom: number) => {
+          return !(itemRight < selLeft || itemLeft > selRight || itemBottom < selTop || itemTop > selBottom);
+        };
 
         const checkImageSelectionPromises: Promise<void>[] = [];
 
@@ -1125,51 +1170,15 @@ const Desinote: React.FC = () => {
             const textWidth = ctx.measureText(item.text).width;
             const textHeight = item.fontSize;
 
-            if (
-              item.x >= selX1 &&
-              item.x + textWidth <= selX2 &&
-              item.y >= selY1 &&
-              item.y + textHeight <= selY2
-            ) {
+            if (checkIntersection(item.x, item.y, item.x + textWidth, item.y + textHeight)) {
               newSelectedNotes.add(item.id);
             }
           }
 
           if (item.type === 'image') {
-            const cachedImage = imageCacheRef.current.get(item.imageUrl);
-            if (cachedImage && cachedImage.complete) {
-              if (
-                item.x >= selX1 &&
-                item.x + item.width <= selX2 &&
-                item.y >= selY1 &&
-                item.y + item.height <= selY2
-              ) {
-                newSelectedNotes.add(item.id);
-              }
-            } else {
-              const img = new Image();
-              img.crossOrigin = "anonymous";
-              const promise = new Promise<void>((resolve) => {
-                img.onload = () => {
-                  imageCacheRef.current.set(item.imageUrl, img);
-                  const imgWidth = img.width;
-                  const imgHeight = img.height;
-                  if (
-                    item.x >= selX1 &&
-                    item.x + imgWidth <= selX2 &&
-                    item.y >= selY1 &&
-                    item.y + imgHeight <= selY2
-                  ) {
-                    newSelectedNotes.add(item.id);
-                  }
-                  resolve();
-                };
-                img.onerror = () => {
-                  resolve();
-                };
-              });
-              img.src = item.imageUrl;
-              checkImageSelectionPromises.push(promise);
+            // Always use the stored dimensions for images.
+            if (checkIntersection(item.x, item.y, item.x + item.width, item.y + item.height)) {
+              newSelectedNotes.add(item.id);
             }
           }
         }
@@ -1186,14 +1195,20 @@ const Desinote: React.FC = () => {
               setPropertyValues({
                 fontSize: singleItem.fontSize,
                 fontFamily: singleItem.fontFamily,
-                color: singleItem.color
+                color: singleItem.color,
+                bold: singleItem.isBold,
+                underline: singleItem.isUnderline,
+                crossedOut: singleItem.isCrossedOut
               });
             }
           } else if (newSelectedNotes.size > 1) {
             setPropertyValues({
               fontSize: 16,
               fontFamily: "Arial",
-              color: "#FFFFFF"
+              color: "#FFFFFF",
+              bold: false,
+              underline: false,
+              crossedOut: false
             });
           }
         });
@@ -1512,7 +1527,10 @@ const Desinote: React.FC = () => {
         y: item.y,
         fontSize: item.fontSize,
         fontFamily: item.fontFamily,
-        color: item.color
+        color: item.color,
+        isBold: item.isBold,
+        isUnderline: item.isUnderline,
+        isCrossedOut: item.isCrossedOut
       }).catch((error) => {
         console.error("Error saving lesson item:", error);
       });
@@ -1582,6 +1600,24 @@ const Desinote: React.FC = () => {
     };
   }, [resizingImage, items, saveLessonItem]);
 
+  useEffect(() => {
+    const handleDeleteKey = (event: KeyboardEvent) => {
+      if (event.key === "Delete" && selectedNotes.size > 0) {
+        selectedNotes.forEach((id) => {
+          deleteLessonItem(id);
+        });
+        setSelectedNotes(new Set());
+        setSelectedNoteId(null);
+        setShowProperties(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleDeleteKey);
+    return () => {
+      window.removeEventListener("keydown", handleDeleteKey);
+    };
+  }, [selectedNotes]);
+
   // --------------------- Focus on Editing Input ---------------------
   // Focus on the input field when a new text note is selected for editing
   useEffect(() => {
@@ -1607,11 +1643,18 @@ const Desinote: React.FC = () => {
     // Update all selected text notes with the new property, excluding newly added items
     const updatedItems: { [id: string]: DrawableItem } = { ...items };
     selectedNotes.forEach(id => {
-      if (!newItemIdsRef.current.has(id) && updatedItems[id].type === 'text') {
-        updatedItems[id] = {
-          ...updatedItems[id],
-          [property]: value
-        };
+      const item = updatedItems[id];
+      if (item && item.type === 'text') {
+        if (property === "bold") {
+          updatedItems[id] = { ...item, isBold: value };
+        } else if (property === "underline") {
+          updatedItems[id] = { ...item, isUnderline: value };
+        } else if (property === "crossedOut") {
+          updatedItems[id] = { ...item, isCrossedOut: value };
+        } else {
+          updatedItems[id] = { ...item, [property]: value };
+        }
+        saveLessonItem(updatedItems[id]);
       }
     });
     setItems(updatedItems);
@@ -1676,44 +1719,68 @@ const Desinote: React.FC = () => {
 
       {/* Properties Panel */}
       {showProperties && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-30 bg-opacity-75 backdrop-filter backdrop-blur-lg p-4 rounded shadow-lg flex space-x-4 items-center">
-          <label className="flex items-center space-x-2">
-            <span className="text-white">Size:</span>
-            <input
-              type="number"
-              min="16"
-              max="72"
-              value={propertyValues.fontSize}
-              onChange={(e) => handlePropertyChange("fontSize", parseInt(e.target.value) || 16)}
-              className="w-16 p-1 rounded text-white font-bold"
-            />
-          </label>
-          <label className="flex items-center space-x-2">
-            <span className="text-white">Font:</span>
-            <select
-              value={propertyValues.fontFamily}
-              onChange={(e) => handlePropertyChange("fontFamily", e.target.value)}
-              className="p-1 rounded text-white font-bold"
-            >
-              <option value="Arial">Arial</option>
-              <option value="Courier New">Courier New</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Times New Roman">Times New Roman</option>
-              <option value="Verdana">Verdana</option>
-              {/* Add more fonts as desired */}
-            </select>
-          </label>
-          <label className="flex items-center space-x-2">
-            <span className="text-white">Color:</span>
-            <input
-              type="color"
-              value={propertyValues.color}
-              onChange={(e) => handlePropertyChange("color", e.target.value)}
-              className="p-1 rounded"
-            />
-          </label>
-        </div>
-      )}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-30 bg-opacity-75 backdrop-filter backdrop-blur-lg p-4 rounded shadow-lg flex flex-wrap gap-4 items-center">
+        <label className="flex items-center space-x-2">
+          <span className="text-white">Size:</span>
+          <input
+            type="number"
+            min="16"
+            max="72"
+            value={propertyValues.fontSize}
+            onChange={(e) => handlePropertyChange("fontSize", parseInt(e.target.value) || 16)}
+            className="w-16 p-1 rounded text-white font-bold"
+          />
+        </label>
+        <label className="flex items-center space-x-2">
+          <span className="text-white">Font:</span>
+          <select
+            value={propertyValues.fontFamily}
+            onChange={(e) => handlePropertyChange("fontFamily", e.target.value)}
+            className="p-1 rounded text-white font-bold"
+          >
+            <option value="Arial">Arial</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Verdana">Verdana</option>
+            {/* Add more fonts as desired */}
+          </select>
+        </label>
+        <label className="flex items-center space-x-2">
+          <span className="text-white">Color:</span>
+          <input
+            type="color"
+            value={propertyValues.color}
+            onChange={(e) => handlePropertyChange("color", e.target.value)}
+            className="p-1 rounded"
+          />
+        </label>
+        <label className="flex items-center space-x-1 text-white">
+          <input
+            type="checkbox"
+            checked={propertyValues.bold}
+            onChange={(e) => handlePropertyChange("bold", e.target.checked)}
+          />
+          <span>Bold</span>
+        </label>
+        <label className="flex items-center space-x-1 text-white">
+          <input
+            type="checkbox"
+            checked={propertyValues.underline}
+            onChange={(e) => handlePropertyChange("underline", e.target.checked)}
+          />
+          <span>Underline</span>
+        </label>
+        <label className="flex items-center space-x-1 text-white">
+          <input
+            type="checkbox"
+            checked={propertyValues.crossedOut}
+            onChange={(e) => handlePropertyChange("crossedOut", e.target.checked)}
+          />
+          <span>Crossed Out</span>
+        </label>
+      </div>
+    )}
 
       <canvas
         ref={canvasRef}
