@@ -114,6 +114,7 @@ interface LayerItemProps {
   onRename: (layerId: string, newName: string) => void;
   onDelete: (layerId: string) => void;
   onSelect: (layerId: string) => void;
+  flashLocked?: boolean;
 }
 
 const SortableLayerItem: React.FC<LayerItemProps> = ({
@@ -124,6 +125,7 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
   onRename,
   onDelete,
   onSelect,
+  flashLocked,
 }) => {
   const { listeners, setNodeRef, transform, transition } =
     useSortable({ id: layer.id });
@@ -180,7 +182,11 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
             {layer.visible ? <FiEye className="text-sm" /> : <FiEyeOff className="text-sm" />}
           </button>
           <button onClick={() => onToggleLock(layer.id)} className="ml-1 p-1 hover:text-gray-300">
-            {layer.locked ? <FiLock className="text-sm" /> : <FiUnlock className="text-sm" />}
+          {layer.locked ? (
+            <FiLock className={`text-sm ${flashLocked ? "text-red-500" : "text-white"}`} />
+          ) : (
+            <FiUnlock className="text-sm" />
+          )}
           </button>
           {layer.id !== "default" && (
             <button onClick={() => onDelete(layer.id)} className="ml-1 p-1 hover:text-red-400">
@@ -262,6 +268,8 @@ const Desinote: React.FC = () => {
   const [activeLayerId, setActiveLayerId] = useState<string>("default");
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const togglePanel = () => setIsPanelCollapsed(prev => !prev);
+  const [flashLockedLayers, setFlashLockedLayers] = useState<{ [layerId: string]: boolean }>({});
+  const [flashPanelToggle, setFlashPanelToggle] = useState(false);
 
   const CLICK_THRESHOLD = 5;
 
@@ -900,6 +908,21 @@ const Desinote: React.FC = () => {
       }
       Promise.all(checkImagePromises).then(() => {
         if (clickedOnItem && clickedItemId) {
+          const item = items[clickedItemId];
+          const layer = layers.find((l) => l.id === item.layerId);
+          if (layer && layer.locked) {
+            // Flash the locked icon for this layer.
+            setFlashLockedLayers((prev) => ({ ...prev, [layer.id]: true }));
+            setTimeout(() => {
+              setFlashLockedLayers((prev) => ({ ...prev, [layer.id]: false }));
+            }, 3000);
+            // Also flash the panel toggle arrow if the panel is collapsed.
+            if (isPanelCollapsed) {
+              setFlashPanelToggle(true);
+              setTimeout(() => setFlashPanelToggle(false), 3000);
+            }
+            return;
+          }
           if (selectedNotes.has(clickedItemId)) {
             setDragStart({ x: event.clientX, y: event.clientY });
             const initPos: { [id: string]: { x: number; y: number } } = {};
@@ -1805,6 +1828,7 @@ const Desinote: React.FC = () => {
                     onRename={handleLayerRename}
                     onDelete={deleteLayer}
                     onSelect={handleLayerSelect}
+                    flashLocked={flashLockedLayers[layer.id]}
                   />
                 ))}
               </SortableContext>
@@ -1813,14 +1837,14 @@ const Desinote: React.FC = () => {
         </div>
         <button
           onClick={togglePanel}
-          className="fixed top-4 z-40 p-1 bg-opacity-75 backdrop-filter backdrop-blur-lg rounded-r rounded-l-none shadow-md hover:bg-gray-700 transition-all duration-300"
+          className="fixed top-4 z-40 p-1 bg-gray-800 bg-opacity-75 rounded-r rounded-l-none shadow-md hover:bg-gray-700 transition-all duration-300"
           style={{ left: isPanelCollapsed ? "calc(4px + 20px)" : "calc(4px + 16rem)" }}
           title="Toggle Layers Panel"
         >
           {isPanelCollapsed ? (
-            <FiChevronRight className="text-white text-sm" />
+            <FiChevronRight className={`text-sm ${flashPanelToggle ? "text-red-500" : "text-white"}`} />
           ) : (
-            <FiChevronLeft className="text-white text-sm" />
+            <FiChevronLeft className={`text-sm ${flashPanelToggle ? "text-red-500" : "text-white"}`} />
           )}
         </button>
       </div>
