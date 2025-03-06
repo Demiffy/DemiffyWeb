@@ -27,6 +27,8 @@ import {
   FiEyeOff,
   FiPlus,
   FiTrash2,
+  FiChevronLeft,
+  FiChevronRight
 } from "react-icons/fi";
 import {
   DndContext,
@@ -145,11 +147,11 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center p-2 border rounded mb-1 bg-gray-800 text-white select-none"
+      className="flex items-center p-2 rounded-md mb-1 bg-gray-800 bg-opacity-75 text-white select-none"
       onClick={() => onSelect(layer.id)}
     >
       <div {...listeners} className="mr-2">
-        <FiMove />
+        <FiMove className="text-gray-300 text-sm" />
       </div>
       {isEditing ? (
         <input
@@ -158,29 +160,29 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
           onChange={(e) => setTempName(e.target.value)}
           onBlur={finishEditing}
           onKeyDown={(e) => e.key === "Enter" && finishEditing()}
-          className="bg-transparent border-b border-white text-white flex-grow"
+          className="flex-grow bg-transparent border-b border-white text-white placeholder-gray-400 focus:outline-none text-sm"
           autoFocus
         />
       ) : (
-        <div onDoubleClick={handleDoubleClick} className="flex-grow truncate">
+        <div onDoubleClick={handleDoubleClick} className="flex-grow truncate text-sm font-medium">
           {layer.name}
         </div>
       )}
       {!isEditing && (
         <>
-          <button onClick={() => onToggleVisibility(layer.id)} className="ml-2">
-            {layer.visible ? <FiEye /> : <FiEyeOff />}
+          <button onClick={() => onToggleVisibility(layer.id)} className="ml-1 p-1 hover:text-gray-300">
+            {layer.visible ? <FiEye className="text-sm" /> : <FiEyeOff className="text-sm" />}
           </button>
-          <button onClick={() => onToggleLock(layer.id)} className="ml-2">
-            {layer.locked ? <FiLock /> : <FiUnlock />}
+          <button onClick={() => onToggleLock(layer.id)} className="ml-1 p-1 hover:text-gray-300">
+            {layer.locked ? <FiLock className="text-sm" /> : <FiUnlock className="text-sm" />}
           </button>
           {layer.id !== "default" && (
-            <button onClick={() => onDelete(layer.id)} className="ml-2">
-              <FiTrash2 />
+            <button onClick={() => onDelete(layer.id)} className="ml-1 p-1 hover:text-red-400">
+              <FiTrash2 className="text-sm" />
             </button>
           )}
-          <button onClick={handleDoubleClick} className="ml-2">
-            <FiEdit2 />
+          <button onClick={handleDoubleClick} className="ml-1 p-1 hover:text-gray-300">
+            <FiEdit2 className="text-sm" />
           </button>
         </>
       )}
@@ -251,6 +253,8 @@ const Desinote: React.FC = () => {
 
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string>("default");
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const togglePanel = () => setIsPanelCollapsed(prev => !prev);
 
   const CLICK_THRESHOLD = 5;
 
@@ -1612,35 +1616,52 @@ const Desinote: React.FC = () => {
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
       {/* Layers Panel */}
-      <div className="fixed top-4 left-4 z-30 p-2 bg-gray-900 bg-opacity-75 rounded shadow-lg w-64 max-h-[80vh]">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-white font-bold">Layers</h3>
-          <button onClick={addNewLayer} title="Add Layer" className="text-white">
-            <FiPlus size={20} />
-          </button>
+      <div>
+        <div
+          className="fixed top-4 z-30 p-2 bg-opacity-75 backdrop-filter backdrop-blur-lg w-64 max-h-[80vh] transition-all duration-300"
+          style={{ left: isPanelCollapsed ? "calc(-16rem + 20px)" : "4px" }}
+        >
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-white font-bold">Layers</h3>
+            <button onClick={addNewLayer} title="Add Layer" className="text-white">
+              <FiPlus size={20} />
+            </button>
+          </div>
+          <div className="max-h-[calc(80vh-2rem)] overflow-auto">
+            <DndContext
+              collisionDetection={closestCenter}
+              onDragEnd={handleLayerDragEnd}
+              modifiers={[restrictToParentElement]}
+            >
+              <SortableContext items={layers.map((l) => l.id)} strategy={verticalListSortingStrategy}>
+                {layers.map((layer) => (
+                  <SortableLayerItem
+                    key={layer.id}
+                    layer={layer}
+                    active={layer.id === activeLayerId}
+                    onToggleLock={handleLayerToggleLock}
+                    onToggleVisibility={handleLayerToggleVisibility}
+                    onRename={handleLayerRename}
+                    onDelete={deleteLayer}
+                    onSelect={handleLayerSelect}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          </div>
         </div>
-        <div className="max-h-[calc(80vh-2rem)] overflow-auto">
-          <DndContext
-            collisionDetection={closestCenter}
-            onDragEnd={handleLayerDragEnd}
-            modifiers={[restrictToParentElement]}
-          >
-            <SortableContext items={layers.map((l) => l.id)} strategy={verticalListSortingStrategy}>
-              {layers.map((layer) => (
-                <SortableLayerItem
-                  key={layer.id}
-                  layer={layer}
-                  active={layer.id === activeLayerId}
-                  onToggleLock={handleLayerToggleLock}
-                  onToggleVisibility={handleLayerToggleVisibility}
-                  onRename={handleLayerRename}
-                  onDelete={deleteLayer}
-                  onSelect={handleLayerSelect}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        </div>
+        <button
+          onClick={togglePanel}
+          className="fixed top-4 z-40 p-1 bg-opacity-75 backdrop-filter backdrop-blur-lg rounded-r rounded-l-none shadow-md hover:bg-gray-700 transition-all duration-300"
+          style={{ left: isPanelCollapsed ? "calc(4px + 20px)" : "calc(4px + 16rem)" }}
+          title="Toggle Layers Panel"
+        >
+          {isPanelCollapsed ? (
+            <FiChevronRight className="text-white text-sm" />
+          ) : (
+            <FiChevronLeft className="text-white text-sm" />
+          )}
+        </button>
       </div>
 
       {/* Top Bar */}
