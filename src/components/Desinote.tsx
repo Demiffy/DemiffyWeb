@@ -327,7 +327,7 @@ const Desinote: React.FC = () => {
       ctx.moveTo(x, y + item.fontSize);
       ctx.lineTo(x + textWidth, y + item.fontSize);
       ctx.strokeStyle = item.color;
-      ctx.lineWidth = 1 / scale;
+      ctx.lineWidth = 2 / scale;
       ctx.stroke();
     }
     if (item.isCrossedOut) {
@@ -437,7 +437,7 @@ const Desinote: React.FC = () => {
     const visibleLayerIds = new Set(layers.filter(l => l.visible).map(l => l.id));
     const itemsToDraw = Object.values(items).filter(item => visibleLayerIds.has(item.layerId));
 
-    const sortedLayers = layers.filter(l => l.visible).sort((a, b) => a.order - b.order);
+    const sortedLayers = layers.filter(l => l.visible).sort((a, b) => b.order - a.order);
     sortedLayers.forEach(layer => {
       const layerItems = itemsToDraw.filter(item => item.layerId === layer.id);
       if (layer.id === activeLayerId) {
@@ -569,6 +569,39 @@ const Desinote: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [currentTool]);
+
+  useEffect(() => {
+    const handleToolShortcut = (e: KeyboardEvent) => {
+      if (
+        document.activeElement instanceof HTMLInputElement ||
+        document.activeElement instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+      switch (e.code) {
+        case "Digit1":
+          setCurrentTool("pan");
+          break;
+        case "Digit2":
+          setCurrentTool("select");
+          break;
+        case "Digit3":
+          setCurrentTool("text");
+          break;
+        case "Digit4":
+          setCurrentTool("image");
+          break;
+        case "Digit5":
+          setGridEnabled((prev) => !prev);
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleToolShortcut);
+    return () => window.removeEventListener("keydown", handleToolShortcut);
+  }, []);
 
   // --------------------- Firebase Loading ---------------------
   const loadLessonNotes = () => {
@@ -792,16 +825,18 @@ const Desinote: React.FC = () => {
     }
     if (currentTool === "select") {
       const visibleItems = Object.values(items).filter(isItemVisible);
-      const orderedItems = visibleItems.sort((a, b) => {
-        const layerAOrder = layers.find(l => l.id === a.layerId)?.order || 0;
-        const layerBOrder = layers.find(l => l.id === b.layerId)?.order || 0;
-        if (layerAOrder !== layerBOrder) return layerBOrder - layerAOrder;
-        if (a.layerId === activeLayerId && b.layerId === activeLayerId) {
-          if (a.type === "text" && b.type === "image") return -1;
-          if (a.type === "image" && b.type === "text") return 1;
-        }
-        return 0;
-      });
+      const orderedItems = visibleItems
+        .sort((a, b) => {
+          const layerAOrder = layers.find(l => l.id === a.layerId)?.order || 0;
+          const layerBOrder = layers.find(l => l.id === b.layerId)?.order || 0;
+          if (layerAOrder !== layerBOrder) return layerBOrder - layerAOrder;
+          if (a.layerId === activeLayerId && b.layerId === activeLayerId) {
+            if (a.type === "text" && b.type === "image") return -1;
+            if (a.type === "image" && b.type === "text") return 1;
+          }
+          return 0;
+        })
+        .reverse();
       let clickedOnItem = false;
       let clickedItemId: string | null = null;
       let clickedItemType: "text" | "image" | null = null;
@@ -1708,7 +1743,7 @@ const Desinote: React.FC = () => {
             </div>
             {/* Canvas Background Category */}
             <div className="mt-2 border-t border-slate-600 pt-2">
-              <h4 className="text-xs text-slate-300 font-semibold mb-1">Canvas Background</h4>
+              <h4 className="text-xs text-slate-300 font-semibold mb-1">Background</h4>
               <div className="flex justify-evenly gap-1">
                 <button
                   onClick={() => changeCanvasBgColor("#121212")}
@@ -1792,42 +1827,47 @@ const Desinote: React.FC = () => {
 
       {/* Top Bar */}
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg">
-        <button
-          onClick={() => setCurrentTool("pan")}
-          className={`p-2 rounded ${currentTool === "pan" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-          title="Pan"
-        >
-          <FiMove size={24} color="#FFFFFF" />
-        </button>
-        <button
-          onClick={() => setCurrentTool("select")}
-          className={`p-2 rounded ${currentTool === "select" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-          title="Select"
-        >
-          <FiCheckSquare size={24} color="#FFFFFF" />
-        </button>
-        <button
-          onClick={() => setCurrentTool("text")}
-          className={`p-2 rounded ${currentTool === "text" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-          title="Add Text"
-        >
-          <FiType size={24} color="#FFFFFF" />
-        </button>
-        <button
-          onClick={() => setCurrentTool("image")}
-          className={`p-2 rounded ${currentTool === "image" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-          title="Add Image"
-        >
-          <FiImage size={24} color="#FFFFFF" />
-        </button>
-        <button
-          onClick={() => setGridEnabled((prev) => !prev)}
-          className={`p-2 rounded ${gridEnabled ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-          title="Grid Lock"
-        >
-          {gridEnabled ? <FiGrid size={24} color="#FFFFFF" /> : <FiSquare size={24} color="#FFFFFF" />}
-        </button>
-      </div>
+      <button
+        onClick={() => setCurrentTool("pan")}
+        className={`relative p-2 rounded ${currentTool === "pan" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+        title="Pan"
+      >
+        <FiMove size={24} color="#FFFFFF" />
+        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">1</span>
+      </button>
+      <button
+        onClick={() => setCurrentTool("select")}
+        className={`relative p-2 rounded ${currentTool === "select" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+        title="Select"
+      >
+        <FiCheckSquare size={24} color="#FFFFFF" />
+        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">2</span>
+      </button>
+      <button
+        onClick={() => setCurrentTool("text")}
+        className={`relative p-2 rounded ${currentTool === "text" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+        title="Add Text"
+      >
+        <FiType size={24} color="#FFFFFF" />
+        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">3</span>
+      </button>
+      <button
+        onClick={() => setCurrentTool("image")}
+        className={`relative p-2 rounded ${currentTool === "image" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+        title="Add Image"
+      >
+        <FiImage size={24} color="#FFFFFF" />
+        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">4</span>
+      </button>
+      <button
+        onClick={() => setGridEnabled((prev) => !prev)}
+        className={`relative p-2 rounded ${gridEnabled ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+        title="Grid Lock"
+      >
+        {gridEnabled ? <FiGrid size={24} color="#FFFFFF" /> : <FiSquare size={24} color="#FFFFFF" />}
+        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">5</span>
+      </button>
+    </div>
 
       {selectedNotes.size > 0 && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-20 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg">
