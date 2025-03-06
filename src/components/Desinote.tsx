@@ -733,10 +733,18 @@ const Desinote: React.FC = () => {
 
   // --------------------- Saving & Loading Lesson State ---------------------
   const saveLessonState = () => {
-    const fileName = prompt("Enter a name to save your lesson:");
+    const fileName = prompt("Enter a name to save your lesson (existing file with same name will be overridden):");
     if (!fileName?.trim()) return;
+    const trimmedName = fileName.trim();
+    const existingSave = savedStates.find(save => save.fileName.toLowerCase() === trimmedName.toLowerCase());
+    if (existingSave) {
+      const confirmOverride = window.confirm(
+        `A saved lesson named "${trimmedName}" already exists. Do you want to override it?`
+      );
+      if (!confirmOverride) return;
+    }
     const stateToSave = {
-      fileName: fileName.trim(),
+      fileName: trimmedName,
       timestamp: Date.now(),
       items,
       layers,
@@ -744,10 +752,16 @@ const Desinote: React.FC = () => {
       gridEnabled,
     };
     const savesRef = dbRef(db, "lessonSaves");
-    const newSaveRef = push(savesRef);
-    set(newSaveRef, stateToSave)
-      .then(() => alert("Lesson saved successfully!"))
-      .catch((error) => console.error("Error saving lesson state:", error));
+    if (existingSave) {
+      set(dbRef(db, `lessonSaves/${existingSave.id}`), stateToSave)
+        .then(() => alert("Lesson overridden successfully!"))
+        .catch((error) => console.error("Error saving lesson state:", error));
+    } else {
+      const newSaveRef = push(savesRef);
+      set(newSaveRef, stateToSave)
+        .then(() => alert("Lesson saved successfully!"))
+        .catch((error) => console.error("Error saving lesson state:", error));
+    }
   };
 
   useEffect(() => {
@@ -1780,6 +1794,18 @@ const Desinote: React.FC = () => {
     }
   };
 
+  const clearCanvas = () => {
+    if (window.confirm("Clear canvas? This will permanently remove all items.")) {
+      set(dbRef(db, "lessonNotes"), null).catch((error) =>
+        console.error("Error clearing lesson notes:", error)
+      );
+      set(dbRef(db, "lessonImages"), null).catch((error) =>
+        console.error("Error clearing lesson images:", error)
+      );
+      setItems({});
+    }
+  };
+
   const [showLoadDialog, setShowLoadDialog] = useState(false);
 
   // --------------------- Render ---------------------
@@ -1810,6 +1836,12 @@ const Desinote: React.FC = () => {
                 className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded"
               >
                 <FiDownload className="mr-2" /> <span className="text-sm">Load</span>
+              </button>
+              <button
+                onClick={clearCanvas}
+                className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded"
+              >
+                <FiTrash2 className="mr-2" /> <span className="text-sm">Clear Canvas</span>
               </button>
             </div>
             {/* Options Category */}
