@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref as dbRef, onValue, set } from 'firebase/database';
+import { getDatabase, ref as dbRef, onValue, update } from 'firebase/database';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -188,6 +188,17 @@ function createProgram(gl: WebGL2RenderingContext, vsSource: string, fsSource: s
   return program;
 }
 
+function throttle<T extends (...args: any[]) => any>(fn: T, limit: number): T {
+  let lastCall = 0;
+  return function (...args: any[]) {
+    const now = Date.now();
+    if (now - lastCall >= limit) {
+      lastCall = now;
+      fn(...args);
+    }
+  } as T;
+}
+
 const WebGLCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -197,6 +208,13 @@ const WebGLCanvas: React.FC = () => {
   const instanceBufferRef = useRef<WebGLBuffer | null>(null);
   const colorBufferRef = useRef<WebGLBuffer | null>(null);
   const vertexBufferRef = useRef<WebGLBuffer | null>(null);
+  const instanceBufferSizeRef = useRef<number>(0);
+  const colorBufferSizeRef = useRef<number>(0);
+  const updateQueueRef = useRef<Record<string, any>>({});
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pixelDebounceRef = useRef<Record<string, number>>({});
+  const debounceTime = 50;
+  const maxQueueSize = 100;
 
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -209,46 +227,49 @@ const WebGLCanvas: React.FC = () => {
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
   const [selectedColor, setSelectedColor] = useState<number>(0);
   const [isEraserSelected, setIsEraserSelected] = useState<boolean>(false);
-  const [pixels, setPixels] = useState<Record<string, any>>({});
+  const [, setPixels] = useState<Record<string, any>>({});
   const quadtreeRef = useRef<Quadtree | null>(null);
   const visiblePixelsRef = useRef<Pixel[]>([]);
 
   useEffect(() => {
     const canvasDBRef = dbRef(db, 'canvas');
     const unsubscribe = onValue(canvasDBRef, (snapshot) => {
-      setPixels(snapshot.exists() ? snapshot.val() : {});
+      const newPixels = snapshot.exists() ? snapshot.val() : {};
+      setPixels(newPixels);
+
+      if (!quadtreeRef.current) {
+        const pixelArray: Pixel[] = [];
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        Object.entries(newPixels).forEach(([key, pixelData]) => {
+          const parts = key.split('_');
+          if (parts.length !== 2) return;
+          const x = parseInt(parts[0], 10);
+          const y = parseInt(parts[1], 10);
+          const colorIndex = parseInt((pixelData as { color: string }).color, 10);
+          const colorHex = colors[colorIndex] || '#000000';
+          if (colorHex.toLowerCase() === '#ffffff') return;
+          pixelArray.push({ x, y, color: colorHex });
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        });
+        if (minX === Infinity) {
+          minX = -1000; minY = -1000; maxX = 1000; maxY = 1000;
+        }
+        const boundary: Rect = { 
+          x: minX, 
+          y: minY, 
+          width: maxX - minX + pixelSize, 
+          height: maxY - minY + pixelSize 
+        };
+        const qt = new Quadtree(boundary, 16);
+        pixelArray.forEach((p) => qt.insert(p));
+        quadtreeRef.current = qt;
+      }
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const pixelArray: Pixel[] = [];
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      Object.entries(pixels).forEach(([key, pixelData]) => {
-        const parts = key.split('_');
-        if (parts.length !== 2) return;
-        const x = parseInt(parts[0], 10);
-        const y = parseInt(parts[1], 10);
-        const colorIndex = parseInt(pixelData.color, 10);
-        const colorHex = colors[colorIndex] || '#000000';
-        if (colorHex.toLowerCase() === '#ffffff') return;
-        pixelArray.push({ x, y, color: colorHex });
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-      });
-      if (minX === Infinity) {
-        minX = -1000; minY = -1000; maxX = 1000; maxY = 1000;
-      }
-      const boundary: Rect = { x: minX, y: minY, width: maxX - minX + pixelSize, height: maxY - minY + pixelSize };
-      const qt = new Quadtree(boundary, 16);
-      pixelArray.forEach((p) => qt.insert(p));
-      quadtreeRef.current = qt;
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [pixels]);
 
   useEffect(() => {
     const updateViewport = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
@@ -256,31 +277,32 @@ const WebGLCanvas: React.FC = () => {
     return () => window.removeEventListener('resize', updateViewport);
   }, []);
 
-  const updateVisiblePixels = useCallback(() => {
-    if (quadtreeRef.current) {
-      const effectiveViewportTopLeft = { x: (0 - offset.x) / scale, y: (0 - offset.y) / scale };
-      const effectiveViewportBottomRight = { x: (viewport.width - offset.x) / scale, y: (viewport.height - offset.y) / scale };
-      const gridEffectiveTopLeft = { x: Math.floor(effectiveViewportTopLeft.x / pixelSize), y: Math.floor(effectiveViewportTopLeft.y / pixelSize) };
-      const gridEffectiveBottomRight = { x: Math.floor(effectiveViewportBottomRight.x / pixelSize), y: Math.floor(effectiveViewportBottomRight.y / pixelSize) };
-      const queryRange: Rect = {
-        x: gridEffectiveTopLeft.x,
-        y: gridEffectiveTopLeft.y,
-        width: gridEffectiveBottomRight.x - gridEffectiveTopLeft.x,
-        height: gridEffectiveBottomRight.y - gridEffectiveTopLeft.y,
-      };
-      visiblePixelsRef.current = quadtreeRef.current.query(queryRange);
-    }
-  }, [offset, scale, viewport]);
-
   useEffect(() => {
     let animationFrameId: number;
+    let lastUpdate = performance.now();
     const updateLoop = () => {
-      updateVisiblePixels();
+      const now = performance.now();
+      if (now - lastUpdate > 1) {
+        if (quadtreeRef.current) {
+          const effectiveViewportTopLeft = { x: (0 - offset.x) / scale, y: (0 - offset.y) / scale };
+          const effectiveViewportBottomRight = { x: (viewport.width - offset.x) / scale, y: (viewport.height - offset.y) / scale };
+          const gridEffectiveTopLeft = { x: Math.floor(effectiveViewportTopLeft.x / pixelSize), y: Math.floor(effectiveViewportTopLeft.y / pixelSize) };
+          const gridEffectiveBottomRight = { x: Math.floor(effectiveViewportBottomRight.x / pixelSize), y: Math.floor(effectiveViewportBottomRight.y / pixelSize) };
+          const queryRange: Rect = {
+            x: gridEffectiveTopLeft.x,
+            y: gridEffectiveTopLeft.y,
+            width: gridEffectiveBottomRight.x - gridEffectiveTopLeft.x,
+            height: gridEffectiveBottomRight.y - gridEffectiveTopLeft.y,
+          };
+          visiblePixelsRef.current = quadtreeRef.current.query(queryRange);
+        }
+        lastUpdate = now;
+      }
       animationFrameId = requestAnimationFrame(updateLoop);
     };
     updateLoop();
     return () => cancelAnimationFrame(animationFrameId);
-  }, [updateVisiblePixels]);
+  }, [offset, scale, viewport]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -360,7 +382,14 @@ const WebGLCanvas: React.FC = () => {
     };
   }, []);
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const flushUpdateQueue = () => {
+    if (Object.keys(updateQueueRef.current).length > 0) {
+      update(dbRef(db, 'canvas'), updateQueueRef.current);
+      updateQueueRef.current = {};
+    }
+  };
+
+  const handleCanvasClickInternal = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isSpaceDown) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -374,6 +403,12 @@ const WebGLCanvas: React.FC = () => {
     const pixelKey = `${gridX}_${gridY}`;
     const newColorIndex = isEraserSelected ? colors.indexOf('#ffffff') : selectedColor;
 
+    const now = Date.now();
+    if (pixelDebounceRef.current[pixelKey] && now - pixelDebounceRef.current[pixelKey] < debounceTime) {
+      return;
+    }
+    pixelDebounceRef.current[pixelKey] = now;
+
     setPixels(prev => ({ ...prev, [pixelKey]: { x: gridX, y: gridY, color: newColorIndex, placedBy: "anon" } }));
 
     if (quadtreeRef.current) {
@@ -381,11 +416,34 @@ const WebGLCanvas: React.FC = () => {
       if (rectContains(quadtreeRef.current.boundary, newPixel)) {
         quadtreeRef.current.insert(newPixel);
       }
-      updateVisiblePixels();
+      const effectiveViewportTopLeft = { x: (0 - offset.x) / scale, y: (0 - offset.y) / scale };
+      const effectiveViewportBottomRight = { x: (viewport.width - offset.x) / scale, y: (viewport.height - offset.y) / scale };
+      const gridEffectiveTopLeft = { x: Math.floor(effectiveViewportTopLeft.x / pixelSize), y: Math.floor(effectiveViewportTopLeft.y / pixelSize) };
+      const gridEffectiveBottomRight = { x: Math.floor(effectiveViewportBottomRight.x / pixelSize), y: Math.floor(effectiveViewportBottomRight.y / pixelSize) };
+      const queryRange: Rect = {
+        x: gridEffectiveTopLeft.x,
+        y: gridEffectiveTopLeft.y,
+        width: gridEffectiveBottomRight.x - gridEffectiveTopLeft.x,
+        height: gridEffectiveBottomRight.y - gridEffectiveTopLeft.y,
+      };
+      visiblePixelsRef.current = quadtreeRef.current.query(queryRange);
     }
 
-    set(dbRef(db, `canvas/${pixelKey}`), { x: gridX, y: gridY, color: newColorIndex, placedBy: "anon" });
+    updateQueueRef.current[pixelKey] = { x: gridX, y: gridY, color: newColorIndex, placedBy: "anon" };
+
+    if (Object.keys(updateQueueRef.current).length >= maxQueueSize) {
+      flushUpdateQueue();
+    } else if (!updateTimeoutRef.current) {
+      updateTimeoutRef.current = setTimeout(() => {
+        flushUpdateQueue();
+        updateTimeoutRef.current = null;
+      }, 100);
+    }
   };
+
+  const throttledHandleCanvasClick = useCallback(throttle(handleCanvasClickInternal, 20), [
+    offset, scale, viewport, isSpaceDown, isEraserSelected, selectedColor
+  ]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 0 && isSpaceDown) {
@@ -489,9 +547,19 @@ const WebGLCanvas: React.FC = () => {
       colorsArray[i * 3 + 2] = b;
     });
     gl.bindBuffer(gl.ARRAY_BUFFER, instanceBufferRef.current);
-    gl.bufferData(gl.ARRAY_BUFFER, offsets, gl.DYNAMIC_DRAW);
+    if (offsets.byteLength === instanceBufferSizeRef.current) {
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, offsets);
+    } else {
+      gl.bufferData(gl.ARRAY_BUFFER, offsets, gl.DYNAMIC_DRAW);
+      instanceBufferSizeRef.current = offsets.byteLength;
+    }
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBufferRef.current);
-    gl.bufferData(gl.ARRAY_BUFFER, colorsArray, gl.DYNAMIC_DRAW);
+    if (colorsArray.byteLength === colorBufferSizeRef.current) {
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, colorsArray);
+    } else {
+      gl.bufferData(gl.ARRAY_BUFFER, colorsArray, gl.DYNAMIC_DRAW);
+      colorBufferSizeRef.current = colorsArray.byteLength;
+    }
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, visiblePixels.length);
     gl.bindVertexArray(null);
   }, [offset, scale, viewport]);
@@ -502,7 +570,7 @@ const WebGLCanvas: React.FC = () => {
       render();
       animationFrameId = requestAnimationFrame(renderLoop);
     };
-    animationFrameId = requestAnimationFrame(renderLoop);
+    renderLoop();
     return () => cancelAnimationFrame(animationFrameId);
   }, [render]);
 
@@ -514,7 +582,7 @@ const WebGLCanvas: React.FC = () => {
         ref={canvasRef}
         width={viewport.width}
         height={viewport.height}
-        onClick={handleCanvasClick}
+        onClick={throttledHandleCanvasClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
