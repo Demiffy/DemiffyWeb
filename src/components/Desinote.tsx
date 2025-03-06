@@ -496,6 +496,7 @@ const Desinote: React.FC = () => {
 
   const handleWheel = useCallback(
     (event: WheelEvent) => {
+      setContextModal(null);
       event.preventDefault();
       const zoomFactor = 0.1;
       const canvas = canvasRef.current;
@@ -815,6 +816,7 @@ const Desinote: React.FC = () => {
 
   // --------------------- Mouse Event Handlers ---------------------
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    setContextModal(null);
     if (event.button !== 0) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1773,6 +1775,81 @@ const Desinote: React.FC = () => {
     };
   }, [showMenu]);
 
+  const [contextModal, setContextModal] = useState<{ x: number; y: number; layerName: string } | null>(null);
+  const contextModalRef = useRef<HTMLDivElement>(null);
+
+  const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const { x, y } = getWorldCoordinates(e, canvas);
+    let foundItem: DrawableItem | null = null;
+    const orderedItems = Object.values(items)
+      .filter(isItemVisible)
+      .sort((a, b) => {
+        const orderA = layers.find(l => l.id === a.layerId)?.order || 0;
+        const orderB = layers.find(l => l.id === b.layerId)?.order || 0;
+        return orderB - orderA;
+      });
+    for (const item of orderedItems) {
+      if (item.type === "text") {
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
+        ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
+        const lines = item.text.split(/\r?\n/);
+        const lineHeight = item.fontSize + 4;
+        const totalHeight = lines.length * lineHeight;
+        const maxWidth = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0);
+        if (x >= item.x && x <= item.x + maxWidth && y >= item.y && y <= item.y + totalHeight) {
+          foundItem = item;
+          break;
+        }
+      } else if (item.type === "image") {
+        if (x >= item.x && x <= item.x + item.width && y >= item.y && y <= item.y + item.height) {
+          foundItem = item;
+          break;
+        }
+      }
+    }
+    if (foundItem) {
+      setContextModal({ x: e.clientX, y: e.clientY, layerName: foundItem.layerName });
+    }
+  };
+
+  useEffect(() => {
+    if (contextModal) {
+      const handleMouseMoveForContext = (e: MouseEvent) => {
+        if (contextModalRef.current) {
+          const rect = contextModalRef.current.getBoundingClientRect();
+          const extendedRect = {
+            left: rect.left - 20,
+            right: rect.right + 20,
+            top: rect.top - 20,
+            bottom: rect.bottom + 20,
+          };
+          if (
+            e.clientX >= extendedRect.left &&
+            e.clientX <= extendedRect.right &&
+            e.clientY >= extendedRect.top &&
+            e.clientY <= extendedRect.bottom
+          ) {
+            return;
+          }
+        }
+        const dx = e.clientX - contextModal.x;
+        const dy = e.clientY - contextModal.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const threshold = 10;
+        if (distance > threshold) {
+          setContextModal(null);
+        }
+      };
+      window.addEventListener("mousemove", handleMouseMoveForContext);
+      return () =>
+        window.removeEventListener("mousemove", handleMouseMoveForContext);
+    }
+  }, [contextModal]);
+
   // --------------------- Save/Load Lesson State ---------------------
   const loadSavedStates = () => {
     const savesRef = dbRef(db, "lessonSaves");
@@ -2194,6 +2271,7 @@ const Desinote: React.FC = () => {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onDoubleClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
       />
 
       {Object.values(items).map(
@@ -2259,6 +2337,16 @@ const Desinote: React.FC = () => {
               Loading important stuff
             </span>
           </div>
+        </div>
+      )}
+      {contextModal && (
+        <div
+          ref={contextModalRef}
+          className="fixed z-50 p-2 bg-slate-700 bg-opacity-90 text-white rounded shadow-lg text-sm"
+          style={{ top: contextModal.y, left: contextModal.x }}
+          onClick={() => setContextModal(null)}
+        >
+          <span>Layer: {contextModal.layerName}</span>
         </div>
       )}
     </div>
