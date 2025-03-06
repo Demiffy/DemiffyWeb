@@ -284,10 +284,22 @@ const WebGLCanvas: React.FC = () => {
       const now = performance.now();
       if (now - lastUpdate > 1) {
         if (quadtreeRef.current) {
-          const effectiveViewportTopLeft = { x: (0 - offset.x) / scale, y: (0 - offset.y) / scale };
-          const effectiveViewportBottomRight = { x: (viewport.width - offset.x) / scale, y: (viewport.height - offset.y) / scale };
-          const gridEffectiveTopLeft = { x: Math.floor(effectiveViewportTopLeft.x / pixelSize), y: Math.floor(effectiveViewportTopLeft.y / pixelSize) };
-          const gridEffectiveBottomRight = { x: Math.floor(effectiveViewportBottomRight.x / pixelSize), y: Math.floor(effectiveViewportBottomRight.y / pixelSize) };
+          const effectiveViewportTopLeft = { 
+            x: (0 - offset.x) / scale, 
+            y: (0 - offset.y) / scale 
+          };
+          const effectiveViewportBottomRight = { 
+            x: (viewport.width - offset.x) / scale, 
+            y: (viewport.height - offset.y) / scale 
+          };
+          const gridEffectiveTopLeft = { 
+            x: Math.floor(effectiveViewportTopLeft.x / pixelSize), 
+            y: Math.floor(effectiveViewportTopLeft.y / pixelSize) 
+          };
+          const gridEffectiveBottomRight = { 
+            x: Math.floor(effectiveViewportBottomRight.x / pixelSize) + 1, 
+            y: Math.floor(effectiveViewportBottomRight.y / pixelSize) + 1 
+          };
           const queryRange: Rect = {
             x: gridEffectiveTopLeft.x,
             y: gridEffectiveTopLeft.y,
@@ -302,7 +314,7 @@ const WebGLCanvas: React.FC = () => {
     };
     updateLoop();
     return () => cancelAnimationFrame(animationFrameId);
-  }, [offset, scale, viewport]);
+  }, [offset, scale, viewport]);  
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -509,14 +521,32 @@ const WebGLCanvas: React.FC = () => {
     const now = performance.now();
     if (now - lastFrameTimeRef.current < 16.67) return;
     lastFrameTimeRef.current = now;
+  
     ctx.clearRect(0, 0, viewport.width, viewport.height);
     if (!isHovering) return;
+  
     const gridX = Math.floor(mouseWorld.x / pixelSize);
     const gridY = Math.floor(mouseWorld.y / pixelSize);
-    ctx.strokeStyle = 'yellow';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(offset.x + scale * (gridX * pixelSize), offset.y + scale * (gridY * pixelSize), scale * pixelSize, scale * pixelSize);
+    const x = offset.x + scale * (gridX * pixelSize);
+    const y = offset.y + scale * (gridY * pixelSize);
+    const size = scale * pixelSize;
+  
+    ctx.save();
+  
+    const borderColor = 'rgba(0, 120, 255, 0.8)';
+    const lineWidth = 3 * scale;
+    const shadowBlur = 10 * scale;
+    const halfLineWidth = lineWidth / 2;
+  
+    ctx.shadowColor = borderColor;
+    ctx.shadowBlur = shadowBlur;
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(x + halfLineWidth, y + halfLineWidth, size - lineWidth, size - lineWidth);
+  
+    ctx.restore();
   }, [mouseWorld, offset, scale, viewport, isHovering]);
+  
 
   const render = useCallback(() => {
     const gl = glRef.current;
@@ -574,8 +604,6 @@ const WebGLCanvas: React.FC = () => {
     return () => cancelAnimationFrame(animationFrameId);
   }, [render]);
 
-  const fpsColor = fps >= 50 ? 'text-green-400' : fps >= 30 ? 'text-yellow-400' : 'text-red-400';
-
   return (
     <div className="relative overflow-hidden">
       <canvas
@@ -590,7 +618,7 @@ const WebGLCanvas: React.FC = () => {
           setIsHovering(false);
           handleMouseUp(e);
         }}
-        className={isPanning ? 'cursor-grabbing bg-white' : 'cursor-pointer bg-white'}
+        className={isPanning ? 'cursor-grabbing bg-white' : 'cursor-crosshair bg-white'}
       />
       <canvas
         ref={overlayCanvasRef}
@@ -604,19 +632,36 @@ const WebGLCanvas: React.FC = () => {
           zIndex: 1,
         }}
       />
-      <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white p-2 rounded text-sm space-y-1 z-10">
-        <div>
-          <strong>FPS:</strong> <span className={fpsColor}>{fps}</span>
-        </div>
-        <div>
-          <strong>Viewport (Grid):</strong> Top-Left: (
-          {Math.floor((viewport.width - offset.x) / (scale * pixelSize))}, {Math.floor((viewport.height - offset.y) / (scale * pixelSize))})
-        </div>
-        <div>
-          <strong>Mouse (Grid):</strong> ({Math.floor(mouseWorld.x / pixelSize)}, {Math.floor(mouseWorld.y / pixelSize)})
-        </div>
+      {/* Coordinate and Zoom Display */}
+      <div className="absolute top-12 right-6 bg-opacity-70 p-4 rounded-xl text-zinc-800 text-sm space-y-2 backdrop-blur-md">
+        <p className="flex items-center">
+          <span className="font-bold mr-1">Coordinates:</span>
+          <span>
+            X: {Math.floor(mouseWorld.x / pixelSize)}, Y: {Math.floor(mouseWorld.y / pixelSize)}
+          </span>
+        </p>
+        <p className="flex items-center">
+          <span className="font-bold mr-1">Zoom:</span>
+          <span>{scale.toFixed(2)}x</span>
+        </p>
+        <p className="flex items-center">
+          <span className="font-bold mr-1">FPS:</span>
+          <span
+            className={`font-bold ${
+              fps >= 100
+                ? "text-green-500"
+                : fps >= 50
+                ? "text-orange-200"
+                : fps < 30
+                ? "text-red-500"
+                : "text-red-800"
+            }`}
+          >
+            {fps}
+          </span>
+        </p>
       </div>
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-full shadow-lg z-10">
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-opacity-70 p-4 rounded-xl text-white text-sm space-y-2 backdrop-blur-md max-w-full shadow-lg z-10">
         <div className="grid grid-cols-[repeat(auto-fit,_minmax(2.5rem,_1fr))] gap-2 justify-center items-center" style={{ maxWidth: "90vw" }}>
           {colors.map((color, index) => (
             <div key={index} className="flex justify-center items-center">
