@@ -186,7 +186,7 @@ const Desinote: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasBgColor, setCanvasBgColor] = useState("#121212");
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const inputRefs = useRef<{ [id: string]: HTMLInputElement | null }>({});
+  const inputRefs = useRef<{ [id: string]: HTMLInputElement | HTMLTextAreaElement | null }>({});
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const newItemIdsRef = useRef<Set<string>>(new Set());
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -297,12 +297,20 @@ const Desinote: React.FC = () => {
     ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
     ctx.fillStyle = item.color;
     ctx.textBaseline = "top";
-    ctx.fillText(item.text, x, y);
-    const textWidth = ctx.measureText(item.text).width;
+    const lines = item.text.split("\n");
+    const lineHeight = item.fontSize + 4;
+    lines.forEach((line, index) => {
+      ctx.fillText(line, x, y + index * lineHeight);
+    });
+    const maxWidth = lines.reduce((max, line) => {
+      const w = ctx.measureText(line).width;
+      return w > max ? w : max;
+    }, 0);
+
     if (item.isUnderline) {
       ctx.beginPath();
       ctx.moveTo(x, y + item.fontSize);
-      ctx.lineTo(x + textWidth, y + item.fontSize);
+      ctx.lineTo(x + maxWidth, y + item.fontSize);
       ctx.strokeStyle = item.color;
       ctx.lineWidth = 2 / scale;
       ctx.stroke();
@@ -310,7 +318,7 @@ const Desinote: React.FC = () => {
     if (item.isCrossedOut) {
       ctx.beginPath();
       ctx.moveTo(x, y + item.fontSize / 2);
-      ctx.lineTo(x + textWidth, y + item.fontSize / 2);
+      ctx.lineTo(x + maxWidth, y + item.fontSize / 2);
       ctx.strokeStyle = item.color;
       ctx.lineWidth = 1 / scale;
       ctx.stroke();
@@ -323,10 +331,34 @@ const Desinote: React.FC = () => {
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(x - padding + borderRadius, y - paddingTop);
-      ctx.arcTo(x + textWidth + padding, y - paddingTop, x + textWidth + padding, y + item.fontSize + paddingBottom, borderRadius);
-      ctx.arcTo(x + textWidth + padding, y + item.fontSize + paddingBottom, x - padding, y + item.fontSize + paddingBottom, borderRadius);
-      ctx.arcTo(x - padding, y + item.fontSize + paddingBottom, x - padding, y - paddingTop, borderRadius);
-      ctx.arcTo(x - padding, y - paddingTop, x + textWidth + padding, y - paddingTop, borderRadius);
+      ctx.arcTo(
+        x + maxWidth + padding,
+        y - paddingTop,
+        x + maxWidth + padding,
+        y + lines.length * lineHeight + paddingBottom,
+        borderRadius
+      );
+      ctx.arcTo(
+        x + maxWidth + padding,
+        y + lines.length * lineHeight + paddingBottom,
+        x - padding,
+        y + lines.length * lineHeight + paddingBottom,
+        borderRadius
+      );
+      ctx.arcTo(
+        x - padding,
+        y + lines.length * lineHeight + paddingBottom,
+        x - padding,
+        y - paddingTop,
+        borderRadius
+      );
+      ctx.arcTo(
+        x - padding,
+        y - paddingTop,
+        x + maxWidth + padding,
+        y - paddingTop,
+        borderRadius
+      );
       ctx.closePath();
       ctx.stroke();
     }
@@ -844,12 +876,14 @@ const Desinote: React.FC = () => {
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
           ctx.font = `${item.fontSize}px ${item.fontFamily}`;
-          const textWidth = ctx.measureText(item.text).width;
+          const lines = item.text.split("\n");
+          const lineHeight = item.fontSize + 4; // Adjust as needed
+          const maxWidth = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0);
           if (
             x >= item.x - 7 &&
-            x <= item.x + textWidth + 7 &&
+            x <= item.x + maxWidth + 7 &&
             y >= item.y - 7 &&
-            y <= item.y + item.fontSize + 7
+            y <= item.y + lines.length * lineHeight + 7
           ) {
             clickedOnItem = true;
             clickedItemId = item.id;
@@ -1024,22 +1058,33 @@ const Desinote: React.FC = () => {
       return;
     }
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const { x, y } = getWorldCoordinates(event, canvas);
-    let hovering = false;
-    const hoverPromises: Promise<void>[] = [];
-    for (const it of Object.values(items)) {
-      if (!isItemVisible(it)) continue;
-      if (it.type === "text") {
-        const ctx = canvas.getContext("2d");
-        if (!ctx) continue;
-        ctx.font = `${it.fontSize}px ${it.fontFamily}`;
-        const tw = ctx.measureText(it.text).width;
-        if (x >= it.x && x <= it.x + tw && y >= it.y && y <= it.y + it.fontSize) {
-          hovering = true;
-          break;
-        }
-      } else if (it.type === "image") {
+      if (!canvas) return;
+      const { x, y } = getWorldCoordinates(event, canvas);
+      let hovering = false;
+      const hoverPromises: Promise<void>[] = [];
+      for (const it of Object.values(items)) {
+        if (!isItemVisible(it)) continue;
+        if (it.type === "text") {
+          const ctx = canvas.getContext("2d");
+          if (!ctx) continue;
+          ctx.font = `${it.isBold ? "bold " : ""}${it.fontSize}px ${it.fontFamily}`;
+          const lines = it.text.split(/\r?\n/);
+          const lineHeight = it.fontSize + 4;
+          const totalHeight = lines.length * lineHeight;
+          const maxWidth = lines.reduce(
+            (max, line) => Math.max(max, ctx.measureText(line).width),
+            0
+          );
+          if (
+            x >= it.x &&
+            x <= it.x + maxWidth &&
+            y >= it.y &&
+            y <= it.y + totalHeight
+          ) {
+            hovering = true;
+            break;
+          }
+        } else if (it.type === "image") {
         const cached = imageCacheRef.current.get(it.imageUrl);
         if (cached && cached.complete) {
           if (x >= it.x && x <= it.x + it.width && y >= it.y && y <= it.y + it.height) {
@@ -1177,13 +1222,16 @@ const Desinote: React.FC = () => {
       if (it.type === "text") {
         const ctx = canvas.getContext("2d");
         if (!ctx) continue;
-        ctx.font = `${it.fontSize}px ${it.fontFamily}`;
-        const tw = ctx.measureText(it.text).width;
+        ctx.font = `${it.isBold ? "bold " : ""}${it.fontSize}px ${it.fontFamily}`;
+        const lines = it.text.split(/\r?\n/);
+        const lineHeight = it.fontSize + 4;
+        const totalHeight = lines.length * lineHeight;
+        const maxWidth = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0);
         if (
           x >= it.x - 7 &&
-          x <= it.x + tw + 7 &&
+          x <= it.x + maxWidth + 7 &&
           y >= it.y - 7 &&
-          y <= it.y + it.fontSize + 7
+          y <= it.y + totalHeight + 7
         ) {
           dblClickedId = it.id;
           dblClickedType = "text";
@@ -1263,7 +1311,7 @@ const Desinote: React.FC = () => {
   };
 
   // --------------------- Text Editing Handlers ---------------------
-  const handleInputChange = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (id: string, e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     const caret = e.target.selectionStart;
     setItems((prev) => ({ ...prev, [id]: { ...prev[id], text } }));
@@ -1283,6 +1331,16 @@ const Desinote: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    Object.keys(inputRefs.current).forEach((id) => {
+      const input = inputRefs.current[id];
+      if (input) {
+        input.style.height = "auto";
+        input.style.height = `${input.scrollHeight}px`;
+      }
+    });
+  }, [items]);
+
   const handleInputBlur = (id: string) => {
     setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
     const it = items[id];
@@ -1293,8 +1351,9 @@ const Desinote: React.FC = () => {
     setShowProperties(Array.from(selectedNotes).some((id) => items[id].type === "text"));
   };
 
-  const handleKeyDownInput = (id: string, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === "Escape") {
+  const handleKeyDownInput = (id: string, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
       setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
       const it = items[id];
       if (it && it.type === "text") {
@@ -2141,15 +2200,18 @@ const Desinote: React.FC = () => {
         (it) =>
           it.type === "text" &&
           it.isEditing && (
-            <input
+            <textarea
               key={it.id}
               ref={(el) => (inputRefs.current[it.id] = el)}
-              type="text"
               value={it.text}
-              onChange={(e) => handleInputChange(it.id, e)}
+              onChange={(e) => {
+                handleInputChange(it.id, e);
+                e.target.style.height = "auto";
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
               onBlur={() => handleInputBlur(it.id)}
               onKeyDown={(e) => handleKeyDownInput(it.id, e)}
-              className="absolute bg-transparent border-b border-white z-10"
+              className="absolute bg-transparent border-b border-white z-10 resize-none overflow-hidden"
               style={{
                 top: inputPositions[it.id]?.top || 0,
                 left: inputPositions[it.id]?.left || 0,
@@ -2159,12 +2221,12 @@ const Desinote: React.FC = () => {
                 fontFamily: it.fontFamily,
                 color: it.color,
                 fontWeight: it.isBold ? "bold" : "normal",
-                textDecoration: it.isCrossedOut ? "line-through" : "none",
                 lineHeight: `${it.fontSize + 4}px`,
                 outline: "none",
                 border: "none",
                 caretColor: it.color,
                 width: `${inputWidths[it.id] || 100}px`,
+                height: "auto",
               }}
             />
           )
