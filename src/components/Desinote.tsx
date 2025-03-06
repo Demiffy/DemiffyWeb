@@ -28,7 +28,13 @@ import {
   FiPlus,
   FiTrash2,
   FiChevronLeft,
-  FiChevronRight
+  FiChevronRight,
+  FiAlignJustify,
+  FiSave,
+  FiDownload,
+  FiUpload,
+  FiSettings,
+  FiHelpCircle
 } from "react-icons/fi";
 import {
   DndContext,
@@ -194,6 +200,7 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
 const Desinote: React.FC = () => {
   // Refs and States
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [canvasBgColor, setCanvasBgColor] = useState("#121212");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRefs = useRef<{ [id: string]: HTMLInputElement | null }>({});
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -714,6 +721,35 @@ const Desinote: React.FC = () => {
     loadLessonImages();
     loadLessonLayers();
   }, []);
+
+  const loadLessonSettings = () => {
+    const settingsRef = dbRef(db, "lessonSettings");
+    const listener = onValue(
+      settingsRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.canvasColor) {
+          setCanvasBgColor(data.canvasColor);
+        }
+      },
+      (error) => {
+        console.error("Error loading lesson settings:", error);
+      }
+    );
+    return () => off(settingsRef, "value", listener);
+  };
+
+  useEffect(() => {
+    loadLessonSettings();
+  }, []);
+
+  const changeCanvasBgColor = (color: string) => {
+    setCanvasBgColor(color);
+    const settingsRef = dbRef(db, "lessonSettings");
+    set(settingsRef, { canvasColor: color }).catch((error) =>
+      console.error("Error saving lesson settings:", error)
+    );
+  };
 
   // --------------------- Mouse Event Handlers ---------------------
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1612,9 +1648,99 @@ const Desinote: React.FC = () => {
     }
   };
 
+  // --------------------- Menu & Panel Handlers ---------------------
+  const [showMenu, setShowMenu] = useState(false);
+  const toggleMenu = () => setShowMenu((prev) => !prev);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
+
   // --------------------- Render ---------------------
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
+      {/* Menu Button */}
+       <div className="fixed top-4 right-4 z-20" ref={menuRef}>
+        <button
+          onClick={toggleMenu}
+          className="rounded bg-slate-800 p-2 shadow-lg hover:bg-slate-700 transition-all duration-300"
+          title="Menu"
+        >
+          <FiAlignJustify size={24} color="#FFFFFF" />
+        </button>
+        {showMenu && (
+          <div className="absolute right-0 mt-2 w-40 bg-slate-800 bg-opacity-95 rounded-lg shadow-lg p-2 transition-all duration-300">
+            {/* File Category */}
+            <div className="mb-2 border-b border-slate-600 pb-1">
+              <h4 className="text-xs text-slate-300 font-semibold mb-1">File</h4>
+              <button className="w-full flex items-center px-4 py-1 mb-1 hover:bg-slate-700 rounded">
+                <FiSave className="mr-2" /> <span className="text-sm">Save</span>
+              </button>
+              <button className="w-full flex items-center px-4 py-1 mb-1 hover:bg-slate-700 rounded">
+                <FiDownload className="mr-2" /> <span className="text-sm">Export</span>
+              </button>
+              <button className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded">
+                <FiUpload className="mr-2" /> <span className="text-sm">Import</span>
+              </button>
+            </div>
+            {/* Options Category */}
+            <div className="mb-2">
+              <h4 className="text-xs text-slate-300 font-semibold mb-1">Options</h4>
+              <button className="w-full flex items-center px-4 py-1 mb-1 hover:bg-slate-700 rounded">
+                <FiSettings className="mr-2" /> <span className="text-sm">Settings</span>
+              </button>
+              <button className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded">
+                <FiHelpCircle className="mr-2" /> <span className="text-sm">Help</span>
+              </button>
+            </div>
+            {/* Canvas Background Category */}
+            <div className="mt-2 border-t border-slate-600 pt-2">
+              <h4 className="text-xs text-slate-300 font-semibold mb-1">Canvas Background</h4>
+              <div className="flex justify-evenly gap-1">
+                <button
+                  onClick={() => changeCanvasBgColor("#121212")}
+                  className={`w-6 h-6 bg-[#121212] hover:opacity-75 rounded ${canvasBgColor === "#121212" ? "ring-2 ring-blue-500" : ""}`}
+                  title="Onyx"
+                ></button>
+                <button
+                  onClick={() => changeCanvasBgColor("#1E1E1E")}
+                  className={`w-6 h-6 bg-[#1E1E1E] hover:opacity-75 rounded ${canvasBgColor === "#1E1E1E" ? "ring-2 ring-blue-500" : ""}`}
+                  title="Dark Gray"
+                ></button>
+                <button
+                  onClick={() => changeCanvasBgColor("#2C2C2C")}
+                  className={`w-6 h-6 bg-[#2C2C2C] hover:opacity-75 rounded ${canvasBgColor === "#2C2C2C" ? "ring-2 ring-blue-500" : ""}`}
+                  title="Charcoal"
+                ></button>
+                <button
+                  onClick={() => changeCanvasBgColor("#FFFFFF")}
+                  className={`w-6 h-6 bg-[#FFFFFF] hover:opacity-75 rounded ${canvasBgColor === "#FFFFFF" ? "ring-2 ring-blue-500" : ""}`}
+                  title="White"
+                ></button>
+                <button
+                  onClick={() => changeCanvasBgColor("#F3F4F6")}
+                  className={`w-6 h-6 bg-[#F3F4F6] hover:opacity-75 rounded ${canvasBgColor === "#F3F4F6" ? "ring-2 ring-blue-500" : ""}`}
+                  title="Light Gray"
+                ></button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Layers Panel */}
       <div>
         <div
@@ -1783,7 +1909,7 @@ const Desinote: React.FC = () => {
         height={canvasSize.height}
         className="block"
         style={{
-          background: "#121212",
+          background: canvasBgColor,
           cursor:
             currentTool === "pan"
               ? isPanning
