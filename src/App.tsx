@@ -18,7 +18,7 @@ import DemiNotes from './components/DemiNotes';
 import Destabilize from './components/Desinote';
 import DiscordUser from './components/DiscordUser';
 import CanvasTest from './components/canvastest';
-import CanvasTest2 from './components/canvastest2';
+import CanvasAsync from './components/ui/CanvasASynC';
 import DCars from './components/DCars';
 import ImageEditor from './components/ImageEditor';
 import RemoteControl from './components/RemoteControl';
@@ -49,7 +49,7 @@ const AnimatedRoutes = () => {
           <Route path="/deminotes" element={<DemiNotes />} />
           <Route path="/DN" element={<Destabilize />} />
           <Route path="/canvas" element={<CanvasTest />} />
-          <Route path="/canvas2" element={<CanvasTest2 />} />
+          <Route path="/canvas2" element={<CanvasAsync />} />
           <Route path="/dcars" element={<DCars />} />
           <Route path="/remotepc" element={<RemoteControl />} />
           <Route path="/404" element={<NotFound />} />

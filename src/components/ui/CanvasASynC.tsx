@@ -199,7 +199,7 @@ function throttle<T extends (...args: any[]) => any>(fn: T, limit: number): T {
   } as T;
 }
 
-const WebGLCanvas: React.FC = () => {
+const CanvasASynC: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const glRef = useRef<WebGL2RenderingContext | null>(null);
@@ -708,4 +708,4 @@ const WebGLCanvas: React.FC = () => {
   );
 };
 
-export default WebGLCanvas;
+export default CanvasASynC;
