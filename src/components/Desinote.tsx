@@ -61,6 +61,8 @@ interface ImageItem {
   imageUrl: string;
   isDragging: boolean;
   isEditing: boolean;
+  width: number;
+  height: number;
 }
 
 type DrawableItem = TextItem | ImageItem;
@@ -97,8 +99,16 @@ const Desinote: React.FC = () => {
   const CLICK_THRESHOLD = 5;
 
   // State variables for dragging multiple notes
-  const [dragStart, setDragStart] = useState<{x: number, y: number} | null>(null);
-  const [initialPositions, setInitialPositions] = useState<{ [id: string]: {x: number, y: number} }>({});
+  const [dragStart, setDragStart] = useState<{ x: number, y: number } | null>(null);
+  const [initialPositions, setInitialPositions] = useState<{ [id: string]: { x: number, y: number } }>({});
+
+  const [resizingImage, setResizingImage] = useState<{
+    id: string;
+    startX: number;
+    startY: number;
+    initialWidth: number;
+    initialHeight: number;
+  } | null>(null);
 
   // State for properties panel
   const [showProperties, setShowProperties] = useState<boolean>(false);
@@ -264,21 +274,12 @@ const Desinote: React.FC = () => {
     // Draw images
     images.forEach(item => {
       const cachedImage = imageCacheRef.current.get(item.imageUrl);
-      if (cachedImage && cachedImage.complete) {
-        const x = (item.x - viewportOffset.x);
-        const y = (item.y - viewportOffset.y);
-        ctx.drawImage(cachedImage, x, y, cachedImage.width, cachedImage.height);
+      const x = (item.x - viewportOffset.x);
+      const y = (item.y - viewportOffset.y);
 
-        // Draw selection border if selected
-        if (selectedNotes.has(item.id)) {
-          ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
-          ctx.lineWidth = 2;
-          ctx.setLineDash([6]);
-          ctx.strokeRect(x - 4, y - 4, cachedImage.width + 8, cachedImage.height + 8);
-          ctx.setLineDash([]);
-        }
+      if (cachedImage && cachedImage.complete) {
+        ctx.drawImage(cachedImage, x, y, item.width, item.height);
       } else {
-        // If image is not cached yet, create and cache it
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.src = item.imageUrl;
@@ -289,6 +290,37 @@ const Desinote: React.FC = () => {
         img.onerror = () => {
           console.error(`Failed to load image at URL: ${item.imageUrl}`);
         };
+      }
+
+      if (selectedNotes.has(item.id)) {
+        const baseLineWidth = 2;
+        const baseDashLength = 6;
+        const basePadding = 4;
+        const baseHandleSize = 14;
+
+        const adjustedLineWidth = baseLineWidth / scale;
+        const adjustedDash = [baseDashLength / scale];
+        const adjustedPadding = basePadding / scale;
+        const adjustedHandleSize = baseHandleSize / scale;
+
+        ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
+        ctx.lineWidth = adjustedLineWidth;
+        ctx.setLineDash(adjustedDash);
+        ctx.strokeRect(
+          x - adjustedPadding,
+          y - adjustedPadding,
+          item.width + 2 * adjustedPadding,
+          item.height + 2 * adjustedPadding
+        );
+        ctx.setLineDash([]);
+
+        const handleX = x + item.width - adjustedHandleSize;
+        const handleY = y + item.height - adjustedHandleSize;
+        ctx.fillStyle = "rgba(0, 123, 255, 0.9)";
+        ctx.fillRect(handleX, handleY, adjustedHandleSize, adjustedHandleSize);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+        ctx.lineWidth = adjustedLineWidth;
+        ctx.strokeRect(handleX, handleY, adjustedHandleSize, adjustedHandleSize);
       }
     });
 
@@ -489,6 +521,8 @@ const Desinote: React.FC = () => {
               imageUrl: typeof image.imageUrl === "string" ? image.imageUrl : "",
               isDragging: false,
               isEditing: false,
+              width: typeof image.width === "number" ? image.width : 100,
+              height: typeof image.height === "number" ? image.height : 100
             };
 
             // **Preload and Cache Images**
@@ -618,33 +652,57 @@ const Desinote: React.FC = () => {
     if (newImageId) {
       const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
       const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
-      const newImage: ImageItem = {
-        id: newImageId,
-        type: 'image',
-        x: defaultX,
-        y: defaultY,
-        imageUrl: imageUrl,
-        isDragging: false,
-        isEditing: false
-      };
-      set(newImageRef, {
-        id: newImage.id,
-        type: newImage.type,
-        imageUrl: newImage.imageUrl,
-        x: newImage.x,
-        y: newImage.y
-      })
-        .then(() => {
-          setItems(prev => ({
-            ...prev,
-            [newImageId]: newImage,
-          }));
-          setSelectedNotes(new Set([newImageId]));
-          setShowProperties(false);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = imageUrl;
+      img.onload = () => {
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+
+        const maxWidth = 300;
+        if (width > maxWidth) {
+          const scaleFactor = maxWidth / width;
+          width = maxWidth;
+          height = height * scaleFactor;
+        }
+
+        const newImage: ImageItem = {
+          id: newImageId,
+          type: 'image',
+          x: defaultX,
+          y: defaultY,
+          imageUrl: imageUrl,
+          isDragging: false,
+          isEditing: false,
+          width: width,
+          height: height
+        };
+
+        set(newImageRef, {
+          id: newImage.id,
+          type: newImage.type,
+          imageUrl: newImage.imageUrl,
+          x: newImage.x,
+          y: newImage.y,
+          width: newImage.width,
+          height: newImage.height
         })
-        .catch(error => {
-          console.error("Error adding new image:", error);
-        });
+          .then(() => {
+            setItems(prev => ({
+              ...prev,
+              [newImageId]: newImage,
+            }));
+            setSelectedNotes(new Set([newImageId]));
+            setShowProperties(false);
+          })
+          .catch(error => {
+            console.error("Error adding new image:", error);
+          });
+      };
+      img.onerror = () => {
+        alert("Failed to load image. Please check the URL and try again.");
+      };
     }
   };
 
@@ -663,9 +721,33 @@ const Desinote: React.FC = () => {
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-
     const x = (event.clientX - rect.left) / scale + viewportOffset.x;
     const y = (event.clientY - rect.top) / scale + viewportOffset.y;
+
+    if (currentTool === 'select') {
+      const baseHandleSize = 14;
+      const adjustedHandleSize = baseHandleSize / scale;
+      for (const id of selectedNotes) {
+        const item = items[id];
+        if (item && item.type === 'image') {
+          if (
+            x >= item.x + item.width - adjustedHandleSize &&
+            x <= item.x + item.width &&
+            y >= item.y + item.height - adjustedHandleSize &&
+            y <= item.y + item.height
+          ) {
+            setResizingImage({
+              id: item.id,
+              startX: event.clientX,
+              startY: event.clientY,
+              initialWidth: item.width,
+              initialHeight: item.height,
+            });
+            return;
+          }
+        }
+      }
+    }
 
     // Record mouse down position
     mouseDownPosRef.current = { x: event.clientX, y: event.clientY };
@@ -723,13 +805,11 @@ const Desinote: React.FC = () => {
         if (item.type === 'image') {
           const cachedImage = imageCacheRef.current.get(item.imageUrl);
           if (cachedImage && cachedImage.complete) {
-            const imgWidth = cachedImage.width;
-            const imgHeight = cachedImage.height;
             if (
               x >= item.x &&
-              x <= item.x + imgWidth &&
+              x <= item.x + item.width &&
               y >= item.y &&
-              y <= item.y + imgHeight
+              y <= item.y + item.height
             ) {
               clickedOnItem = true;
               clickedItemId = item.id;
@@ -798,15 +878,44 @@ const Desinote: React.FC = () => {
           setSelectionStart({ x, y });
           setSelectionEnd({ x, y });
           setSelectedNotes(new Set());
-
           setSelectedNoteId(null);
         }
       });
     }
   };
 
-  // Handle mouse move for dragging or panning or selecting
+  // Handle mouse move for dragging, panning, selecting, or resizing
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (resizingImage) {
+      const deltaX = event.clientX - resizingImage.startX;
+      const deltaY = event.clientY - resizingImage.startY;
+      if (!event.shiftKey) {
+        // Default: preserve aspect ratio
+        const newWidth = Math.max(20, resizingImage.initialWidth + deltaX / scale);
+        const aspectRatio = resizingImage.initialWidth / resizingImage.initialHeight;
+        const newHeight = Math.max(20, newWidth / aspectRatio);
+        setItems(prevItems => ({
+          ...prevItems,
+          [resizingImage.id]: {
+            ...prevItems[resizingImage.id],
+            width: newWidth,
+            height: newHeight,
+          }
+        }));
+      } else {
+        // Shift pressed: freeform resizing
+        setItems(prevItems => ({
+          ...prevItems,
+          [resizingImage.id]: {
+            ...prevItems[resizingImage.id],
+            width: Math.max(20, resizingImage.initialWidth + deltaX / scale),
+            height: Math.max(20, resizingImage.initialHeight + deltaY / scale),
+          }
+        }));
+      }
+      return;
+    }
+
     if (isPanning) {
       const deltaX = event.clientX - panStart.x;
       const deltaY = event.clientY - panStart.y;
@@ -912,13 +1021,11 @@ const Desinote: React.FC = () => {
       if (item.type === 'image') {
         const cachedImage = imageCacheRef.current.get(item.imageUrl);
         if (cachedImage && cachedImage.complete) {
-          const imgWidth = cachedImage.width;
-          const imgHeight = cachedImage.height;
           if (
             x >= item.x &&
-            x <= item.x + imgWidth &&
+            x <= item.x + item.width &&
             y >= item.y &&
-            y <= item.y + imgHeight
+            y <= item.y + item.height
           ) {
             hovering = true;
             break;
@@ -954,8 +1061,17 @@ const Desinote: React.FC = () => {
     });
   };
 
-  // Handle mouse up to stop dragging or panning or finalize selection
+  // Handle mouse up to stop dragging, panning, selecting, or finalizing resizing
   const handleMouseUp = useCallback(() => {
+    if (resizingImage) {
+      const resizedItem = items[resizingImage.id];
+      if (resizedItem) {
+        saveLessonItem(resizedItem);
+      }
+      setResizingImage(null);
+      return;
+    }
+
     if (isPanning) {
       setIsPanning(false);
       return;
@@ -1022,13 +1138,11 @@ const Desinote: React.FC = () => {
           if (item.type === 'image') {
             const cachedImage = imageCacheRef.current.get(item.imageUrl);
             if (cachedImage && cachedImage.complete) {
-              const imgWidth = cachedImage.width;
-              const imgHeight = cachedImage.height;
               if (
                 item.x >= selX1 &&
-                item.x + imgWidth <= selX2 &&
+                item.x + item.width <= selX2 &&
                 item.y >= selY1 &&
-                item.y + imgHeight <= selY2
+                item.y + item.height <= selY2
               ) {
                 newSelectedNotes.add(item.id);
               }
@@ -1092,15 +1206,13 @@ const Desinote: React.FC = () => {
       mouseDownPosRef.current = null;
       return;
     }
-  }, [isPanning, dragStart, selectedNotes, items, isSelecting, selectionStart, selectionEnd]);
+  }, [isPanning, dragStart, selectedNotes, items, isSelecting, selectionStart, selectionEnd, resizingImage]);
 
   useEffect(() => {
-    // Add global mouseup listener to handle cases where mouse is released outside the canvas
     const handleGlobalMouseUp = () => {
       handleMouseUp();
     };
 
-    // Add global mouseup listener when selecting, dragging, or panning
     if (isSelecting || dragStart || isPanning) {
       window.addEventListener('mouseup', handleGlobalMouseUp);
     }
@@ -1117,11 +1229,10 @@ const Desinote: React.FC = () => {
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-
     const x = (event.clientX - rect.left) / scale + viewportOffset.x;
     const y = (event.clientY - rect.top) / scale + viewportOffset.y;
 
-    // **Check if double-click is on a selected item**
+    // Check if double-click is on a selected item
     let doubleClickedItemId: string | null = null;
     let doubleClickedItemType: 'text' | 'image' | null = null;
 
@@ -1156,13 +1267,11 @@ const Desinote: React.FC = () => {
       if (item.type === 'image') {
         const cachedImage = imageCacheRef.current.get(item.imageUrl);
         if (cachedImage && cachedImage.complete) {
-          const imgWidth = cachedImage.width;
-          const imgHeight = cachedImage.height;
           if (
             x >= item.x &&
-            x <= item.x + imgWidth &&
+            x <= item.x + item.width &&
             y >= item.y &&
-            y <= item.y + imgHeight
+            y <= item.y + item.height
           ) {
             doubleClickedItemId = item.id;
             doubleClickedItemType = 'image';
@@ -1416,7 +1525,9 @@ const Desinote: React.FC = () => {
         type: item.type,
         imageUrl: item.imageUrl,
         x: item.x,
-        y: item.y
+        y: item.y,
+        width: item.width,
+        height: item.height
       }).catch((error) => {
         console.error("Error saving lesson image:", error);
       });
@@ -1450,6 +1561,26 @@ const Desinote: React.FC = () => {
       return updated;
     });
   };
+
+  useEffect(() => {
+    const handleGlobalMouseUpForResize = () => {
+      if (resizingImage) {
+        const resizedItem = items[resizingImage.id];
+        if (resizedItem) {
+          saveLessonItem(resizedItem);
+        }
+        setResizingImage(null);
+      }
+    };
+
+    if (resizingImage) {
+      window.addEventListener('mouseup', handleGlobalMouseUpForResize);
+    }
+
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUpForResize);
+    };
+  }, [resizingImage, items, saveLessonItem]);
 
   // --------------------- Focus on Editing Input ---------------------
   // Focus on the input field when a new text note is selected for editing
