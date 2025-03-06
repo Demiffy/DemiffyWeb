@@ -20,7 +20,27 @@ import {
   FiImage,
   FiGrid,
   FiSquare,
+  FiLock,
+  FiUnlock,
+  FiEdit2,
+  FiEye,
+  FiEyeOff,
+  FiPlus,
+  FiTrash2,
 } from "react-icons/fi";
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToParentElement } from '@dnd-kit/modifiers';
 
 // --------------------- Firebase Initialization ---------------------
 const firebaseConfig = {
@@ -39,14 +59,19 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const db = getDatabase(app);
 
 // --------------------- Type Definitions ---------------------
-interface TextItem {
+interface BaseItem {
   id: string;
-  type: "text";
+  layerId: string;
+  layerName: string;
   x: number;
   y: number;
-  text: string;
   isDragging: boolean;
   isEditing: boolean;
+}
+
+export interface TextItem extends BaseItem {
+  type: "text";
+  text: string;
   fontSize: number;
   fontFamily: string;
   color: string;
@@ -55,19 +80,113 @@ interface TextItem {
   isCrossedOut: boolean;
 }
 
-interface ImageItem {
-  id: string;
+export interface ImageItem extends BaseItem {
   type: "image";
-  x: number;
-  y: number;
   imageUrl: string;
-  isDragging: boolean;
-  isEditing: boolean;
   width: number;
   height: number;
 }
 
 type DrawableItem = TextItem | ImageItem;
+
+interface Layer {
+  id: string;
+  name: string;
+  locked: boolean;
+  order: number;
+  visible: boolean;
+}
+
+// --------------------- Sortable Layer Item Component ---------------------
+interface LayerItemProps {
+  layer: Layer;
+  active: boolean;
+  onToggleLock: (layerId: string) => void;
+  onToggleVisibility: (layerId: string) => void;
+  onRename: (layerId: string, newName: string) => void;
+  onDelete: (layerId: string) => void;
+  onSelect: (layerId: string) => void;
+}
+
+const SortableLayerItem: React.FC<LayerItemProps> = ({
+  layer,
+  active,
+  onToggleLock,
+  onToggleVisibility,
+  onRename,
+  onDelete,
+  onSelect,
+}) => {
+  const { listeners, setNodeRef, transform, transition } =
+    useSortable({ id: layer.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    cursor: "grab",
+    border: `2px solid ${active ? "#4A90E2" : "transparent"}`,
+    backgroundColor: active ? "#2D3748" : "transparent",
+  };
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempName, setTempName] = useState(layer.name);
+
+  const handleDoubleClick = () => {
+    setIsEditing(true);
+  };
+
+  const finishEditing = () => {
+    setIsEditing(false);
+    if (tempName.trim() && tempName !== layer.name) {
+      onRename(layer.id, tempName.trim());
+    }
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center p-2 border rounded mb-1 bg-gray-800 text-white select-none"
+      onClick={() => onSelect(layer.id)}
+    >
+      <div {...listeners} className="mr-2">
+        <FiMove />
+      </div>
+      {isEditing ? (
+        <input
+          type="text"
+          value={tempName}
+          onChange={(e) => setTempName(e.target.value)}
+          onBlur={finishEditing}
+          onKeyDown={(e) => e.key === "Enter" && finishEditing()}
+          className="bg-transparent border-b border-white text-white flex-grow"
+          autoFocus
+        />
+      ) : (
+        <div onDoubleClick={handleDoubleClick} className="flex-grow truncate">
+          {layer.name}
+        </div>
+      )}
+      {!isEditing && (
+        <>
+          <button onClick={() => onToggleVisibility(layer.id)} className="ml-2">
+            {layer.visible ? <FiEye /> : <FiEyeOff />}
+          </button>
+          <button onClick={() => onToggleLock(layer.id)} className="ml-2">
+            {layer.locked ? <FiLock /> : <FiUnlock />}
+          </button>
+          {layer.id !== "default" && (
+            <button onClick={() => onDelete(layer.id)} className="ml-2">
+              <FiTrash2 />
+            </button>
+          )}
+          <button onClick={handleDoubleClick} className="ml-2">
+            <FiEdit2 />
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
 
 // --------------------- Main Component ---------------------
 const Desinote: React.FC = () => {
@@ -130,7 +249,15 @@ const Desinote: React.FC = () => {
   const [currentTool, setCurrentTool] = useState<"pan" | "select" | "text" | "image">("pan");
   const [isSpacePressed, setIsSpacePressed] = useState(false);
 
+  const [layers, setLayers] = useState<Layer[]>([]);
+  const [activeLayerId, setActiveLayerId] = useState<string>("default");
+
   const CLICK_THRESHOLD = 5;
+
+  const isItemVisible = (item: DrawableItem) => {
+    const layer = layers.find((l) => l.id === item.layerId);
+    return layer ? layer.visible : true;
+  };
 
   // --------------------- Helper Functions ---------------------
   const getWorldCoordinates = useCallback(
@@ -250,7 +377,8 @@ const Desinote: React.FC = () => {
         imageCacheRef.current.set(item.imageUrl, img);
         drawCanvas();
       };
-      img.onerror = () => console.error(`Failed to load image at URL: ${item.imageUrl}`);
+      img.onerror = () =>
+        console.error(`Failed to load image at URL: ${item.imageUrl}`);
     }
     if (selected) {
       const baseLineWidth = 2,
@@ -295,17 +423,24 @@ const Desinote: React.FC = () => {
 
     if (gridEnabled) drawGrid(ctx, canvas.width, canvas.height);
 
-    // Draw images first, then texts
-    const allItems = Object.values(items);
-    const images = allItems.filter((it) => it.type === "image") as ImageItem[];
-    const texts = allItems.filter((it) => it.type === "text") as TextItem[];
+    const visibleLayerIds = new Set(layers.filter(l => l.visible).map(l => l.id));
+    const itemsToDraw = Object.values(items).filter(item => visibleLayerIds.has(item.layerId));
 
-    images.forEach((item) =>
-      drawImageItem(ctx, item, selectedNotes.has(item.id))
-    );
-    texts.forEach((item) =>
-      drawText(ctx, item, selectedNotes.has(item.id))
-    );
+    const sortedLayers = layers.filter(l => l.visible).sort((a, b) => a.order - b.order);
+    sortedLayers.forEach(layer => {
+      const layerItems = itemsToDraw.filter(item => item.layerId === layer.id);
+      if (layer.id === activeLayerId) {
+        const images = layerItems.filter(item => item.type === "image") as ImageItem[];
+        const texts = layerItems.filter(item => item.type === "text") as TextItem[];
+        images.forEach(item => drawImageItem(ctx, item, selectedNotes.has(item.id)));
+        texts.forEach(item => drawText(ctx, item, selectedNotes.has(item.id)));
+      } else {
+        const images = layerItems.filter(item => item.type === "image") as ImageItem[];
+        const texts = layerItems.filter(item => item.type === "text") as TextItem[];
+        images.forEach(item => drawImageItem(ctx, item, selectedNotes.has(item.id)));
+        texts.forEach(item => drawText(ctx, item, selectedNotes.has(item.id)));
+      }
+    });
     ctx.restore();
 
     // Draw selection rectangle if selecting and dragged
@@ -344,6 +479,8 @@ const Desinote: React.FC = () => {
     selectionStart,
     selectionEnd,
     selectedNotes,
+    layers,
+    activeLayerId,
   ]);
 
   useEffect(() => {
@@ -400,8 +537,8 @@ const Desinote: React.FC = () => {
   // --------------------- Keyboard Handlers ---------------------
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const active = document.activeElement;
-      if (e.code === "Space" && !(active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement)) {
+      const activeEl = document.activeElement;
+      if (e.code === "Space" && !(activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement)) {
         if (currentTool === "pan") return;
         e.preventDefault();
         setIsSpacePressed(true);
@@ -437,6 +574,8 @@ const Desinote: React.FC = () => {
             validated[id] = {
               id: note.id || id,
               type: "text",
+              layerId: note.layerId || activeLayerId,
+              layerName: note.layerName || layers[0]?.name || "Default",
               x: typeof note.x === "number" ? note.x : 100,
               y: typeof note.y === "number" ? note.y : 100,
               text: typeof note.content === "string" ? note.content : "",
@@ -453,8 +592,8 @@ const Desinote: React.FC = () => {
             const ctx = canvas.getContext("2d");
             if (ctx) {
               ctx.font = `${validated[id].fontSize}px ${validated[id].fontFamily}`;
-              const textWidth = ctx.measureText(note.content || "").width;
-              newWidths[id] = Math.max(100, textWidth + 20);
+              const tw = ctx.measureText(note.content || "").width;
+              newWidths[id] = Math.max(100, tw + 20);
             }
           });
           setItems((prev) => ({ ...prev, ...validated }));
@@ -491,6 +630,8 @@ const Desinote: React.FC = () => {
             validated[id] = {
               id: image.id || id,
               type: "image",
+              layerId: image.layerId || activeLayerId,
+              layerName: image.layerName || layers[0]?.name || "Default",
               x: typeof image.x === "number" ? image.x : 100,
               y: typeof image.y === "number" ? image.y : 100,
               imageUrl: typeof image.imageUrl === "string" ? image.imageUrl : "",
@@ -531,9 +672,43 @@ const Desinote: React.FC = () => {
     return () => off(imagesRef, "value", listener);
   };
 
+  const loadLessonLayers = () => {
+    const layersRef = dbRef(db, "lessonLayers");
+    const listener = onValue(
+      layersRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const loaded: Layer[] = Object.keys(data).map((id) => ({
+            id,
+            name: data[id].name,
+            locked: !!data[id].locked,
+            order: typeof data[id].order === "number" ? data[id].order : 0,
+            visible: data[id].visible !== undefined ? data[id].visible : true,
+          }));
+          loaded.sort((a, b) => a.order - b.order);
+          setLayers(loaded);
+          if (!loaded.find((l) => l.id === activeLayerId)) {
+            setActiveLayerId(loaded[0]?.id || "default");
+          }
+        } else {
+          const defaultLayer: Layer = { id: "default", name: "Default", locked: false, order: 0, visible: true };
+          setLayers([defaultLayer]);
+          setActiveLayerId("default");
+          set(dbRef(db, "lessonLayers/default"), defaultLayer);
+        }
+      },
+      (error) => {
+        console.error("Error loading lesson layers:", error);
+      }
+    );
+    return () => off(dbRef(db, "lessonLayers"), "value", listener);
+  };
+
   useEffect(() => {
     loadLessonNotes();
     loadLessonImages();
+    loadLessonLayers();
   }, []);
 
   // --------------------- Mouse Event Handlers ---------------------
@@ -542,13 +717,14 @@ const Desinote: React.FC = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const { x, y } = getWorldCoordinates(event, canvas);
-    // Check for image resize on selected image items (only when in select mode)
     if (currentTool === "select") {
       const baseHandleSize = 14;
       const adjustedHandleSize = baseHandleSize / scale;
       for (const id of selectedNotes) {
         const item = items[id];
         if (item && item.type === "image") {
+          const layer = layers.find(l => l.id === item.layerId);
+          if (layer && !layer.visible) continue;
           if (
             x >= item.x + item.width - adjustedHandleSize &&
             x <= item.x + item.width &&
@@ -575,14 +751,22 @@ const Desinote: React.FC = () => {
       return;
     }
     if (currentTool === "select") {
+      const visibleItems = Object.values(items).filter(isItemVisible);
+      const orderedItems = visibleItems.sort((a, b) => {
+        const layerAOrder = layers.find(l => l.id === a.layerId)?.order || 0;
+        const layerBOrder = layers.find(l => l.id === b.layerId)?.order || 0;
+        if (layerAOrder !== layerBOrder) return layerBOrder - layerAOrder;
+        if (a.layerId === activeLayerId && b.layerId === activeLayerId) {
+          if (a.type === "text" && b.type === "image") return -1;
+          if (a.type === "image" && b.type === "text") return 1;
+        }
+        return 0;
+      });
       let clickedOnItem = false;
       let clickedItemId: string | null = null;
       let clickedItemType: "text" | "image" | null = null;
-      const itemsArray = Object.values(items);
-      // Draw texts on top so reverse order
-      const orderedItems = [...itemsArray.filter(it => it.type === "text"), ...itemsArray.filter(it => it.type === "image")];
       const checkImagePromises: Promise<void>[] = [];
-      for (let i = orderedItems.length - 1; i >= 0; i--) {
+      for (let i = 0; i < orderedItems.length; i++) {
         const item = orderedItems[i];
         if (item.type === "text") {
           const ctx = canvas.getContext("2d");
@@ -737,12 +921,15 @@ const Desinote: React.FC = () => {
       const deltaY = event.clientY - dragStart.y;
       const updated: { [id: string]: DrawableItem } = { ...items };
       selectedNotes.forEach((id) => {
+        const it = updated[id];
+        const layer = layers.find(l => l.id === it.layerId);
+        if (layer && layer.locked) return;
         const init = initialPositions[id];
         if (init) {
           const newX = init.x + deltaX / scale;
           const newY = init.y + deltaY / scale;
           updated[id] = {
-            ...updated[id],
+            ...it,
             x: gridEnabled ? Math.round(newX / gridSize) * gridSize : newX,
             y: gridEnabled ? Math.round(newY / gridSize) * gridSize : newY,
           };
@@ -751,19 +938,19 @@ const Desinote: React.FC = () => {
       setItems(updated);
       return;
     }
-    // Hover detection
     const canvas = canvasRef.current;
     if (!canvas) return;
     const { x, y } = getWorldCoordinates(event, canvas);
     let hovering = false;
     const hoverPromises: Promise<void>[] = [];
     for (const it of Object.values(items)) {
+      if (!isItemVisible(it)) continue;
       if (it.type === "text") {
         const ctx = canvas.getContext("2d");
         if (!ctx) continue;
         ctx.font = `${it.fontSize}px ${it.fontFamily}`;
-        const textWidth = ctx.measureText(it.text).width;
-        if (x >= it.x && x <= it.x + textWidth && y >= it.y && y <= it.y + it.fontSize) {
+        const tw = ctx.measureText(it.text).width;
+        if (x >= it.x && x <= it.x + tw && y >= it.y && y <= it.y + it.fontSize) {
           hovering = true;
           break;
         }
@@ -797,8 +984,8 @@ const Desinote: React.FC = () => {
 
   const handleMouseUp = useCallback(() => {
     if (resizingImage) {
-      const resized = items[resizingImage.id];
-      if (resized) saveLessonItem(resized);
+      const it = items[resizingImage.id];
+      if (it) saveLessonItem(it);
       setResizingImage(null);
       return;
     }
@@ -808,13 +995,13 @@ const Desinote: React.FC = () => {
     }
     if (dragStart) {
       selectedNotes.forEach((id) => {
-        const item = items[id];
-        if (item) {
+        const it = items[id];
+        if (it) {
           if (newItemIdsRef.current.has(id)) {
             console.log(`Skipping save for new item ID: ${id}`);
             return;
           }
-          saveLessonItem(item);
+          saveLessonItem(it);
         }
       });
       setDragStart(null);
@@ -833,12 +1020,14 @@ const Desinote: React.FC = () => {
         const intersect = (il: number, it: number, ir: number, ib: number) =>
           !(ir < selLeft || il > selRight || ib < selTop || it > selBottom);
         for (const it of Object.values(items)) {
+          if (!isItemVisible(it)) continue;
           if (it.type === "text") {
             const ctx = canvasRef.current?.getContext("2d");
             if (!ctx) continue;
             ctx.font = `${it.fontSize}px ${it.fontFamily}`;
             const tw = ctx.measureText(it.text).width;
-            if (intersect(it.x, it.y, it.x + tw, it.y + it.fontSize)) newSelected.add(it.id);
+            if (intersect(it.x, it.y, it.x + tw, it.y + it.fontSize))
+              newSelected.add(it.id);
           } else if (it.type === "image") {
             if (intersect(it.x, it.y, it.x + it.width, it.y + it.height))
               newSelected.add(it.id);
@@ -877,11 +1066,12 @@ const Desinote: React.FC = () => {
       hasDraggedRef.current = false;
       mouseDownPosRef.current = null;
     }
-  }, [isPanning, dragStart, selectedNotes, items, isSelecting, selectionStart, selectionEnd, resizingImage]);
+  }, [isPanning, dragStart, selectedNotes, items, isSelecting, selectionStart, selectionEnd, resizingImage, layers]);
 
   useEffect(() => {
     const globalMouseUp = () => handleMouseUp();
-    if (isSelecting || dragStart || isPanning) window.addEventListener("mouseup", globalMouseUp);
+    if (isSelecting || dragStart || isPanning)
+      window.addEventListener("mouseup", globalMouseUp);
     return () => window.removeEventListener("mouseup", globalMouseUp);
   }, [isSelecting, dragStart, isPanning, handleMouseUp]);
 
@@ -892,7 +1082,10 @@ const Desinote: React.FC = () => {
     let dblClickedId: string | null = null;
     let dblClickedType: "text" | "image" | null = null;
     const itemsArray = Object.values(items);
-    const ordered = [...itemsArray.filter((it) => it.type === "text"), ...itemsArray.filter((it) => it.type === "image")];
+    const ordered = [
+      ...itemsArray.filter((it) => it.type === "text"),
+      ...itemsArray.filter((it) => it.type === "image"),
+    ];
     for (let i = ordered.length - 1; i >= 0; i--) {
       const it = ordered[i];
       if (!selectedNotes.has(it.id)) continue;
@@ -914,7 +1107,12 @@ const Desinote: React.FC = () => {
       } else if (it.type === "image") {
         const cached = imageCacheRef.current.get(it.imageUrl);
         if (cached && cached.complete) {
-          if (x >= it.x && x <= it.x + it.width && y >= it.y && y <= it.y + it.height) {
+          if (
+            x >= it.x &&
+            x <= it.x + it.width &&
+            y >= it.y &&
+            y <= it.y + it.height
+          ) {
             dblClickedId = it.id;
             dblClickedType = "image";
             break;
@@ -950,6 +1148,8 @@ const Desinote: React.FC = () => {
             y: updated.y,
             width: updated.width,
             height: updated.height,
+            layerId: updated.layerId,
+            layerName: updated.layerName,
           })
             .then(() => {
               setItems((prev) => ({ ...prev, [dblClickedId!]: updated }));
@@ -960,7 +1160,8 @@ const Desinote: React.FC = () => {
                 imageCacheRef.current.set(updated.imageUrl, img);
                 drawCanvas();
               };
-              img.onerror = () => console.error(`Failed to load image at URL: ${updated.imageUrl}`);
+              img.onerror = () =>
+                console.error(`Failed to load image at URL: ${updated.imageUrl}`);
             })
             .catch((error) => console.error("Error updating image URL:", error));
         } else if (newUrl) {
@@ -988,9 +1189,9 @@ const Desinote: React.FC = () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      const item = items[id];
-      if (item && item.type === "text") {
-        ctx.font = `${item.fontSize}px ${item.fontFamily}`;
+      const it = items[id];
+      if (it && it.type === "text") {
+        ctx.font = `${it.fontSize}px ${it.fontFamily}`;
         const tw = ctx.measureText(text).width;
         setInputWidths((prev) => ({ ...prev, [id]: Math.max(100, tw + 20) }));
       }
@@ -999,9 +1200,9 @@ const Desinote: React.FC = () => {
 
   const handleInputBlur = (id: string) => {
     setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
-    const item = items[id];
-    if (item && item.type === "text") {
-      if (item.text) saveLessonItem(item);
+    const it = items[id];
+    if (it && it.type === "text") {
+      if (it.text) saveLessonItem(it);
       else deleteLessonItem(id);
     }
     setShowProperties(Array.from(selectedNotes).some((id) => items[id].type === "text"));
@@ -1010,9 +1211,9 @@ const Desinote: React.FC = () => {
   const handleKeyDownInput = (id: string, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === "Escape") {
       setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
-      const item = items[id];
-      if (item && item.type === "text") {
-        if (item.text) saveLessonItem(item);
+      const it = items[id];
+      if (it && it.type === "text") {
+        if (it.text) saveLessonItem(it);
         else deleteLessonItem(id);
       }
       setShowProperties(Array.from(selectedNotes).some((id) => items[id].type === "text"));
@@ -1022,11 +1223,14 @@ const Desinote: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       Object.keys(inputRefs.current).forEach((id) => {
-        if (inputRefs.current[id] && !inputRefs.current[id]?.contains(e.target as Node)) {
+        if (
+          inputRefs.current[id] &&
+          !inputRefs.current[id]?.contains(e.target as Node)
+        ) {
           setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
-          const item = items[id];
-          if (item && item.type === "text") {
-            if (item.text) saveLessonItem(item);
+          const it = items[id];
+          if (it && it.type === "text") {
+            if (it.text) saveLessonItem(it);
             else deleteLessonItem(id);
           }
           setShowProperties(Array.from(selectedNotes).some((id) => items[id].type === "text"));
@@ -1055,45 +1259,49 @@ const Desinote: React.FC = () => {
   }, [items, scale, viewportOffset]);
 
   // --------------------- Firebase Operations ---------------------
-  const saveLessonItem = (item: DrawableItem) => {
-    if (!item) return;
-    if (item.type === "text") {
-      if (typeof item.text !== "string" || item.text.trim() === "") {
-        deleteLessonItem(item.id);
+  const saveLessonItem = (it: DrawableItem) => {
+    if (!it) return;
+    if (it.type === "text") {
+      if (typeof it.text !== "string" || it.text.trim() === "") {
+        deleteLessonItem(it.id);
         return;
       }
-      const itemRef = dbRef(db, `lessonNotes/${item.id}`);
+      const itemRef = dbRef(db, `lessonNotes/${it.id}`);
       set(itemRef, {
-        id: item.id,
-        type: item.type,
-        content: item.text,
-        x: item.x,
-        y: item.y,
-        fontSize: item.fontSize,
-        fontFamily: item.fontFamily,
-        color: item.color,
-        isBold: item.isBold,
-        isUnderline: item.isUnderline,
-        isCrossedOut: item.isCrossedOut,
+        id: it.id,
+        type: it.type,
+        content: it.text,
+        x: it.x,
+        y: it.y,
+        fontSize: it.fontSize,
+        fontFamily: it.fontFamily,
+        color: it.color,
+        isBold: it.isBold,
+        isUnderline: it.isUnderline,
+        isCrossedOut: it.isCrossedOut,
+        layerId: it.layerId,
+        layerName: it.layerName,
       }).catch((error) => console.error("Error saving lesson item:", error));
-    } else if (item.type === "image") {
-      const itemRef = dbRef(db, `lessonImages/${item.id}`);
+    } else if (it.type === "image") {
+      const itemRef = dbRef(db, `lessonImages/${it.id}`);
       set(itemRef, {
-        id: item.id,
-        type: item.type,
-        imageUrl: item.imageUrl,
-        x: item.x,
-        y: item.y,
-        width: item.width,
-        height: item.height,
+        id: it.id,
+        type: it.type,
+        imageUrl: it.imageUrl,
+        x: it.x,
+        y: it.y,
+        width: it.width,
+        height: it.height,
+        layerId: it.layerId,
+        layerName: it.layerName,
       }).catch((error) => console.error("Error saving lesson image:", error));
     }
   };
 
   const deleteLessonItem = (id: string) => {
-    const item = items[id];
-    if (!item) return;
-    const refPath = item.type === "text" ? `lessonNotes/${id}` : `lessonImages/${id}`;
+    const it = items[id];
+    if (!it) return;
+    const refPath = it.type === "text" ? `lessonNotes/${id}` : `lessonImages/${id}`;
     remove(dbRef(db, refPath)).catch((error) => console.error(`Error deleting item ${id}:`, error));
     setItems((prev) => {
       const updated = { ...prev };
@@ -1105,8 +1313,8 @@ const Desinote: React.FC = () => {
   useEffect(() => {
     const handleGlobalMouseUpForResize = () => {
       if (resizingImage) {
-        const resized = items[resizingImage.id];
-        if (resized) saveLessonItem(resized);
+        const it = items[resizingImage.id];
+        if (it) saveLessonItem(it);
         setResizingImage(null);
       }
     };
@@ -1171,9 +1379,12 @@ const Desinote: React.FC = () => {
       newItemIdsRef.current.add(newId);
       const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
       const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
+      const activeLayer = layers.find(l => l.id === activeLayerId) || { id: "default", name: "Default", locked: false, order: 0, visible: true };
       const newNote: TextItem = {
         id: newId,
         type: "text",
+        layerId: activeLayer.id,
+        layerName: activeLayer.name,
         x: defaultX,
         y: defaultY,
         text: "",
@@ -1195,6 +1406,8 @@ const Desinote: React.FC = () => {
         fontSize: newNote.fontSize,
         fontFamily: newNote.fontFamily,
         color: newNote.color,
+        layerId: newNote.layerId,
+        layerName: newNote.layerName,
       })
         .then(() => {
           setItems((prev) => ({ ...prev, [newId]: newNote }));
@@ -1233,6 +1446,7 @@ const Desinote: React.FC = () => {
     if (newId) {
       const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
       const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
+      const activeLayer = layers.find(l => l.id === activeLayerId) || { id: "default", name: "Default", locked: false, order: 0, visible: true };
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.src = imageUrl;
@@ -1247,6 +1461,8 @@ const Desinote: React.FC = () => {
         const newImage: ImageItem = {
           id: newId,
           type: "image",
+          layerId: activeLayer.id,
+          layerName: activeLayer.name,
           x: defaultX,
           y: defaultY,
           imageUrl,
@@ -1263,6 +1479,8 @@ const Desinote: React.FC = () => {
           y: newImage.y,
           width: newImage.width,
           height: newImage.height,
+          layerId: newImage.layerId,
+          layerName: newImage.layerName,
         })
           .then(() => {
             setItems((prev) => ({ ...prev, [newId]: newImage }));
@@ -1276,9 +1494,155 @@ const Desinote: React.FC = () => {
     }
   };
 
+  // --------------------- Layer Management Functions ---------------------
+  const updateLayerInFirebase = (layer: Layer) => {
+    set(dbRef(db, `lessonLayers/${layer.id}`), layer).catch((error) =>
+      console.error("Error updating layer:", error)
+    );
+  };
+
+  const handleLayerRename = (layerId: string, newName: string) => {
+    setLayers((prev) =>
+      prev.map((layer) =>
+        layer.id === layerId ? { ...layer, name: newName } : layer
+      )
+    );
+    const updated = layers.find((l) => l.id === layerId);
+    if (updated) {
+      updateLayerInFirebase({ ...updated, name: newName });
+    }
+    const updatedItems = { ...items };
+    Object.keys(updatedItems).forEach((id) => {
+      if (updatedItems[id].layerId === layerId) {
+        updatedItems[id] = { ...updatedItems[id], layerName: newName };
+        saveLessonItem(updatedItems[id]);
+      }
+    });
+    setItems(updatedItems);
+  };
+
+  const handleLayerToggleLock = (layerId: string) => {
+    setLayers((prev) =>
+      prev.map((layer) =>
+        layer.id === layerId ? { ...layer, locked: !layer.locked } : layer
+      )
+    );
+    const updated = layers.find((l) => l.id === layerId);
+    if (updated) {
+      updateLayerInFirebase({ ...updated, locked: !updated.locked });
+    }
+  };
+
+  const handleLayerToggleVisibility = (layerId: string) => {
+    setLayers((prev) =>
+      prev.map((layer) =>
+        layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
+      )
+    );
+    const updated = layers.find((l) => l.id === layerId);
+    if (updated) {
+      updateLayerInFirebase({ ...updated, visible: !updated.visible });
+    }
+  };
+
+  const handleLayerDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = layers.findIndex((l) => l.id === active.id);
+      const newIndex = layers.findIndex((l) => l.id === over?.id);
+      const newLayers = arrayMove(layers, oldIndex, newIndex).map((layer, idx) => ({
+        ...layer,
+        order: idx,
+      }));
+      setLayers(newLayers);
+      newLayers.forEach((layer) => updateLayerInFirebase(layer));
+    }
+  };
+
+  const handleLayerSelect = (layerId: string) => {
+    setActiveLayerId(layerId);
+  };
+
+  const addNewLayer = () => {
+    const layersRef = dbRef(db, "lessonLayers");
+    const newLayerRef = push(layersRef);
+    const newId = newLayerRef.key;
+    if (newId) {
+      const newLayer: Layer = {
+        id: newId,
+        name: "New Layer",
+        locked: false,
+        order: layers.length,
+        visible: true,
+      };
+      set(newLayerRef, newLayer)
+        .then(() => {
+          setActiveLayerId(newId);
+        })
+        .catch((error) => console.error("Error adding new layer:", error));
+    }
+  };
+
+  const deleteLayer = (layerId: string) => {
+    if (layerId === "default") {
+      alert("Default layer cannot be deleted.");
+      return;
+    }
+    remove(dbRef(db, `lessonLayers/${layerId}`)).catch((error) =>
+      console.error("Error deleting layer:", error)
+    );
+    setLayers((prev) => prev.filter((layer) => layer.id !== layerId));
+    const updatedItems = { ...items };
+    Object.keys(updatedItems).forEach((id) => {
+      if (updatedItems[id].layerId === layerId) {
+        const refPath = updatedItems[id].type === "text" ? `lessonNotes/${id}` : `lessonImages/${id}`;
+        remove(dbRef(db, refPath)).catch((error) =>
+          console.error(`Error deleting item ${id} on layer ${layerId}:`, error)
+        );
+        delete updatedItems[id];
+      }
+    });
+    setItems(updatedItems);
+    if (activeLayerId === layerId) {
+      setActiveLayerId("default");
+    }
+  };
+
   // --------------------- Render ---------------------
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
+      {/* Layers Panel */}
+      <div className="fixed top-4 left-4 z-30 p-2 bg-gray-900 bg-opacity-75 rounded shadow-lg w-64 max-h-[80vh]">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-white font-bold">Layers</h3>
+          <button onClick={addNewLayer} title="Add Layer" className="text-white">
+            <FiPlus size={20} />
+          </button>
+        </div>
+        <div className="max-h-[calc(80vh-2rem)] overflow-auto">
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleLayerDragEnd}
+            modifiers={[restrictToParentElement]}
+          >
+            <SortableContext items={layers.map((l) => l.id)} strategy={verticalListSortingStrategy}>
+              {layers.map((layer) => (
+                <SortableLayerItem
+                  key={layer.id}
+                  layer={layer}
+                  active={layer.id === activeLayerId}
+                  onToggleLock={handleLayerToggleLock}
+                  onToggleVisibility={handleLayerToggleVisibility}
+                  onRename={handleLayerRename}
+                  onDelete={deleteLayer}
+                  onSelect={handleLayerSelect}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        </div>
+      </div>
+
       {/* Top Bar */}
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg">
         <button
@@ -1314,11 +1678,7 @@ const Desinote: React.FC = () => {
           className={`p-2 rounded ${gridEnabled ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
           title="Grid Lock"
         >
-          {gridEnabled ? (
-            <FiGrid size={24} color="#FFFFFF" />
-          ) : (
-            <FiSquare size={24} color="#FFFFFF" />
-          )}
+          {gridEnabled ? <FiGrid size={24} color="#FFFFFF" /> : <FiSquare size={24} color="#FFFFFF" />}
         </button>
       </div>
 
