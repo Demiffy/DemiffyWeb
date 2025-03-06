@@ -1793,7 +1793,7 @@ const Desinote: React.FC = () => {
               onChange={(e) => handleInputChange(it.id, e)}
               onBlur={() => handleInputBlur(it.id)}
               onKeyDown={(e) => handleKeyDownInput(it.id, e)}
-              className="absolute bg-transparent border-b border-white text-white z-10"
+              className="absolute bg-transparent border-b border-white z-10"
               style={{
                 top: inputPositions[it.id]?.top || 0,
                 left: inputPositions[it.id]?.left || 0,
@@ -1802,10 +1802,12 @@ const Desinote: React.FC = () => {
                 fontSize: `${it.fontSize}px`,
                 fontFamily: it.fontFamily,
                 color: it.color,
+                fontWeight: it.isBold ? "bold" : "normal",
+                textDecoration: it.isCrossedOut ? "line-through" : "none",
                 lineHeight: `${it.fontSize + 4}px`,
                 outline: "none",
                 border: "none",
-                caretColor: "white",
+                caretColor: it.color,
                 width: `${inputWidths[it.id] || 100}px`,
               }}
             />
