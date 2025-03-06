@@ -1,18 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import {
-  initializeApp,
-  getApps,
-  getApp,
-} from "firebase/app";
-import {
-  getDatabase,
-  ref as dbRef,
-  set,
-  onValue,
-  push,
-  off,
-  remove,
-} from "firebase/database";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getDatabase, ref as dbRef, set, onValue, push, off, remove } from "firebase/database";
 import {
   FiMove,
   FiCheckSquare,
@@ -31,22 +19,13 @@ import {
   FiChevronRight,
   FiAlignJustify,
   FiSave,
-  FiDownload,
-  FiUpload,
   FiSettings,
-  FiHelpCircle
+  FiHelpCircle,
+  FiDownload,
+  FiX
 } from "react-icons/fi";
-import {
-  DndContext,
-  closestCenter,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  arrayMove,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToParentElement } from '@dnd-kit/modifiers';
 
@@ -127,8 +106,7 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
   onSelect,
   flashLocked,
 }) => {
-  const { listeners, setNodeRef, transform, transition } =
-    useSortable({ id: layer.id });
+  const { listeners, setNodeRef, transform, transition } = useSortable({ id: layer.id });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -182,11 +160,11 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
             {layer.visible ? <FiEye className="text-sm" /> : <FiEyeOff className="text-sm" />}
           </button>
           <button onClick={() => onToggleLock(layer.id)} className="ml-1 p-1 hover:text-gray-300">
-          {layer.locked ? (
-            <FiLock className={`text-sm ${flashLocked ? "text-red-500" : "text-white"}`} />
-          ) : (
-            <FiUnlock className="text-sm" />
-          )}
+            {layer.locked ? (
+              <FiLock className={`text-sm ${flashLocked ? "text-red-500" : "text-white"}`} />
+            ) : (
+              <FiUnlock className="text-sm" />
+            )}
           </button>
           {layer.id !== "default" && (
             <button onClick={() => onDelete(layer.id)} className="ml-1 p-1 hover:text-red-400">
@@ -217,9 +195,7 @@ const Desinote: React.FC = () => {
   const [items, setItems] = useState<{ [id: string]: DrawableItem }>({});
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [inputWidths, setInputWidths] = useState<{ [id: string]: number }>({});
-  const [inputPositions, setInputPositions] = useState<{
-    [id: string]: { top: number; left: number };
-  }>({});
+  const [inputPositions, setInputPositions] = useState<{ [id: string]: { top: number; left: number } }>({});
   const [scale, setScale] = useState(1);
   const [viewportOffset, setViewportOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({
@@ -271,6 +247,10 @@ const Desinote: React.FC = () => {
   const [flashLockedLayers, setFlashLockedLayers] = useState<{ [layerId: string]: boolean }>({});
   const [flashPanelToggle, setFlashPanelToggle] = useState(false);
 
+  const [savedStates, setSavedStates] = useState<
+    { id: string; fileName: string; timestamp: number; data: any }[]
+  >([]);
+
   const CLICK_THRESHOLD = 5;
 
   const isItemVisible = (item: DrawableItem) => {
@@ -280,10 +260,7 @@ const Desinote: React.FC = () => {
 
   // --------------------- Helper Functions ---------------------
   const getWorldCoordinates = useCallback(
-    (
-      event: React.MouseEvent<HTMLCanvasElement> | MouseEvent,
-      canvas: HTMLCanvasElement
-    ) => {
+    (event: React.MouseEvent<HTMLCanvasElement> | MouseEvent, canvas: HTMLCanvasElement) => {
       const rect = canvas.getBoundingClientRect();
       return {
         x: ((event as MouseEvent).clientX - rect.left) / scale + viewportOffset.x,
@@ -293,11 +270,7 @@ const Desinote: React.FC = () => {
     [scale, viewportOffset]
   );
 
-  const drawGrid = (
-    ctx: CanvasRenderingContext2D,
-    canvasWidth: number,
-    canvasHeight: number
-  ) => {
+  const drawGrid = (ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 0.5 / scale;
     const startX = Math.floor(viewportOffset.x / gridSize) * gridSize;
@@ -318,11 +291,7 @@ const Desinote: React.FC = () => {
     }
   };
 
-  const drawText = (
-    ctx: CanvasRenderingContext2D,
-    item: TextItem,
-    selected: boolean
-  ) => {
+  const drawText = (ctx: CanvasRenderingContext2D, item: TextItem, selected: boolean) => {
     const x = item.x - viewportOffset.x;
     const y = item.y - viewportOffset.y;
     ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
@@ -347,30 +316,15 @@ const Desinote: React.FC = () => {
       ctx.stroke();
     }
     if (selected) {
-      const borderRadius = 6,
-        padding = 8,
-        paddingTop = 6,
-        paddingBottom = 1;
+      const borderRadius = 6, padding = 8, paddingTop = 6, paddingBottom = 1;
       ctx.shadowColor = "rgba(0, 123, 255, 0.5)";
       ctx.shadowBlur = 10;
       ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(x - padding + borderRadius, y - paddingTop);
-      ctx.arcTo(
-        x + textWidth + padding,
-        y - paddingTop,
-        x + textWidth + padding,
-        y + item.fontSize + paddingBottom,
-        borderRadius
-      );
-      ctx.arcTo(
-        x + textWidth + padding,
-        y + item.fontSize + paddingBottom,
-        x - padding,
-        y + item.fontSize + paddingBottom,
-        borderRadius
-      );
+      ctx.arcTo(x + textWidth + padding, y - paddingTop, x + textWidth + padding, y + item.fontSize + paddingBottom, borderRadius);
+      ctx.arcTo(x + textWidth + padding, y + item.fontSize + paddingBottom, x - padding, y + item.fontSize + paddingBottom, borderRadius);
       ctx.arcTo(x - padding, y + item.fontSize + paddingBottom, x - padding, y - paddingTop, borderRadius);
       ctx.arcTo(x - padding, y - paddingTop, x + textWidth + padding, y - paddingTop, borderRadius);
       ctx.closePath();
@@ -378,11 +332,7 @@ const Desinote: React.FC = () => {
     }
   };
 
-  const drawImageItem = (
-    ctx: CanvasRenderingContext2D,
-    item: ImageItem,
-    selected: boolean
-  ) => {
+  const drawImageItem = (ctx: CanvasRenderingContext2D, item: ImageItem, selected: boolean) => {
     const x = item.x - viewportOffset.x;
     const y = item.y - viewportOffset.y;
     const cachedImage = imageCacheRef.current.get(item.imageUrl);
@@ -396,14 +346,10 @@ const Desinote: React.FC = () => {
         imageCacheRef.current.set(item.imageUrl, img);
         drawCanvas();
       };
-      img.onerror = () =>
-        console.error(`Failed to load image at URL: ${item.imageUrl}`);
+      img.onerror = () => console.error(`Failed to load image at URL: ${item.imageUrl}`);
     }
     if (selected) {
-      const baseLineWidth = 2,
-        baseDashLength = 6,
-        basePadding = 4,
-        baseHandleSize = 14;
+      const baseLineWidth = 2, baseDashLength = 6, basePadding = 4, baseHandleSize = 14;
       const adjustedLineWidth = baseLineWidth / scale;
       const adjustedDash = [baseDashLength / scale];
       const adjustedPadding = basePadding / scale;
@@ -411,12 +357,7 @@ const Desinote: React.FC = () => {
       ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
       ctx.lineWidth = adjustedLineWidth;
       ctx.setLineDash(adjustedDash);
-      ctx.strokeRect(
-        x - adjustedPadding,
-        y - adjustedPadding,
-        item.width + 2 * adjustedPadding,
-        item.height + 2 * adjustedPadding
-      );
+      ctx.strokeRect(x - adjustedPadding, y - adjustedPadding, item.width + 2 * adjustedPadding, item.height + 2 * adjustedPadding);
       ctx.setLineDash([]);
       const handleX = x + item.width - adjustedHandleSize;
       const handleY = y + item.height - adjustedHandleSize;
@@ -444,7 +385,6 @@ const Desinote: React.FC = () => {
 
     const visibleLayerIds = new Set(layers.filter(l => l.visible).map(l => l.id));
     const itemsToDraw = Object.values(items).filter(item => visibleLayerIds.has(item.layerId));
-
     const sortedLayers = layers.filter(l => l.visible).sort((a, b) => b.order - a.order);
     sortedLayers.forEach(layer => {
       const layerItems = itemsToDraw.filter(item => item.layerId === layer.id);
@@ -700,8 +640,7 @@ const Desinote: React.FC = () => {
                 imageCacheRef.current.set(image.imageUrl, img);
                 drawCanvas();
               };
-              img.onerror = () =>
-                console.error(`Failed to load image at URL: ${image.imageUrl}`);
+              img.onerror = () => console.error(`Failed to load image at URL: ${image.imageUrl}`);
             }
           });
           setItems((prev) => ({ ...prev, ...validated }));
@@ -791,6 +730,42 @@ const Desinote: React.FC = () => {
       console.error("Error saving lesson settings:", error)
     );
   };
+
+  // --------------------- Saving & Loading Lesson State ---------------------
+  const saveLessonState = () => {
+    const fileName = prompt("Enter a name to save your lesson:");
+    if (!fileName?.trim()) return;
+    const stateToSave = {
+      fileName: fileName.trim(),
+      timestamp: Date.now(),
+      items,
+      layers,
+      canvasBgColor,
+      gridEnabled,
+    };
+    const savesRef = dbRef(db, "lessonSaves");
+    const newSaveRef = push(savesRef);
+    set(newSaveRef, stateToSave)
+      .then(() => alert("Lesson saved successfully!"))
+      .catch((error) => console.error("Error saving lesson state:", error));
+  };
+
+  useEffect(() => {
+    const savesRef = dbRef(db, "lessonSaves");
+    const listener = onValue(savesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const savesArray = Object.keys(data).map((id) => ({
+          id,
+          ...data[id],
+        }));
+        setSavedStates(savesArray);
+      } else {
+        setSavedStates([]);
+      }
+    });
+    return () => off(savesRef, "value", listener);
+  }, []);
 
   // --------------------- Mouse Event Handlers ---------------------
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -911,12 +886,10 @@ const Desinote: React.FC = () => {
           const item = items[clickedItemId];
           const layer = layers.find((l) => l.id === item.layerId);
           if (layer && layer.locked) {
-            // Flash the locked icon for this layer.
             setFlashLockedLayers((prev) => ({ ...prev, [layer.id]: true }));
             setTimeout(() => {
               setFlashLockedLayers((prev) => ({ ...prev, [layer.id]: false }));
             }, 3000);
-            // Also flash the panel toggle arrow if the panel is collapsed.
             if (isPanelCollapsed) {
               setFlashPanelToggle(true);
               setTimeout(() => setFlashPanelToggle(false), 3000);
@@ -1727,11 +1700,93 @@ const Desinote: React.FC = () => {
     };
   }, [showMenu]);
 
+  // --------------------- Save/Load Lesson State ---------------------
+  const loadSavedStates = () => {
+    const savesRef = dbRef(db, "lessonSaves");
+    const listener = onValue(savesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const savesArray = Object.keys(data).map((id) => ({
+          id,
+          ...data[id],
+        }));
+        setSavedStates(savesArray);
+      } else {
+        setSavedStates([]);
+      }
+    });
+    return () => off(savesRef, "value", listener);
+  };
+
+  useEffect(() => {
+    loadSavedStates();
+  }, []);
+
+  const loadLessonState = (saveData: any) => {
+    if (
+      window.confirm(
+        `Load lesson "${saveData.fileName}"? This will overwrite your current work.`
+      )
+    ) {
+      const loadedItems = saveData.items || {};
+      const loadedTextItems: { [id: string]: any } = {};
+      const loadedImageItems: { [id: string]: any } = {};
+      Object.values(loadedItems).forEach((item: any) => {
+        if (item.type === "text") {
+          loadedTextItems[item.id] = {
+            id: item.id,
+            type: item.type,
+            content: item.text,
+            x: item.x,
+            y: item.y,
+            fontSize: item.fontSize,
+            fontFamily: item.fontFamily,
+            color: item.color,
+            isBold: item.isBold,
+            isUnderline: item.isUnderline,
+            isCrossedOut: item.isCrossedOut,
+            layerId: item.layerId,
+            layerName: item.layerName,
+          };
+        } else if (item.type === "image") {
+          loadedImageItems[item.id] = item;
+        }
+      });
+      set(dbRef(db, "lessonNotes"), loadedTextItems);
+      set(dbRef(db, "lessonImages"), loadedImageItems);
+
+      const loadedLayersArray = saveData.layers || [];
+      const loadedLayersObj: { [id: string]: any } = {};
+      loadedLayersArray.forEach((layer: Layer) => {
+        loadedLayersObj[layer.id] = layer;
+      });
+      set(dbRef(db, "lessonLayers"), loadedLayersObj);
+
+      setItems(loadedItems);
+      setLayers(loadedLayersArray);
+      setCanvasBgColor(saveData.canvasBgColor || "#121212");
+      setGridEnabled(saveData.gridEnabled || false);
+      setShowLoadDialog(false);
+    }
+  };
+
+  const deleteSavedState = (id: string) => {
+    if (window.confirm("Delete this saved lesson?")) {
+      remove(dbRef(db, `lessonSaves/${id}`))
+        .then(() => {
+          setSavedStates((prev) => prev.filter((save) => save.id !== id));
+        })
+        .catch((error) => console.error("Error deleting saved lesson:", error));
+    }
+  };
+
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+
   // --------------------- Render ---------------------
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
       {/* Menu Button */}
-       <div className="fixed top-4 right-4 z-20" ref={menuRef}>
+      <div className="fixed top-4 right-4 z-20" ref={menuRef}>
         <button
           onClick={toggleMenu}
           className="rounded bg-slate-800 p-2 shadow-lg hover:bg-slate-700 transition-all duration-300"
@@ -1744,14 +1799,17 @@ const Desinote: React.FC = () => {
             {/* File Category */}
             <div className="mb-2 border-b border-slate-600 pb-1">
               <h4 className="text-xs text-slate-300 font-semibold mb-1">File</h4>
-              <button className="w-full flex items-center px-4 py-1 mb-1 hover:bg-slate-700 rounded">
+              <button
+                onClick={saveLessonState}
+                className="w-full flex items-center px-4 py-1 mb-1 hover:bg-slate-700 rounded"
+              >
                 <FiSave className="mr-2" /> <span className="text-sm">Save</span>
               </button>
-              <button className="w-full flex items-center px-4 py-1 mb-1 hover:bg-slate-700 rounded">
-                <FiDownload className="mr-2" /> <span className="text-sm">Export</span>
-              </button>
-              <button className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded">
-                <FiUpload className="mr-2" /> <span className="text-sm">Import</span>
+              <button
+                onClick={() => setShowLoadDialog(true)}
+                className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded"
+              >
+                <FiDownload className="mr-2" /> <span className="text-sm">Load</span>
               </button>
             </div>
             {/* Options Category */}
@@ -1798,6 +1856,61 @@ const Desinote: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Load Dialog Modal */}
+      {showLoadDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-primary-color rounded-lg shadow-lg p-6 w-96">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white text-xl font-semibold">Load Lesson</h3>
+            <button onClick={() => setShowLoadDialog(false)} className="text-slate-300 hover:text-white">
+              <FiX size={24} />
+            </button>
+          </div>
+          {savedStates.length === 0 ? (
+            <p className="text-slate-400 text-sm">No saved lessons.</p>
+          ) : (
+            <ul className="max-h-60 overflow-y-auto mb-4 space-y-2">
+              {savedStates.map((save) => {
+                const fileSize = (new Blob([JSON.stringify(save)]).size / 1024).toFixed(2);
+                return (
+                  <li
+                    key={save.id}
+                    className="flex items-center justify-between p-2 bg-tertiary-color rounded"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                      <span className="text-slate-200 text-sm font-medium">{save.fileName}</span>
+                      <span className="text-xs text-slate-400">
+                        {new Date(save.timestamp).toLocaleString()}
+                      </span>
+                      <span className="text-xs text-slate-400">Size: {fileSize} KB</span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => loadLessonState(save)}
+                        className="flex items-center space-x-1 text-green-400 hover:text-green-600 text-sm"
+                        title="Load"
+                      >
+                        <FiDownload size={16} />
+                        <span>Load</span>
+                      </button>
+                      <button
+                        onClick={() => deleteSavedState(save.id)}
+                        className="flex items-center space-x-1 text-red-400 hover:text-red-600 text-sm"
+                        title="Delete"
+                      >
+                        <FiTrash2 size={16} />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+      )}
 
       {/* Layers Panel */}
       <div>
@@ -1851,47 +1964,47 @@ const Desinote: React.FC = () => {
 
       {/* Top Bar */}
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg">
-      <button
-        onClick={() => setCurrentTool("pan")}
-        className={`relative p-2 rounded ${currentTool === "pan" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-        title="Pan"
-      >
-        <FiMove size={24} color="#FFFFFF" />
-        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">1</span>
-      </button>
-      <button
-        onClick={() => setCurrentTool("select")}
-        className={`relative p-2 rounded ${currentTool === "select" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-        title="Select"
-      >
-        <FiCheckSquare size={24} color="#FFFFFF" />
-        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">2</span>
-      </button>
-      <button
-        onClick={() => setCurrentTool("text")}
-        className={`relative p-2 rounded ${currentTool === "text" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-        title="Add Text"
-      >
-        <FiType size={24} color="#FFFFFF" />
-        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">3</span>
-      </button>
-      <button
-        onClick={() => setCurrentTool("image")}
-        className={`relative p-2 rounded ${currentTool === "image" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-        title="Add Image"
-      >
-        <FiImage size={24} color="#FFFFFF" />
-        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">4</span>
-      </button>
-      <button
-        onClick={() => setGridEnabled((prev) => !prev)}
-        className={`relative p-2 rounded ${gridEnabled ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
-        title="Grid Lock"
-      >
-        {gridEnabled ? <FiGrid size={24} color="#FFFFFF" /> : <FiSquare size={24} color="#FFFFFF" />}
-        <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">5</span>
-      </button>
-    </div>
+        <button
+          onClick={() => setCurrentTool("pan")}
+          className={`relative p-2 rounded ${currentTool === "pan" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+          title="Pan"
+        >
+          <FiMove size={24} color="#FFFFFF" />
+          <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">1</span>
+        </button>
+        <button
+          onClick={() => setCurrentTool("select")}
+          className={`relative p-2 rounded ${currentTool === "select" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+          title="Select"
+        >
+          <FiCheckSquare size={24} color="#FFFFFF" />
+          <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">2</span>
+        </button>
+        <button
+          onClick={() => setCurrentTool("text")}
+          className={`relative p-2 rounded ${currentTool === "text" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+          title="Add Text"
+        >
+          <FiType size={24} color="#FFFFFF" />
+          <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">3</span>
+        </button>
+        <button
+          onClick={() => setCurrentTool("image")}
+          className={`relative p-2 rounded ${currentTool === "image" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+          title="Add Image"
+        >
+          <FiImage size={24} color="#FFFFFF" />
+          <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">4</span>
+        </button>
+        <button
+          onClick={() => setGridEnabled((prev) => !prev)}
+          className={`relative p-2 rounded ${gridEnabled ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+          title="Grid Lock"
+        >
+          {gridEnabled ? <FiGrid size={24} color="#FFFFFF" /> : <FiSquare size={24} color="#FFFFFF" />}
+          <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">5</span>
+        </button>
+      </div>
 
       {selectedNotes.size > 0 && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-20 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg">
