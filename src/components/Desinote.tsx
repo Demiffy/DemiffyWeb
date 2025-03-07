@@ -213,6 +213,7 @@ const Desinote: React.FC = () => {
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const dragStartWorldRef = useRef<{ x: number; y: number } | null>(null);
   const [initialPositions, setInitialPositions] = useState<{ [id: string]: { x: number; y: number } }>({});
   const [resizingImage, setResizingImage] = useState<{
     id: string;
@@ -373,7 +374,7 @@ const Desinote: React.FC = () => {
     }
   };
 
-  // --------------------- Alignment Guides --------------------- 
+  // --------------------- Alignment Guides ---------------------
 
   const drawAlignmentGuides = (ctx: CanvasRenderingContext2D) => {
     const threshold = 5;
@@ -471,34 +472,34 @@ const Desinote: React.FC = () => {
     });
   };
 
-const measureTextWidth = (note: TextItem): number => {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return 0;
-  ctx.font = `${note.isBold ? "bold " : ""}${note.fontSize}px ${note.fontFamily}`;
-  return ctx.measureText(note.text).width;
-};
+  const measureTextWidth = (note: TextItem): number => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return 0;
+    ctx.font = `${note.isBold ? "bold " : ""}${note.fontSize}px ${note.fontFamily}`;
+    return ctx.measureText(note.text).width;
+  };
 
-const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: number; y: number }[] => {
-  if (note.type === "text") {
-    const textWidth = measureTextWidth(note);
-    return [
-      { x: posX, y: posY },
-      { x: posX + textWidth, y: posY },
-      { x: posX, y: posY + note.fontSize },
-      { x: posX + textWidth, y: posY + note.fontSize },
-      { x: posX + textWidth / 2, y: posY + note.fontSize / 2 },
-    ];
-  } else {
-    return [
-      { x: posX, y: posY },
-      { x: posX + note.width, y: posY },
-      { x: posX, y: posY + note.height },
-      { x: posX + note.width, y: posY + note.height },
-      { x: posX + note.width / 2, y: posY + note.height / 2 },
-    ];
-  }
-};
+  const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: number; y: number }[] => {
+    if (note.type === "text") {
+      const textWidth = measureTextWidth(note);
+      return [
+        { x: posX, y: posY },
+        { x: posX + textWidth, y: posY },
+        { x: posX, y: posY + note.fontSize },
+        { x: posX + textWidth, y: posY + note.fontSize },
+        { x: posX + textWidth / 2, y: posY + note.fontSize / 2 },
+      ];
+    } else {
+      return [
+        { x: posX, y: posY },
+        { x: posX + note.width, y: posY },
+        { x: posX, y: posY + note.height },
+        { x: posX + note.width, y: posY + note.height },
+        { x: posX + note.width / 2, y: posY + note.height / 2 },
+      ];
+    }
+  };
 
   // --------------------- Canvas Drawing ---------------------
   const drawCanvas = useCallback(() => {
@@ -658,6 +659,7 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
       }
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
         setIsShiftPressed(false);
+        dragStartWorldRef.current = null;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -965,12 +967,9 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
   }, []);
 
   const handleSaveRename = (saveId: string) => {
-    // Update the file name in Firebase.
     const saveRef = dbRef(db, `lessonSaves/${saveId}`);
-    // We assume the saved state already has the new fileName stored in "renamingName"
     set(saveRef, { ...savedStates.find(s => s.id === saveId), fileName: renamingName })
       .then(() => {
-        // Update local state
         setSavedStates(prev =>
           prev.map(s => (s.id === saveId ? { ...s, fileName: renamingName } : s))
         );
@@ -1121,6 +1120,7 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
           }
           if (selectedNotes.has(clickedItemId)) {
             setDragStart({ x: event.clientX, y: event.clientY });
+            dragStartWorldRef.current = getWorldCoordinates(event, canvas);
             const initPos: { [id: string]: { x: number; y: number } } = {};
             selectedNotes.forEach((id) => {
               const it = items[id];
@@ -1130,6 +1130,7 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
           } else {
             setSelectedNotes(new Set([clickedItemId]));
             setDragStart({ x: event.clientX, y: event.clientY });
+            dragStartWorldRef.current = getWorldCoordinates(event, canvas);
             setInitialPositions({
               [clickedItemId]: { x: items[clickedItemId].x, y: items[clickedItemId].y },
             });
@@ -1210,9 +1211,13 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
       }
       return;
     }
-    if (dragStart) {
-      const deltaX = event.clientX - dragStart.x;
-      const deltaY = event.clientY - dragStart.y;
+    if (dragStart && dragStartWorldRef.current) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const currentWorld = getWorldCoordinates(event, canvas);
+      const deltaWorldX = currentWorld.x - dragStartWorldRef.current.x;
+      const deltaWorldY = currentWorld.y - dragStartWorldRef.current.y;
+
       const updated: { [id: string]: DrawableItem } = { ...items };
       selectedNotes.forEach((id) => {
         const it = updated[id];
@@ -1220,8 +1225,8 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
         if (layer && layer.locked) return;
         const init = initialPositions[id];
         if (init) {
-          let newX = init.x + deltaX / scale;
-          let newY = init.y + deltaY / scale;
+          let newX = init.x + deltaWorldX;
+          let newY = init.y + deltaWorldY;
 
           if (isShiftPressed) {
             const threshold = 5;
@@ -1337,6 +1342,7 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
       });
       setDragStart(null);
       setInitialPositions({});
+      dragStartWorldRef.current = null;
     }
     if (isSelecting && selectionStart && selectionEnd) {
       const selLeft = Math.min(selectionStart.x, selectionEnd.x);
