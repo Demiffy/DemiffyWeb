@@ -912,6 +912,9 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
   };
 
   // --------------------- Saving & Loading Lesson State ---------------------
+  const [renamingSaveId, setRenamingSaveId] = useState<string | null>(null);
+  const [renamingName, setRenamingName] = useState("");
+
   const saveLessonState = () => {
     const fileName = prompt("Enter a name to save your lesson (existing file with same name will be overridden):");
     if (!fileName?.trim()) return;
@@ -960,6 +963,32 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
     });
     return () => off(savesRef, "value", listener);
   }, []);
+
+  const handleSaveRename = (saveId: string) => {
+    // Update the file name in Firebase.
+    const saveRef = dbRef(db, `lessonSaves/${saveId}`);
+    // We assume the saved state already has the new fileName stored in "renamingName"
+    set(saveRef, { ...savedStates.find(s => s.id === saveId), fileName: renamingName })
+      .then(() => {
+        // Update local state
+        setSavedStates(prev =>
+          prev.map(s => (s.id === saveId ? { ...s, fileName: renamingName } : s))
+        );
+        setRenamingSaveId(null);
+        setRenamingName("");
+      })
+      .catch((error) => {
+        console.error("Error renaming saved lesson:", error);
+      });
+  };
+
+  const measureStringWidth = (str: string, fontSize: number, fontFamily: string) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return 0;
+    ctx.font = `${fontSize}px ${fontFamily}`;
+    return ctx.measureText(str).width;
+  };
 
   // --------------------- Mouse Event Handlers ---------------------
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -2109,46 +2138,85 @@ const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: num
       {/* Load Dialog Modal */}
       {showLoadDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-primary-color rounded-lg shadow-lg p-6 w-96">
+          <div className="bg-primary-color rounded-lg shadow-lg p-6 w-3/4 max-w-4xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white text-xl font-semibold">Load Lesson</h3>
-              <button onClick={() => setShowLoadDialog(false)} className="text-slate-300 hover:text-white">
-                <FiX size={24} />
+              <h3 className="text-white text-2xl font-semibold">Load File</h3>
+              <button
+                onClick={() => setShowLoadDialog(false)}
+                className="text-slate-300 hover:text-white"
+              >
+                <FiX size={32} />
               </button>
             </div>
             {savedStates.length === 0 ? (
-              <p className="text-slate-400 text-sm">No saved lessons.</p>
+              <p className="text-slate-400 text-lg">No saved files.</p>
             ) : (
-              <ul className="max-h-60 overflow-y-auto mb-4 space-y-2">
+              <ul className="max-h-96 overflow-y-auto mb-4 space-y-2">
                 {savedStates.map((save) => {
                   const fileSize = (new Blob([JSON.stringify(save)]).size / 1024).toFixed(2);
                   return (
                     <li
                       key={save.id}
-                      className="flex items-center justify-between p-2 bg-tertiary-color rounded"
+                      className="flex items-center justify-between p-4 bg-tertiary-color rounded"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-                        <span className="text-slate-200 text-sm font-medium">{save.fileName}</span>
-                        <span className="text-xs text-slate-400">
+                        {renamingSaveId === save.id ? (
+                          <input
+                            type="text"
+                            value={renamingName}
+                            onChange={(e) => setRenamingName(e.target.value)}
+                            onBlur={() => handleSaveRename(save.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleSaveRename(save.id);
+                              }
+                            }}
+                            className="text-slate-200 text-lg font-medium bg-transparent border-b border-slate-400"
+                            style={{
+                              width: `${Math.min(measureStringWidth(renamingName || "New File", 18, "Arial") + 16, 250)}px`,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            onDoubleClick={() => {
+                              setRenamingSaveId(save.id);
+                              setRenamingName(save.fileName);
+                            }}
+                            className="text-slate-200 text-lg font-medium cursor-pointer"
+                            style={{
+                              maxWidth: "250px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {save.fileName}
+                          </span>
+                        )}
+                        <span className="text-sm text-slate-400">
                           {new Date(save.timestamp).toLocaleString()}
                         </span>
-                        <span className="text-xs text-slate-400">Size: {fileSize} KB</span>
+                        <span className="text-sm text-slate-400">Size: {fileSize} KB</span>
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-4">
                         <button
                           onClick={() => loadLessonState(save)}
-                          className="flex items-center space-x-1 text-green-400 hover:text-green-600 text-sm"
+                          className="flex items-center space-x-1 text-green-400 hover:text-green-600 text-lg"
                           title="Load"
                         >
-                          <FiDownload size={16} />
+                          <FiDownload size={20} />
                           <span>Load</span>
                         </button>
                         <button
                           onClick={() => deleteSavedState(save.id)}
-                          className="flex items-center space-x-1 text-red-400 hover:text-red-600 text-sm"
+                          className="flex items-center space-x-1 text-red-400 hover:text-red-600 text-lg"
                           title="Delete"
                         >
-                          <FiTrash2 size={16} />
+                          <FiTrash2 size={20} />
                           <span>Delete</span>
                         </button>
                       </div>
