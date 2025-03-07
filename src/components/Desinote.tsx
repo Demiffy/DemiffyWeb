@@ -186,7 +186,7 @@ const Desinote: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasBgColor, setCanvasBgColor] = useState("#121212");
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const inputRefs = useRef<{ [id: string]: HTMLInputElement | HTMLTextAreaElement | null }>({});
+  const inputRefs = useRef<{ [id: string]: HTMLInputElement | null }>({});
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const newItemIdsRef = useRef<Set<string>>(new Set());
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -297,20 +297,12 @@ const Desinote: React.FC = () => {
     ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
     ctx.fillStyle = item.color;
     ctx.textBaseline = "top";
-    const lines = item.text.split("\n");
-    const lineHeight = item.fontSize + 4;
-    lines.forEach((line, index) => {
-      ctx.fillText(line, x, y + index * lineHeight);
-    });
-    const maxWidth = lines.reduce((max, line) => {
-      const w = ctx.measureText(line).width;
-      return w > max ? w : max;
-    }, 0);
-
+    ctx.fillText(item.text, x, y);
+    const textWidth = ctx.measureText(item.text).width;
     if (item.isUnderline) {
       ctx.beginPath();
       ctx.moveTo(x, y + item.fontSize);
-      ctx.lineTo(x + maxWidth, y + item.fontSize);
+      ctx.lineTo(x + textWidth, y + item.fontSize);
       ctx.strokeStyle = item.color;
       ctx.lineWidth = 2 / scale;
       ctx.stroke();
@@ -318,7 +310,7 @@ const Desinote: React.FC = () => {
     if (item.isCrossedOut) {
       ctx.beginPath();
       ctx.moveTo(x, y + item.fontSize / 2);
-      ctx.lineTo(x + maxWidth, y + item.fontSize / 2);
+      ctx.lineTo(x + textWidth, y + item.fontSize / 2);
       ctx.strokeStyle = item.color;
       ctx.lineWidth = 1 / scale;
       ctx.stroke();
@@ -331,34 +323,10 @@ const Desinote: React.FC = () => {
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(x - padding + borderRadius, y - paddingTop);
-      ctx.arcTo(
-        x + maxWidth + padding,
-        y - paddingTop,
-        x + maxWidth + padding,
-        y + lines.length * lineHeight + paddingBottom,
-        borderRadius
-      );
-      ctx.arcTo(
-        x + maxWidth + padding,
-        y + lines.length * lineHeight + paddingBottom,
-        x - padding,
-        y + lines.length * lineHeight + paddingBottom,
-        borderRadius
-      );
-      ctx.arcTo(
-        x - padding,
-        y + lines.length * lineHeight + paddingBottom,
-        x - padding,
-        y - paddingTop,
-        borderRadius
-      );
-      ctx.arcTo(
-        x - padding,
-        y - paddingTop,
-        x + maxWidth + padding,
-        y - paddingTop,
-        borderRadius
-      );
+      ctx.arcTo(x + textWidth + padding, y - paddingTop, x + textWidth + padding, y + item.fontSize + paddingBottom, borderRadius);
+      ctx.arcTo(x + textWidth + padding, y + item.fontSize + paddingBottom, x - padding, y + item.fontSize + paddingBottom, borderRadius);
+      ctx.arcTo(x - padding, y + item.fontSize + paddingBottom, x - padding, y - paddingTop, borderRadius);
+      ctx.arcTo(x - padding, y - paddingTop, x + textWidth + padding, y - paddingTop, borderRadius);
       ctx.closePath();
       ctx.stroke();
     }
@@ -496,7 +464,6 @@ const Desinote: React.FC = () => {
 
   const handleWheel = useCallback(
     (event: WheelEvent) => {
-      setContextModal(null);
       event.preventDefault();
       const zoomFactor = 0.1;
       const canvas = canvasRef.current;
@@ -816,7 +783,6 @@ const Desinote: React.FC = () => {
 
   // --------------------- Mouse Event Handlers ---------------------
   const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    setContextModal(null);
     if (event.button !== 0) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -878,14 +844,12 @@ const Desinote: React.FC = () => {
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
           ctx.font = `${item.fontSize}px ${item.fontFamily}`;
-          const lines = item.text.split("\n");
-          const lineHeight = item.fontSize + 4; // Adjust as needed
-          const maxWidth = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0);
+          const textWidth = ctx.measureText(item.text).width;
           if (
             x >= item.x - 7 &&
-            x <= item.x + maxWidth + 7 &&
+            x <= item.x + textWidth + 7 &&
             y >= item.y - 7 &&
-            y <= item.y + lines.length * lineHeight + 7
+            y <= item.y + item.fontSize + 7
           ) {
             clickedOnItem = true;
             clickedItemId = item.id;
@@ -1060,33 +1024,22 @@ const Desinote: React.FC = () => {
       return;
     }
     const canvas = canvasRef.current;
-      if (!canvas) return;
-      const { x, y } = getWorldCoordinates(event, canvas);
-      let hovering = false;
-      const hoverPromises: Promise<void>[] = [];
-      for (const it of Object.values(items)) {
-        if (!isItemVisible(it)) continue;
-        if (it.type === "text") {
-          const ctx = canvas.getContext("2d");
-          if (!ctx) continue;
-          ctx.font = `${it.isBold ? "bold " : ""}${it.fontSize}px ${it.fontFamily}`;
-          const lines = it.text.split(/\r?\n/);
-          const lineHeight = it.fontSize + 4;
-          const totalHeight = lines.length * lineHeight;
-          const maxWidth = lines.reduce(
-            (max, line) => Math.max(max, ctx.measureText(line).width),
-            0
-          );
-          if (
-            x >= it.x &&
-            x <= it.x + maxWidth &&
-            y >= it.y &&
-            y <= it.y + totalHeight
-          ) {
-            hovering = true;
-            break;
-          }
-        } else if (it.type === "image") {
+    if (!canvas) return;
+    const { x, y } = getWorldCoordinates(event, canvas);
+    let hovering = false;
+    const hoverPromises: Promise<void>[] = [];
+    for (const it of Object.values(items)) {
+      if (!isItemVisible(it)) continue;
+      if (it.type === "text") {
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
+        ctx.font = `${it.fontSize}px ${it.fontFamily}`;
+        const tw = ctx.measureText(it.text).width;
+        if (x >= it.x && x <= it.x + tw && y >= it.y && y <= it.y + it.fontSize) {
+          hovering = true;
+          break;
+        }
+      } else if (it.type === "image") {
         const cached = imageCacheRef.current.get(it.imageUrl);
         if (cached && cached.complete) {
           if (x >= it.x && x <= it.x + it.width && y >= it.y && y <= it.y + it.height) {
@@ -1224,16 +1177,13 @@ const Desinote: React.FC = () => {
       if (it.type === "text") {
         const ctx = canvas.getContext("2d");
         if (!ctx) continue;
-        ctx.font = `${it.isBold ? "bold " : ""}${it.fontSize}px ${it.fontFamily}`;
-        const lines = it.text.split(/\r?\n/);
-        const lineHeight = it.fontSize + 4;
-        const totalHeight = lines.length * lineHeight;
-        const maxWidth = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0);
+        ctx.font = `${it.fontSize}px ${it.fontFamily}`;
+        const tw = ctx.measureText(it.text).width;
         if (
           x >= it.x - 7 &&
-          x <= it.x + maxWidth + 7 &&
+          x <= it.x + tw + 7 &&
           y >= it.y - 7 &&
-          y <= it.y + totalHeight + 7
+          y <= it.y + it.fontSize + 7
         ) {
           dblClickedId = it.id;
           dblClickedType = "text";
@@ -1313,7 +1263,7 @@ const Desinote: React.FC = () => {
   };
 
   // --------------------- Text Editing Handlers ---------------------
-  const handleInputChange = (id: string, e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleInputChange = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
     const caret = e.target.selectionStart;
     setItems((prev) => ({ ...prev, [id]: { ...prev[id], text } }));
@@ -1333,16 +1283,6 @@ const Desinote: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    Object.keys(inputRefs.current).forEach((id) => {
-      const input = inputRefs.current[id];
-      if (input) {
-        input.style.height = "auto";
-        input.style.height = `${input.scrollHeight}px`;
-      }
-    });
-  }, [items]);
-
   const handleInputBlur = (id: string) => {
     setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
     const it = items[id];
@@ -1353,9 +1293,8 @@ const Desinote: React.FC = () => {
     setShowProperties(Array.from(selectedNotes).some((id) => items[id].type === "text"));
   };
 
-  const handleKeyDownInput = (id: string, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
+  const handleKeyDownInput = (id: string, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === "Escape") {
       setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
       const it = items[id];
       if (it && it.type === "text") {
@@ -1774,81 +1713,6 @@ const Desinote: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showMenu]);
-
-  const [contextModal, setContextModal] = useState<{ x: number; y: number; layerName: string } | null>(null);
-  const contextModalRef = useRef<HTMLDivElement>(null);
-
-  const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const { x, y } = getWorldCoordinates(e, canvas);
-    let foundItem: DrawableItem | null = null;
-    const orderedItems = Object.values(items)
-      .filter(isItemVisible)
-      .sort((a, b) => {
-        const orderA = layers.find(l => l.id === a.layerId)?.order || 0;
-        const orderB = layers.find(l => l.id === b.layerId)?.order || 0;
-        return orderB - orderA;
-      });
-    for (const item of orderedItems) {
-      if (item.type === "text") {
-        const ctx = canvas.getContext("2d");
-        if (!ctx) continue;
-        ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
-        const lines = item.text.split(/\r?\n/);
-        const lineHeight = item.fontSize + 4;
-        const totalHeight = lines.length * lineHeight;
-        const maxWidth = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0);
-        if (x >= item.x && x <= item.x + maxWidth && y >= item.y && y <= item.y + totalHeight) {
-          foundItem = item;
-          break;
-        }
-      } else if (item.type === "image") {
-        if (x >= item.x && x <= item.x + item.width && y >= item.y && y <= item.y + item.height) {
-          foundItem = item;
-          break;
-        }
-      }
-    }
-    if (foundItem) {
-      setContextModal({ x: e.clientX, y: e.clientY, layerName: foundItem.layerName });
-    }
-  };
-
-  useEffect(() => {
-    if (contextModal) {
-      const handleMouseMoveForContext = (e: MouseEvent) => {
-        if (contextModalRef.current) {
-          const rect = contextModalRef.current.getBoundingClientRect();
-          const extendedRect = {
-            left: rect.left - 20,
-            right: rect.right + 20,
-            top: rect.top - 20,
-            bottom: rect.bottom + 20,
-          };
-          if (
-            e.clientX >= extendedRect.left &&
-            e.clientX <= extendedRect.right &&
-            e.clientY >= extendedRect.top &&
-            e.clientY <= extendedRect.bottom
-          ) {
-            return;
-          }
-        }
-        const dx = e.clientX - contextModal.x;
-        const dy = e.clientY - contextModal.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const threshold = 10;
-        if (distance > threshold) {
-          setContextModal(null);
-        }
-      };
-      window.addEventListener("mousemove", handleMouseMoveForContext);
-      return () =>
-        window.removeEventListener("mousemove", handleMouseMoveForContext);
-    }
-  }, [contextModal]);
 
   // --------------------- Save/Load Lesson State ---------------------
   const loadSavedStates = () => {
@@ -2271,25 +2135,21 @@ const Desinote: React.FC = () => {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onDoubleClick={handleDoubleClick}
-        onContextMenu={handleContextMenu}
       />
 
       {Object.values(items).map(
         (it) =>
           it.type === "text" &&
           it.isEditing && (
-            <textarea
+            <input
               key={it.id}
               ref={(el) => (inputRefs.current[it.id] = el)}
+              type="text"
               value={it.text}
-              onChange={(e) => {
-                handleInputChange(it.id, e);
-                e.target.style.height = "auto";
-                e.target.style.height = `${e.target.scrollHeight}px`;
-              }}
+              onChange={(e) => handleInputChange(it.id, e)}
               onBlur={() => handleInputBlur(it.id)}
               onKeyDown={(e) => handleKeyDownInput(it.id, e)}
-              className="absolute bg-transparent border-b border-white z-10 resize-none overflow-hidden"
+              className="absolute bg-transparent border-b border-white z-10"
               style={{
                 top: inputPositions[it.id]?.top || 0,
                 left: inputPositions[it.id]?.left || 0,
@@ -2299,12 +2159,12 @@ const Desinote: React.FC = () => {
                 fontFamily: it.fontFamily,
                 color: it.color,
                 fontWeight: it.isBold ? "bold" : "normal",
+                textDecoration: it.isCrossedOut ? "line-through" : "none",
                 lineHeight: `${it.fontSize + 4}px`,
                 outline: "none",
                 border: "none",
                 caretColor: it.color,
                 width: `${inputWidths[it.id] || 100}px`,
-                height: "auto",
               }}
             />
           )
@@ -2337,16 +2197,6 @@ const Desinote: React.FC = () => {
               Loading important stuff
             </span>
           </div>
-        </div>
-      )}
-      {contextModal && (
-        <div
-          ref={contextModalRef}
-          className="fixed z-50 p-2 bg-slate-700 bg-opacity-90 text-white rounded shadow-lg text-sm"
-          style={{ top: contextModal.y, left: contextModal.x }}
-          onClick={() => setContextModal(null)}
-        >
-          <span>Layer: {contextModal.layerName}</span>
         </div>
       )}
     </div>
