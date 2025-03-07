@@ -239,6 +239,7 @@ const Desinote: React.FC = () => {
   });
   const [currentTool, setCurrentTool] = useState<"pan" | "select" | "text" | "image">("pan");
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
 
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string>("default");
@@ -317,8 +318,8 @@ const Desinote: React.FC = () => {
     }
     if (selected) {
       const baseLineWidth = 2,
-      baseDashLength = 6,
-      basePadding = 4;
+        baseDashLength = 6,
+        basePadding = 4;
       const adjustedLineWidth = baseLineWidth / scale;
       const adjustedDash = [baseDashLength / scale];
       const adjustedPadding = basePadding / scale;
@@ -372,6 +373,133 @@ const Desinote: React.FC = () => {
     }
   };
 
+  // --------------------- Alignment Guides --------------------- 
+
+  const drawAlignmentGuides = (ctx: CanvasRenderingContext2D) => {
+    const threshold = 5;
+    const maxVerticalRange = 100;
+    const maxHorizontalRange = 100;
+
+    Object.values(items).forEach(selectedItem => {
+      if (!selectedNotes.has(selectedItem.id)) return;
+
+      let selLeft, selTop, selRight, selBottom, selCenterX, selCenterY;
+      if (selectedItem.type === "text") {
+        ctx.font = `${selectedItem.isBold ? "bold " : ""}${selectedItem.fontSize}px ${selectedItem.fontFamily}`;
+        const textWidth = ctx.measureText(selectedItem.text).width;
+        selLeft = selectedItem.x;
+        selTop = selectedItem.y;
+        selRight = selectedItem.x + textWidth;
+        selBottom = selectedItem.y + selectedItem.fontSize;
+      } else {
+        selLeft = selectedItem.x;
+        selTop = selectedItem.y;
+        selRight = selectedItem.x + selectedItem.width;
+        selBottom = selectedItem.y + selectedItem.height;
+      }
+      selCenterX = selectedItem.x + (selRight - selectedItem.x) / 2;
+      selCenterY = selectedItem.y + (selBottom - selectedItem.y) / 2;
+
+      const selectedPoints = [
+        { x: selLeft, y: selTop },
+        { x: selRight, y: selTop },
+        { x: selLeft, y: selBottom },
+        { x: selRight, y: selBottom },
+        { x: selCenterX, y: selCenterY },
+      ];
+
+      Object.values(items).forEach(candidate => {
+        if (selectedNotes.has(candidate.id)) return;
+        const candidateLayer = layers.find(l => l.id === candidate.layerId);
+        if (candidateLayer && !candidateLayer.visible) return;
+
+        let candLeft, candTop, candRight, candBottom, candCenterX, candCenterY;
+        if (candidate.type === "text") {
+          ctx.font = `${candidate.isBold ? "bold " : ""}${candidate.fontSize}px ${candidate.fontFamily}`;
+          const textWidth = ctx.measureText(candidate.text).width;
+          candLeft = candidate.x;
+          candTop = candidate.y;
+          candRight = candidate.x + textWidth;
+          candBottom = candidate.y + candidate.fontSize;
+        } else {
+          candLeft = candidate.x;
+          candTop = candidate.y;
+          candRight = candidate.x + candidate.width;
+          candBottom = candidate.y + candidate.height;
+        }
+        candCenterX = candidate.x + (candRight - candidate.x) / 2;
+        candCenterY = candidate.y + (candBottom - candidate.y) / 2;
+
+        const candidatePoints = [
+          { x: candLeft, y: candTop },
+          { x: candRight, y: candTop },
+          { x: candLeft, y: candBottom },
+          { x: candRight, y: candBottom },
+          { x: candCenterX, y: candCenterY },
+        ];
+
+        ctx.lineWidth = 1 / scale;
+        ctx.strokeStyle = "red";
+        ctx.setLineDash([5 / scale]);
+
+        selectedPoints.forEach(selPoint => {
+          candidatePoints.forEach(candPoint => {
+            if (
+              Math.abs(selPoint.x - candPoint.x) < threshold &&
+              Math.abs(selCenterY - candCenterY) < maxVerticalRange
+            ) {
+              const xLine = candPoint.x - viewportOffset.x;
+              ctx.beginPath();
+              ctx.moveTo(xLine, 0);
+              ctx.lineTo(xLine, canvasSize.height / scale);
+              ctx.stroke();
+            }
+            if (
+              Math.abs(selPoint.y - candPoint.y) < threshold &&
+              Math.abs(selCenterX - candCenterX) < maxHorizontalRange
+            ) {
+              const yLine = candPoint.y - viewportOffset.y;
+              ctx.beginPath();
+              ctx.moveTo(0, yLine);
+              ctx.lineTo(canvasSize.width / scale, yLine);
+              ctx.stroke();
+            }
+          });
+        });
+        ctx.setLineDash([]);
+      });
+    });
+  };
+
+const measureTextWidth = (note: TextItem): number => {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return 0;
+  ctx.font = `${note.isBold ? "bold " : ""}${note.fontSize}px ${note.fontFamily}`;
+  return ctx.measureText(note.text).width;
+};
+
+const getItemPoints = (note: DrawableItem, posX: number, posY: number): { x: number; y: number }[] => {
+  if (note.type === "text") {
+    const textWidth = measureTextWidth(note);
+    return [
+      { x: posX, y: posY },
+      { x: posX + textWidth, y: posY },
+      { x: posX, y: posY + note.fontSize },
+      { x: posX + textWidth, y: posY + note.fontSize },
+      { x: posX + textWidth / 2, y: posY + note.fontSize / 2 },
+    ];
+  } else {
+    return [
+      { x: posX, y: posY },
+      { x: posX + note.width, y: posY },
+      { x: posX, y: posY + note.height },
+      { x: posX + note.width, y: posY + note.height },
+      { x: posX + note.width / 2, y: posY + note.height / 2 },
+    ];
+  }
+};
+
   // --------------------- Canvas Drawing ---------------------
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -404,6 +532,17 @@ const Desinote: React.FC = () => {
       }
     });
     ctx.restore();
+
+    // If dragging and Shift is held, draw alignment guides.
+    if (dragStart && isShiftPressed) {
+      const ctxGuides = canvas.getContext("2d");
+      if (ctxGuides) {
+        ctxGuides.save();
+        ctxGuides.scale(scale, scale);
+        drawAlignmentGuides(ctxGuides);
+        ctxGuides.restore();
+      }
+    }
 
     // Draw selection rectangle if selecting and dragged
     if (isSelecting && selectionStart && selectionEnd && hasDraggedRef.current) {
@@ -443,6 +582,8 @@ const Desinote: React.FC = () => {
     selectedNotes,
     layers,
     activeLayerId,
+    dragStart,
+    isShiftPressed
   ]);
 
   useEffect(() => {
@@ -505,12 +646,18 @@ const Desinote: React.FC = () => {
         e.preventDefault();
         setIsSpacePressed(true);
       }
+      if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
+        setIsShiftPressed(true);
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         if (currentTool === "pan") return;
         e.preventDefault();
         setIsSpacePressed(false);
+      }
+      if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
+        setIsShiftPressed(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -520,6 +667,36 @@ const Desinote: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [currentTool]);
+
+  // --------------------- Arrow Key Nudging ---------------------
+  useEffect(() => {
+    const handleArrowKey = (e: KeyboardEvent) => {
+      if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return;
+      if (selectedNotes.size > 0) {
+        let deltaX = 0, deltaY = 0;
+        if (e.key === "ArrowUp") deltaY = -1;
+        if (e.key === "ArrowDown") deltaY = 1;
+        if (e.key === "ArrowLeft") deltaX = -1;
+        if (e.key === "ArrowRight") deltaX = 1;
+        if (deltaX !== 0 || deltaY !== 0) {
+          e.preventDefault();
+          setItems(prev => {
+            const updated = { ...prev };
+            selectedNotes.forEach(id => {
+              const it = updated[id];
+              const layer = layers.find(l => l.id === it.layerId);
+              if (layer && layer.locked) return;
+              updated[id] = { ...it, x: it.x + deltaX, y: it.y + deltaY };
+              saveLessonItem(updated[id]);
+            });
+            return updated;
+          });
+        }
+      }
+    };
+    window.addEventListener("keydown", handleArrowKey);
+    return () => window.removeEventListener("keydown", handleArrowKey);
+  }, [selectedNotes, layers, items]);
 
   useEffect(() => {
     const handleToolShortcut = (e: KeyboardEvent) => {
@@ -1014,8 +1191,45 @@ const Desinote: React.FC = () => {
         if (layer && layer.locked) return;
         const init = initialPositions[id];
         if (init) {
-          const newX = init.x + deltaX / scale;
-          const newY = init.y + deltaY / scale;
+          let newX = init.x + deltaX / scale;
+          let newY = init.y + deltaY / scale;
+
+          if (isShiftPressed) {
+            const threshold = 5;
+            const maxSnapDistance = 100;
+            const selectedPoints = getItemPoints(it, newX, newY);
+            const selCenter = selectedPoints[selectedPoints.length - 1];
+            let snapOffsetX = 0, snapOffsetY = 0;
+            let foundSnapX = false, foundSnapY = false;
+            Object.values(items).forEach(candidate => {
+              if (selectedNotes.has(candidate.id)) return;
+              const candidatePoints = getItemPoints(candidate, candidate.x, candidate.y);
+              const candCenter = candidatePoints[candidatePoints.length - 1];
+              if (
+                Math.abs(selCenter.x - candCenter.x) > maxSnapDistance ||
+                Math.abs(selCenter.y - candCenter.y) > maxSnapDistance
+              ) {
+                return;
+              }
+              selectedPoints.forEach(selPoint => {
+                candidatePoints.forEach(candPoint => {
+                  const diffX = candPoint.x - selPoint.x;
+                  const diffY = candPoint.y - selPoint.y;
+                  if (!foundSnapX && Math.abs(diffX) < threshold) {
+                    snapOffsetX = diffX;
+                    foundSnapX = true;
+                  }
+                  if (!foundSnapY && Math.abs(diffY) < threshold) {
+                    snapOffsetY = diffY;
+                    foundSnapY = true;
+                  }
+                });
+              });
+            });
+            newX += snapOffsetX;
+            newY += snapOffsetY;
+          }
+
           updated[id] = {
             ...it,
             x: gridEnabled ? Math.round(newX / gridSize) * gridSize : newX,
@@ -1895,56 +2109,56 @@ const Desinote: React.FC = () => {
       {/* Load Dialog Modal */}
       {showLoadDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-primary-color rounded-lg shadow-lg p-6 w-96">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white text-xl font-semibold">Load Lesson</h3>
-            <button onClick={() => setShowLoadDialog(false)} className="text-slate-300 hover:text-white">
-              <FiX size={24} />
-            </button>
+          <div className="bg-primary-color rounded-lg shadow-lg p-6 w-96">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-xl font-semibold">Load Lesson</h3>
+              <button onClick={() => setShowLoadDialog(false)} className="text-slate-300 hover:text-white">
+                <FiX size={24} />
+              </button>
+            </div>
+            {savedStates.length === 0 ? (
+              <p className="text-slate-400 text-sm">No saved lessons.</p>
+            ) : (
+              <ul className="max-h-60 overflow-y-auto mb-4 space-y-2">
+                {savedStates.map((save) => {
+                  const fileSize = (new Blob([JSON.stringify(save)]).size / 1024).toFixed(2);
+                  return (
+                    <li
+                      key={save.id}
+                      className="flex items-center justify-between p-2 bg-tertiary-color rounded"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                        <span className="text-slate-200 text-sm font-medium">{save.fileName}</span>
+                        <span className="text-xs text-slate-400">
+                          {new Date(save.timestamp).toLocaleString()}
+                        </span>
+                        <span className="text-xs text-slate-400">Size: {fileSize} KB</span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => loadLessonState(save)}
+                          className="flex items-center space-x-1 text-green-400 hover:text-green-600 text-sm"
+                          title="Load"
+                        >
+                          <FiDownload size={16} />
+                          <span>Load</span>
+                        </button>
+                        <button
+                          onClick={() => deleteSavedState(save.id)}
+                          className="flex items-center space-x-1 text-red-400 hover:text-red-600 text-sm"
+                          title="Delete"
+                        >
+                          <FiTrash2 size={16} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
-          {savedStates.length === 0 ? (
-            <p className="text-slate-400 text-sm">No saved lessons.</p>
-          ) : (
-            <ul className="max-h-60 overflow-y-auto mb-4 space-y-2">
-              {savedStates.map((save) => {
-                const fileSize = (new Blob([JSON.stringify(save)]).size / 1024).toFixed(2);
-                return (
-                  <li
-                    key={save.id}
-                    className="flex items-center justify-between p-2 bg-tertiary-color rounded"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-                      <span className="text-slate-200 text-sm font-medium">{save.fileName}</span>
-                      <span className="text-xs text-slate-400">
-                        {new Date(save.timestamp).toLocaleString()}
-                      </span>
-                      <span className="text-xs text-slate-400">Size: {fileSize} KB</span>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => loadLessonState(save)}
-                        className="flex items-center space-x-1 text-green-400 hover:text-green-600 text-sm"
-                        title="Load"
-                      >
-                        <FiDownload size={16} />
-                        <span>Load</span>
-                      </button>
-                      <button
-                        onClick={() => deleteSavedState(save.id)}
-                        className="flex items-center space-x-1 text-red-400 hover:text-red-600 text-sm"
-                        title="Delete"
-                      >
-                        <FiTrash2 size={16} />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
         </div>
-      </div>
       )}
 
       {/* Layers Panel */}
