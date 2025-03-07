@@ -918,13 +918,13 @@ const Desinote: React.FC = () => {
   const [renamingName, setRenamingName] = useState("");
 
   const saveLessonState = () => {
-    const fileName = prompt("Enter a name to save your lesson (existing file with same name will be overridden):");
+    const fileName = prompt("Enter a name to save your file (existing file with same name will be overridden):");
     if (!fileName?.trim()) return;
     const trimmedName = fileName.trim();
     const existingSave = savedStates.find(save => save.fileName.toLowerCase() === trimmedName.toLowerCase());
     if (existingSave) {
       const confirmOverride = window.confirm(
-        `A saved lesson named "${trimmedName}" already exists. Do you want to override it?`
+        `A saved file named "${trimmedName}" already exists. Do you want to override it?`
       );
       if (!confirmOverride) return;
     }
@@ -939,13 +939,13 @@ const Desinote: React.FC = () => {
     const savesRef = dbRef(db, "lessonSaves");
     if (existingSave) {
       set(dbRef(db, `lessonSaves/${existingSave.id}`), stateToSave)
-        .then(() => alert("Lesson overridden successfully!"))
-        .catch((error) => console.error("Error saving lesson state:", error));
+        .then(() => alert("File overridden successfully!"))
+        .catch((error) => console.error("Error saving file state:", error));
     } else {
       const newSaveRef = push(savesRef);
       set(newSaveRef, stateToSave)
-        .then(() => alert("Lesson saved successfully!"))
-        .catch((error) => console.error("Error saving lesson state:", error));
+        .then(() => alert("File saved successfully!"))
+        .catch((error) => console.error("Error saving file state:", error));
     }
   };
 
@@ -1991,7 +1991,7 @@ const Desinote: React.FC = () => {
   const loadLessonState = (saveData: any) => {
     if (
       window.confirm(
-        `Load lesson "${saveData.fileName}"? This will overwrite your current work.`
+        `Load file "${saveData.fileName}"? This will overwrite your current work.`
       )
     ) {
       const loadedItems = saveData.items || {};
@@ -2037,12 +2037,12 @@ const Desinote: React.FC = () => {
   };
 
   const deleteSavedState = (id: string) => {
-    if (window.confirm("Delete this saved lesson?")) {
+    if (window.confirm("Delete this saved file?")) {
       remove(dbRef(db, `lessonSaves/${id}`))
         .then(() => {
           setSavedStates((prev) => prev.filter((save) => save.id !== id));
         })
-        .catch((error) => console.error("Error deleting saved lesson:", error));
+        .catch((error) => console.error("Error deleting saved file:", error));
     }
   };
 
