@@ -316,19 +316,22 @@ const Desinote: React.FC = () => {
       ctx.stroke();
     }
     if (selected) {
-      const borderRadius = 6, padding = 8, paddingTop = 6, paddingBottom = 1;
-      ctx.shadowColor = "rgba(0, 123, 255, 0.5)";
-      ctx.shadowBlur = 10;
+      const baseLineWidth = 2,
+      baseDashLength = 6,
+      basePadding = 4;
+      const adjustedLineWidth = baseLineWidth / scale;
+      const adjustedDash = [baseDashLength / scale];
+      const adjustedPadding = basePadding / scale;
       ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x - padding + borderRadius, y - paddingTop);
-      ctx.arcTo(x + textWidth + padding, y - paddingTop, x + textWidth + padding, y + item.fontSize + paddingBottom, borderRadius);
-      ctx.arcTo(x + textWidth + padding, y + item.fontSize + paddingBottom, x - padding, y + item.fontSize + paddingBottom, borderRadius);
-      ctx.arcTo(x - padding, y + item.fontSize + paddingBottom, x - padding, y - paddingTop, borderRadius);
-      ctx.arcTo(x - padding, y - paddingTop, x + textWidth + padding, y - paddingTop, borderRadius);
-      ctx.closePath();
-      ctx.stroke();
+      ctx.lineWidth = adjustedLineWidth;
+      ctx.setLineDash(adjustedDash);
+      ctx.strokeRect(
+        x - adjustedPadding,
+        y - adjustedPadding,
+        textWidth + 2 * adjustedPadding,
+        item.fontSize + 2 * adjustedPadding
+      );
+      ctx.setLineDash([]);
     }
   };
 
@@ -585,7 +588,7 @@ const Desinote: React.FC = () => {
             if (ctx) {
               ctx.font = `${validated[id].fontSize}px ${validated[id].fontFamily}`;
               const tw = ctx.measureText(note.content || "").width;
-              newWidths[id] = Math.max(100, tw + 20);
+              newWidths[id] = note.content ? (tw + 2) : 1;
             }
           });
           setItems((prev) => ({ ...prev, ...validated }));
@@ -1278,7 +1281,7 @@ const Desinote: React.FC = () => {
       if (it && it.type === "text") {
         ctx.font = `${it.fontSize}px ${it.fontFamily}`;
         const tw = ctx.measureText(text).width;
-        setInputWidths((prev) => ({ ...prev, [id]: Math.max(100, tw + 20) }));
+        setInputWidths((prev) => ({ ...prev, [id]: text ? (tw + 2) : 1 }));
       }
     }
   };
@@ -2164,7 +2167,7 @@ const Desinote: React.FC = () => {
                 outline: "none",
                 border: "none",
                 caretColor: it.color,
-                width: `${inputWidths[it.id] || 100}px`,
+                width: `${(inputWidths[it.id] || 10)}px`,
               }}
             />
           )
