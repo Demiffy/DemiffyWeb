@@ -2696,6 +2696,9 @@ useEffect(() => {
       } else if (e.key === "F5") {
         e.preventDefault();
         console.log("Help shortcut triggered");
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setShowMenu(prev => !prev);
       }
     };
 
