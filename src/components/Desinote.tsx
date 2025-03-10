@@ -1528,7 +1528,7 @@ const Desinote: React.FC = () => {
     if (ctx) {
       const it = items[id];
       if (it && it.type === "text") {
-        ctx.font = `${it.fontSize}px ${it.fontFamily}`;
+        ctx.font = `${it.isBold ? "bold " : ""}${it.fontSize}px ${it.fontFamily}`;
         const tw = ctx.measureText(text).width;
         setInputWidths((prev) => ({ ...prev, [id]: text ? (tw + 2) : 1 }));
       }
@@ -1584,15 +1584,36 @@ const Desinote: React.FC = () => {
 
   useEffect(() => {
     const newPos: { [id: string]: { top: number; left: number } } = {};
+    const newWidths: { [id: string]: number } = {};
+
+    const fontAdjustments: Record<string, number> = {
+      "Verdana": -2,
+      "Courier New": 2,
+      "Arial": -1,
+    };
+    // TODO: scaling adjusments
     Object.values(items).forEach((it) => {
       if (it.type === "text" && it.isEditing && canvasRef.current && containerRef.current) {
+        const fontAdjustment = fontAdjustments[it.fontFamily] || 0;
+
         newPos[it.id] = {
-          top: (it.y - viewportOffset.y) * scale - 2.7 * scale,
+          top: (it.y - viewportOffset.y) * scale - 2.7 * scale + 1 + fontAdjustment,
           left: (it.x - viewportOffset.x) * scale,
         };
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.font = `${it.isBold ? "bold " : ""}${it.fontSize}px ${it.fontFamily}`;
+          const tw = ctx.measureText(it.text).width;
+          const extraPadding = 2;
+          newWidths[it.id] = it.text ? tw + extraPadding : 1;
+        }
       }
     });
+
     setInputPositions(newPos);
+    setInputWidths(newWidths);
   }, [items, scale, viewportOffset]);
 
   // --------------------- Firebase Operations ---------------------

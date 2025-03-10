@@ -22,6 +22,7 @@ import CanvasAsync from './components/ui/CanvasASynC';
 import DCars from './components/DCars';
 import ImageEditor from './components/ImageEditor';
 import RemoteControl from './components/RemoteControl';
+import Ctest1 from './components/ctest1';
 import NotFound from '../NotFound';
 import './App.css';
 
@@ -49,6 +50,7 @@ const AnimatedRoutes = () => {
           <Route path="/deminotes" element={<DemiNotes />} />
           <Route path="/DN" element={<Destabilize />} />
           <Route path="/canvas" element={<CanvasTest />} />
+          <Route path="/ctest1" element={<Ctest1 />} />
           <Route path="/canvas2" element={<CanvasAsync />} />
           <Route path="/dcars" element={<DCars />} />
           <Route path="/remotepc" element={<RemoteControl />} />
