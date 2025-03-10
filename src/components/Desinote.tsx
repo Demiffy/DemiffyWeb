@@ -381,6 +381,18 @@ const Desinote: React.FC = () => {
     setIsHoveringItem(hovering);
   };
 
+  const handleArrowPropertyChange = (property: "lineWidth" | "color", value: any) => {
+    const updatedItems = { ...items };
+    selectedNotes.forEach((id) => {
+      const it = updatedItems[id];
+      if (it && it.type === "arrow") {
+        updatedItems[id] = { ...it, [property]: value };
+        saveLessonItem(updatedItems[id]);
+      }
+    });
+    setItems(updatedItems);
+  };
+
   const drawGrid = (ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 0.5 / scale;
@@ -501,13 +513,18 @@ const Desinote: React.FC = () => {
     const endY = item.endY - viewportOffset.y;
     ctx.strokeStyle = item.color;
     ctx.lineWidth = item.lineWidth / scale;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    const headLength = (item.lineWidth * 4) / scale;
+    const angle = Math.atan2(endY - startY, endX - startX);
+    const overlapFactor = 0.8;
+    const adjustedEndX = endX - headLength * overlapFactor * Math.cos(angle);
+    const adjustedEndY = endY - headLength * overlapFactor * Math.sin(angle);
     ctx.beginPath();
     ctx.moveTo(startX, startY);
-    ctx.lineTo(endX, endY);
+    ctx.lineTo(adjustedEndX, adjustedEndY);
     ctx.stroke();
 
-    const headLength = 10 / scale;
-    const angle = Math.atan2(endY - startY, endX - startX);
     ctx.beginPath();
     ctx.moveTo(endX, endY);
     ctx.lineTo(
@@ -518,7 +535,7 @@ const Desinote: React.FC = () => {
       endX - headLength * Math.cos(angle + Math.PI / 6),
       endY - headLength * Math.sin(angle + Math.PI / 6)
     );
-    ctx.lineTo(endX, endY);
+    ctx.closePath();
     ctx.fillStyle = item.color;
     ctx.fill();
 
@@ -1451,7 +1468,7 @@ const Desinote: React.FC = () => {
             checkImagePromises.push(promise);
           }
         } else if (item.type === "arrow") {
-          const threshold = 5;
+          const threshold = 10;
           const distToLine = (
             x0: number,
             y0: number,
@@ -1537,7 +1554,7 @@ const Desinote: React.FC = () => {
                 [clickedItemId]: { x: item.x, y: item.y },
               });
             }
-            setShowProperties(clickedItemType === "text");
+            setShowProperties(clickedItemType === "text" || clickedItemType === "arrow");
             if (clickedItemType === "text") {
               const textItem = item as TextItem;
               setPropertyValues({
@@ -1904,7 +1921,7 @@ const Desinote: React.FC = () => {
           img.src = it.imageUrl;
         }
       } else if (it.type === "arrow") {
-        const threshold = 5;
+        const threshold = 10;
         const distToLine = (x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) => {
           const A = x0 - x1, B = y0 - y1, C = x2 - x1, D = y2 - y1;
           const dot = A * C + B * D;
@@ -2849,64 +2866,98 @@ const Desinote: React.FC = () => {
       {/* Properties Panel */}
       {showProperties && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-30 bg-opacity-75 backdrop-filter backdrop-blur-lg p-4 rounded shadow-lg flex flex-wrap gap-4 items-center">
-          <label className="flex items-center space-x-2">
-            <span className="text-white">Size:</span>
-            <input
-              type="number"
-              min="16"
-              max="72"
-              value={propertyValues.fontSize}
-              onChange={(e) => handlePropertyChange("fontSize", parseInt(e.target.value) || 16)}
-              className="w-16 p-1 rounded text-white font-bold"
-            />
-          </label>
-          <label className="flex items-center space-x-2">
-            <span className="text-white">Font:</span>
-            <select
-              value={propertyValues.fontFamily}
-              onChange={(e) => handlePropertyChange("fontFamily", e.target.value)}
-              className="p-1 rounded text-white font-bold"
-            >
-              <option value="Arial">Arial</option>
-              <option value="Courier New">Courier New</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Times New Roman">Times New Roman</option>
-              <option value="Verdana">Verdana</option>
-            </select>
-          </label>
-          <label className="flex items-center space-x-2">
-            <span className="text-white">Color:</span>
-            <input
-              type="color"
-              value={propertyValues.color}
-              onChange={(e) => handlePropertyChange("color", e.target.value)}
-              className="p-1 rounded"
-            />
-          </label>
-          <label className="flex items-center space-x-1 text-white">
-            <input
-              type="checkbox"
-              checked={propertyValues.bold}
-              onChange={(e) => handlePropertyChange("bold", e.target.checked)}
-            />
-            <span>Bold</span>
-          </label>
-          <label className="flex items-center space-x-1 text-white">
-            <input
-              type="checkbox"
-              checked={propertyValues.underline}
-              onChange={(e) => handlePropertyChange("underline", e.target.checked)}
-            />
-            <span>Underline</span>
-          </label>
-          <label className="flex items-center space-x-1 text-white">
-            <input
-              type="checkbox"
-              checked={propertyValues.crossedOut}
-              onChange={(e) => handlePropertyChange("crossedOut", e.target.checked)}
-            />
-            <span>Crossed Out</span>
-          </label>
+          {selectedNotes.size === 1 &&
+          items[Array.from(selectedNotes)[0]]?.type === "arrow" ? (
+            <>
+              <label className="flex items-center space-x-2">
+                <span className="text-white">Thickness:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={(items[Array.from(selectedNotes)[0]] as ArrowItem).lineWidth}
+                  onChange={(e) =>
+                    handleArrowPropertyChange("lineWidth", parseFloat(e.target.value) || 1)
+                  }
+                  className="w-16 p-1 rounded text-white font-bold"
+                />
+              </label>
+              <label className="flex items-center space-x-2">
+                <span className="text-white">Color:</span>
+                <input
+                  type="color"
+                  value={(items[Array.from(selectedNotes)[0]] as TextItem | ArrowItem).color}
+                  onChange={(e) =>
+                    handleArrowPropertyChange("color", e.target.value)
+                  }
+                  className="p-1 rounded"
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="flex items-center space-x-2">
+                <span className="text-white">Size:</span>
+                <input
+                  type="number"
+                  min="16"
+                  max="72"
+                  value={propertyValues.fontSize}
+                  onChange={(e) =>
+                    handlePropertyChange("fontSize", parseInt(e.target.value) || 16)
+                  }
+                  className="w-16 p-1 rounded text-white font-bold"
+                />
+              </label>
+              <label className="flex items-center space-x-2">
+                <span className="text-white">Font:</span>
+                <select
+                  value={propertyValues.fontFamily}
+                  onChange={(e) => handlePropertyChange("fontFamily", e.target.value)}
+                  className="p-1 rounded text-white font-bold"
+                >
+                  <option value="Arial">Arial</option>
+                  <option value="Courier New">Courier New</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Verdana">Verdana</option>
+                </select>
+              </label>
+              <label className="flex items-center space-x-2">
+                <span className="text-white">Color:</span>
+                <input
+                  type="color"
+                  value={propertyValues.color}
+                  onChange={(e) => handlePropertyChange("color", e.target.value)}
+                  className="p-1 rounded"
+                />
+              </label>
+              <label className="flex items-center space-x-1 text-white">
+                <input
+                  type="checkbox"
+                  checked={propertyValues.bold}
+                  onChange={(e) => handlePropertyChange("bold", e.target.checked)}
+                />
+                <span>Bold</span>
+              </label>
+              <label className="flex items-center space-x-1 text-white">
+                <input
+                  type="checkbox"
+                  checked={propertyValues.underline}
+                  onChange={(e) => handlePropertyChange("underline", e.target.checked)}
+                />
+                <span>Underline</span>
+              </label>
+              <label className="flex items-center space-x-1 text-white">
+                <input
+                  type="checkbox"
+                  checked={propertyValues.crossedOut}
+                  onChange={(e) => handlePropertyChange("crossedOut", e.target.checked)}
+                />
+                <span>Crossed Out</span>
+              </label>
+            </>
+          )}
         </div>
       )}
 
