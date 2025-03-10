@@ -85,6 +85,7 @@ export interface TextItem extends BaseItem {
   isBold: boolean;
   isUnderline: boolean;
   isCrossedOut: boolean;
+  angle: number;
 }
 
 export interface ImageItem extends BaseItem {
@@ -92,6 +93,7 @@ export interface ImageItem extends BaseItem {
   imageUrl: string;
   width: number;
   height: number;
+  angle: number;
 }
 
 export interface ArrowItem extends BaseItem {
@@ -296,6 +298,13 @@ const Desinote: React.FC = () => {
   const [arrowDrawing, setArrowDrawing] = useState<ArrowItem | null>(null);
   const [draggingArrowHandle, setDraggingArrowHandle] = useState<DraggingArrowHandle | null>(null);
 
+  const [rotatingItem, setRotatingItem] = useState<{
+    id: string;
+    center: { x: number; y: number };
+    startMouseAngle: number;
+    initialAngle: number;
+  } | null>(null);
+
   const isItemVisible = (item: DrawableItem) => {
     const layer = layers.find((l) => l.id === item.layerId);
     return layer ? layer.visible : true;
@@ -339,28 +348,14 @@ const Desinote: React.FC = () => {
     let hovering = false;
     for (const item of Object.values(items)) {
       if (item.type === "text") {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
-          const textWidth = ctx.measureText(item.text).width;
-          if (
-            worldX >= item.x &&
-            worldX <= item.x + textWidth &&
-            worldY >= item.y &&
-            worldY <= item.y + item.fontSize
-          ) {
-            hovering = true;
-            break;
-          }
+        const inRect = isPointInRotatedRect(item, worldX, worldY);
+        if (inRect) {
+          hovering = true;
+          break;
         }
       } else if (item.type === "image") {
-        if (
-          worldX >= item.x &&
-          worldX <= item.x + item.width &&
-          worldY >= item.y &&
-          worldY <= item.y + item.height
-        ) {
+        const inRect = isPointInRotatedRect(item, worldX, worldY);
+        if (inRect) {
           hovering = true;
           break;
         }
@@ -380,6 +375,26 @@ const Desinote: React.FC = () => {
       }
     }
     setIsHoveringItem(hovering);
+  };
+
+  const isPointInRotatedRect = (item: TextItem | ImageItem, worldX: number, worldY: number): boolean => {
+    let width, height;
+    if (item.type === "text") {
+      width = measureTextWidth(item);
+      height = item.fontSize;
+    } else {
+      width = item.width;
+      height = item.height;
+    }
+    const centerX = item.x + width / 2;
+    const centerY = item.y + height / 2;
+    const dx = worldX - centerX;
+    const dy = worldY - centerY;
+    const cos = Math.cos(-item.angle);
+    const sin = Math.sin(-item.angle);
+    const localX = dx * cos - dy * sin;
+    const localY = dx * sin + dy * cos;
+    return localX >= -width / 2 && localX <= width / 2 && localY >= -height / 2 && localY <= height / 2;
   };
 
   const handleArrowPropertyChange = (property: "lineWidth" | "color", value: any) => {
@@ -416,37 +431,18 @@ const Desinote: React.FC = () => {
   };
 
   const drawText = (ctx: CanvasRenderingContext2D, item: TextItem, selected: boolean) => {
-    const x = item.x - viewportOffset.x;
-    const y = item.y - viewportOffset.y;
+    const textWidth = measureTextWidth(item);
+    const textHeight = item.fontSize;
+    const centerX = item.x + textWidth / 2;
+    const centerY = item.y + textHeight / 2;
+    ctx.save();
+    ctx.translate(centerX - viewportOffset.x, centerY - viewportOffset.y);
+    ctx.rotate(item.angle);
     ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
     ctx.fillStyle = item.color;
-    ctx.textBaseline = "top";
-
-    if (!item.isEditing) {
-      ctx.fillText(item.text, x, y);
-      const textWidth = ctx.measureText(item.text).width;
-      if (item.isUnderline) {
-        ctx.beginPath();
-        ctx.moveTo(x, y + item.fontSize);
-        ctx.lineTo(x + textWidth, y + item.fontSize);
-        ctx.strokeStyle = item.color;
-        ctx.lineWidth = 2 / scale;
-        ctx.stroke();
-      }
-      if (item.isCrossedOut) {
-        ctx.beginPath();
-        ctx.moveTo(x, y + item.fontSize / 2);
-        ctx.lineTo(x + textWidth, y + item.fontSize / 2);
-        ctx.strokeStyle = item.color;
-        ctx.lineWidth = 1 / scale;
-        ctx.stroke();
-      }
-    } else {
-      ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
-    }
-
-    const textWidth = ctx.measureText(item.text).width;
-
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillText(item.text, 0, 0);
     if (selected) {
       const baseLineWidth = 2,
         baseDashLength = 6,
@@ -458,21 +454,36 @@ const Desinote: React.FC = () => {
       ctx.lineWidth = adjustedLineWidth;
       ctx.setLineDash(adjustedDash);
       ctx.strokeRect(
-        x - adjustedPadding,
-        y - adjustedPadding,
+        -textWidth / 2 - adjustedPadding,
+        -textHeight / 2 - adjustedPadding,
         textWidth + 2 * adjustedPadding,
-        item.fontSize + 2 * adjustedPadding
+        textHeight + 2 * adjustedPadding
       );
       ctx.setLineDash([]);
+      const handlePadding = 20 / scale;
+      const handleRadius = 8 / scale;
+      const handleX = 0;
+      const handleY = -textHeight / 2 - handlePadding;
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, handleRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0, 123, 255, 0.9)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.8)";
+      ctx.lineWidth = adjustedLineWidth;
+      ctx.stroke();
     }
+    ctx.restore();
   };
 
   const drawImageItem = (ctx: CanvasRenderingContext2D, item: ImageItem, selected: boolean) => {
-    const x = item.x - viewportOffset.x;
-    const y = item.y - viewportOffset.y;
+    const centerX = item.x + item.width / 2;
+    const centerY = item.y + item.height / 2;
+    ctx.save();
+    ctx.translate(centerX - viewportOffset.x, centerY - viewportOffset.y);
+    ctx.rotate(item.angle);
     const cachedImage = imageCacheRef.current.get(item.imageUrl);
     if (cachedImage && cachedImage.complete) {
-      ctx.drawImage(cachedImage, x, y, item.width, item.height);
+      ctx.drawImage(cachedImage, -item.width / 2, -item.height / 2, item.width, item.height);
     } else {
       const img = new Image();
       img.crossOrigin = "anonymous";
@@ -486,25 +497,33 @@ const Desinote: React.FC = () => {
     if (selected) {
       const baseLineWidth = 2,
         baseDashLength = 6,
-        basePadding = 4,
-        baseHandleSize = 14;
+        basePadding = 4;
       const adjustedLineWidth = baseLineWidth / scale;
       const adjustedDash = [baseDashLength / scale];
       const adjustedPadding = basePadding / scale;
-      const adjustedHandleSize = baseHandleSize / scale;
       ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
       ctx.lineWidth = adjustedLineWidth;
       ctx.setLineDash(adjustedDash);
-      ctx.strokeRect(x - adjustedPadding, y - adjustedPadding, item.width + 2 * adjustedPadding, item.height + 2 * adjustedPadding);
+      ctx.strokeRect(
+        -item.width / 2 - adjustedPadding,
+        -item.height / 2 - adjustedPadding,
+        item.width + 2 * adjustedPadding,
+        item.height + 2 * adjustedPadding
+      );
       ctx.setLineDash([]);
-      const handleX = x + item.width - adjustedHandleSize;
-      const handleY = y + item.height - adjustedHandleSize;
+      const handlePadding = 20 / scale;
+      const handleRadius = 8 / scale;
+      const handleX = 0;
+      const handleY = -item.height / 2 - handlePadding;
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, handleRadius, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(0, 123, 255, 0.9)";
-      ctx.fillRect(handleX, handleY, adjustedHandleSize, adjustedHandleSize);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.8)";
       ctx.lineWidth = adjustedLineWidth;
-      ctx.strokeRect(handleX, handleY, adjustedHandleSize, adjustedHandleSize);
+      ctx.stroke();
     }
+    ctx.restore();
   };
 
   const drawArrow = (ctx: CanvasRenderingContext2D, item: ArrowItem, selected: boolean) => {
@@ -581,12 +600,12 @@ const Desinote: React.FC = () => {
       if (!selectedNotes.has(selectedItem.id)) return;
       let selLeft = 0, selTop = 0, selRight = 0, selBottom = 0, selCenterX = 0, selCenterY = 0;
       if (selectedItem.type === "text") {
-        ctx.font = `${selectedItem.isBold ? "bold " : ""}${selectedItem.fontSize}px ${selectedItem.fontFamily}`;
-        const textWidth = ctx.measureText(selectedItem.text).width;
+        const textWidth = measureTextWidth(selectedItem);
+        const textHeight = selectedItem.fontSize;
         selLeft = selectedItem.x;
         selTop = selectedItem.y;
         selRight = selectedItem.x + textWidth;
-        selBottom = selectedItem.y + selectedItem.fontSize;
+        selBottom = selectedItem.y + textHeight;
       } else if (selectedItem.type === "image") {
         selLeft = selectedItem.x;
         selTop = selectedItem.y;
@@ -616,12 +635,12 @@ const Desinote: React.FC = () => {
 
         let candLeft = 0, candTop = 0, candRight = 0, candBottom = 0, candCenterX = 0, candCenterY = 0;
         if (candidate.type === "text") {
-          ctx.font = `${candidate.isBold ? "bold " : ""}${candidate.fontSize}px ${candidate.fontFamily}`;
-          const textWidth = ctx.measureText(candidate.text).width;
+          const tw = measureTextWidth(candidate);
+          const th = candidate.fontSize;
           candLeft = candidate.x;
           candTop = candidate.y;
-          candRight = candidate.x + textWidth;
-          candBottom = candidate.y + candidate.fontSize;
+          candRight = candidate.x + tw;
+          candBottom = candidate.y + th;
         } else if (candidate.type === "image") {
           candLeft = candidate.x;
           candTop = candidate.y;
@@ -1020,6 +1039,96 @@ const Desinote: React.FC = () => {
     return () => window.removeEventListener("mouseup", handleMouseUpForArrowHandle);
   }, [draggingArrowHandle, items]);
 
+  // --------------------- Rotation Handle Mouse Events ---------------------
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handleRotationMouseDown = (e: MouseEvent) => {
+      if (currentTool !== "select") return;
+      const pos = getWorldCoordinates(e, canvas);
+      let rotationHitItem: (TextItem | ImageItem) | null = null;
+      for (const item of Object.values(items)) {
+        if ((item.type === "text" || item.type === "image") && selectedNotes.has(item.id)) {
+          let width, height;
+          if (item.type === "text") {
+            width = measureTextWidth(item);
+            height = item.fontSize;
+          } else {
+            width = item.width;
+            height = item.height;
+          }
+          const centerX = item.x + width / 2;
+          const centerY = item.y + height / 2;
+          const handlePadding = 20 / scale;
+          const handleRadius = 10 / scale;
+          const handleLocalX = 0;
+          const handleLocalY = -height / 2 - handlePadding;
+          const cos = Math.cos(item.angle);
+          const sin = Math.sin(item.angle);
+          const handleWorldX = centerX + handleLocalX * cos - handleLocalY * sin;
+          const handleWorldY = centerY + handleLocalX * sin + handleLocalY * cos;
+          if (Math.hypot(pos.x - handleWorldX, pos.y - handleWorldY) < handleRadius) {
+            rotationHitItem = item;
+            break;
+          }
+        }
+      }
+      if (rotationHitItem) {
+        let width = rotationHitItem.type === "text" ? measureTextWidth(rotationHitItem) : rotationHitItem.width;
+        let height = rotationHitItem.type === "text" ? rotationHitItem.fontSize : rotationHitItem.height;
+        const center = { x: rotationHitItem.x + width / 2, y: rotationHitItem.y + height / 2 };
+        const startMouseAngle = Math.atan2(pos.y - center.y, pos.x - center.x);
+        setRotatingItem({ id: rotationHitItem.id, center, startMouseAngle, initialAngle: rotationHitItem.angle });
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    canvas.addEventListener("mousedown", handleRotationMouseDown);
+    return () => canvas.removeEventListener("mousedown", handleRotationMouseDown);
+  }, [currentTool, items, selectedNotes, scale, getWorldCoordinates]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handleRotationMouseMove = (e: MouseEvent) => {
+      if (rotatingItem) {
+        const pos = getWorldCoordinates(e, canvas);
+        const currentMouseAngle = Math.atan2(pos.y - rotatingItem.center.y, pos.x - rotatingItem.center.x);
+        const angleDelta = currentMouseAngle - rotatingItem.startMouseAngle;
+        let newAngle = rotatingItem.initialAngle + angleDelta;
+        if (e.shiftKey) {
+          const snapIncrement = Math.PI / 4;
+          newAngle = Math.round(newAngle / snapIncrement) * snapIncrement;
+        }
+        setItems(prev => {
+          const updated = { ...prev };
+          const item = updated[rotatingItem!.id];
+          if (item && (item.type === "text" || item.type === "image")) {
+            updated[rotatingItem!.id] = { ...item, angle: newAngle };
+          }
+          return updated;
+        });
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("mousemove", handleRotationMouseMove);
+    return () => window.removeEventListener("mousemove", handleRotationMouseMove);
+  }, [rotatingItem, getWorldCoordinates]);
+
+  useEffect(() => {
+    const handleRotationMouseUp = () => {
+      if (rotatingItem) {
+        const item = items[rotatingItem.id];
+        if (item && (item.type === "text" || item.type === "image")) {
+          saveLessonItem(item);
+        }
+        setRotatingItem(null);
+      }
+    };
+    window.addEventListener("mouseup", handleRotationMouseUp);
+    return () => window.removeEventListener("mouseup", handleRotationMouseUp);
+  }, [rotatingItem, items]);
+
   // --------------------- Firebase Loading ---------------------
   const loadLessonNotes = () => {
     const notesRef = dbRef(db, "lessonNotes");
@@ -1048,6 +1157,7 @@ const Desinote: React.FC = () => {
               isBold: !!note.isBold,
               isUnderline: !!note.isUnderline,
               isCrossedOut: !!note.isCrossedOut,
+              angle: typeof note.angle === "number" ? note.angle : 0,
             };
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
@@ -1100,6 +1210,7 @@ const Desinote: React.FC = () => {
               isEditing: false,
               width: typeof image.width === "number" ? image.width : 100,
               height: typeof image.height === "number" ? image.height : 100,
+              angle: typeof image.angle === "number" ? image.angle : 0,
             };
             if (image.imageUrl && !imageCacheRef.current.get(image.imageUrl)) {
               const img = new Image();
@@ -1335,67 +1446,6 @@ const Desinote: React.FC = () => {
     }
 
     if (currentTool === "select") {
-      const baseHandleSize = 14;
-      const scaledHandleSize = baseHandleSize / scale;
-      let foundResizeHandle = false;
-      let clickedResizeItemId: string | null = null;
-      for (const item of Object.values(items)) {
-        if (item.type === "image") {
-          const handleX = item.x + item.width - scaledHandleSize;
-          const handleY = item.y + item.height - scaledHandleSize;
-          if (
-            x >= handleX &&
-            x <= handleX + scaledHandleSize &&
-            y >= handleY &&
-            y <= handleY + scaledHandleSize
-          ) {
-            foundResizeHandle = true;
-            clickedResizeItemId = item.id;
-            break;
-          }
-        }
-      }
-      if (foundResizeHandle && clickedResizeItemId) {
-        setResizingImage({
-          id: clickedResizeItemId,
-          startX: event.clientX,
-          startY: event.clientY,
-          initialWidth: (items[clickedResizeItemId] as ImageItem).width,
-          initialHeight: (items[clickedResizeItemId] as ImageItem).height,
-        });
-        return;
-      }
-    }
-
-    if (currentTool === "select") {
-      const pos = getWorldCoordinates(event, canvas);
-      for (const item of Object.values(items)) {
-        if (item.type === "arrow" && item.isEditing) {
-          const dist = (ax: number, ay: number, bx: number, by: number) =>
-            Math.hypot(ax - bx, ay - by);
-          const threshold = 10 / scale;
-          if (dist(pos.x, pos.y, item.startX, item.startY) < threshold) {
-            setDraggingArrowHandle({
-              id: item.id,
-              handle: "start",
-              offsetX: pos.x - item.startX,
-              offsetY: pos.y - item.startY,
-            });
-            return;
-          }
-          if (dist(pos.x, pos.y, item.endX, item.endY) < threshold) {
-            setDraggingArrowHandle({
-              id: item.id,
-              handle: "end",
-              offsetX: pos.x - item.endX,
-              offsetY: pos.y - item.endY,
-            });
-            return;
-          }
-        }
-      }
-    }
-    if (currentTool === "select") {
       const visibleItems = Object.values(items).filter(isItemVisible);
       const orderedItems = visibleItems
         .sort((a, b) => {
@@ -1418,55 +1468,18 @@ const Desinote: React.FC = () => {
         if (item.type === "text") {
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
-          ctx.font = `${item.fontSize}px ${item.fontFamily}`;
-          const textWidth = ctx.measureText(item.text).width;
-          if (
-            x >= item.x - 7 &&
-            x <= item.x + textWidth + 7 &&
-            y >= item.y - 7 &&
-            y <= item.y + item.fontSize + 7
-          ) {
+          if (isPointInRotatedRect(item, x, y)) {
             clickedOnItem = true;
             clickedItemId = item.id;
             clickedItemType = "text";
             break;
           }
         } else if (item.type === "image") {
-          const cached = imageCacheRef.current.get(item.imageUrl);
-          if (cached && cached.complete) {
-            if (
-              x >= item.x &&
-              x <= item.x + item.width &&
-              y >= item.y &&
-              y <= item.y + item.height
-            ) {
-              clickedOnItem = true;
-              clickedItemId = item.id;
-              clickedItemType = "image";
-              break;
-            }
-          } else {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            const promise = new Promise<void>((resolve) => {
-              img.onload = () => {
-                imageCacheRef.current.set(item.imageUrl, img);
-                if (
-                  x >= item.x &&
-                  x <= item.x + img.width &&
-                  y >= item.y &&
-                  y <= item.y + img.height
-                ) {
-                  clickedOnItem = true;
-                  clickedItemId = item.id;
-                  clickedItemType = "image";
-                }
-                resolve();
-              };
-              img.onerror = () => resolve();
-            });
-            img.src = item.imageUrl;
-            checkImagePromises.push(promise);
+          if (isPointInRotatedRect(item, x, y)) {
+            clickedOnItem = true;
+            clickedItemId = item.id;
+            clickedItemType = "image";
+            break;
           }
         } else if (item.type === "arrow") {
           const threshold = 10;
@@ -1594,6 +1607,7 @@ const Desinote: React.FC = () => {
   };
 
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (rotatingItem) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const currentPoint = getWorldCoordinates(event, canvas);
@@ -1905,26 +1919,17 @@ const Desinote: React.FC = () => {
         const ctx = canvas.getContext("2d");
         if (!ctx) continue;
         ctx.font = `${it.fontSize}px ${it.fontFamily}`;
-        const tw = ctx.measureText(it.text).width;
-        if (x >= it.x - 7 && x <= it.x + tw + 7 && y >= it.y - 7 && y <= it.y + it.fontSize + 7) {
+        ctx.measureText(it.text).width;
+        if (isPointInRotatedRect(it, x, y)) {
           dblClickedId = it.id;
           dblClickedType = "text";
           break;
         }
       } else if (it.type === "image") {
-        const cached = imageCacheRef.current.get(it.imageUrl);
-        if (cached && cached.complete) {
-          if (x >= it.x && x <= it.x + it.width && y >= it.y && y <= it.y + it.height) {
-            dblClickedId = it.id;
-            dblClickedType = "image";
-            break;
-          }
-        } else {
-          const img = new Image();
-          img.onload = () => {
-            imageCacheRef.current.set(it.imageUrl, img);
-          };
-          img.src = it.imageUrl;
+        if (isPointInRotatedRect(it, x, y)) {
+          dblClickedId = it.id;
+          dblClickedType = "image";
+          break;
         }
       } else if (it.type === "arrow") {
         const threshold = 10;
@@ -1969,6 +1974,7 @@ const Desinote: React.FC = () => {
             height: updated.height,
             layerId: updated.layerId,
             layerName: updated.layerName,
+            angle: updated.angle,
           })
             .then(() => {
               setItems(prev => ({ ...prev, [dblClickedId]: updated }));
@@ -2136,6 +2142,7 @@ const Desinote: React.FC = () => {
         isCrossedOut: it.isCrossedOut,
         layerId: it.layerId,
         layerName: it.layerName,
+        angle: it.angle,
       }).catch(error => console.error("Error saving lesson item:", error));
     } else if (it.type === "image") {
       const itemRef = dbRef(db, `lessonImages/${it.id}`);
@@ -2149,6 +2156,7 @@ const Desinote: React.FC = () => {
         height: it.height,
         layerId: it.layerId,
         layerName: it.layerName,
+        angle: it.angle,
       }).catch(error => console.error("Error saving lesson image:", error));
     } else if (it.type === "arrow") {
       const itemRef = dbRef(db, `lessonArrows/${it.id}`);
@@ -2268,6 +2276,7 @@ const Desinote: React.FC = () => {
         isBold: false,
         isUnderline: false,
         isCrossedOut: false,
+        angle: 0,
       };
       set(newNoteRef, {
         id: newNote.id,
@@ -2280,6 +2289,7 @@ const Desinote: React.FC = () => {
         color: newNote.color,
         layerId: newNote.layerId,
         layerName: newNote.layerName,
+        angle: newNote.angle,
       })
         .then(() => {
           setItems(prev => ({ ...prev, [newId]: newNote }));
@@ -2342,6 +2352,7 @@ const Desinote: React.FC = () => {
           isEditing: false,
           width,
           height,
+          angle: 0,
         };
         set(newImageRef, {
           id: newImage.id,
@@ -2353,6 +2364,7 @@ const Desinote: React.FC = () => {
           height: newImage.height,
           layerId: newImage.layerId,
           layerName: newImage.layerName,
+          angle: newImage.angle,
         })
           .then(() => {
             setItems(prev => ({ ...prev, [newId]: newImage }));
@@ -2536,6 +2548,7 @@ const Desinote: React.FC = () => {
             isCrossedOut: item.isCrossedOut,
             layerId: item.layerId,
             layerName: item.layerName,
+            angle: item.angle,
           };
         } else if (item.type === "image") {
           loadedImageItems[item.id] = item;
@@ -2590,93 +2603,94 @@ const Desinote: React.FC = () => {
   const [showLoadDialog, setShowLoadDialog] = useState(false);
 
   // --------------------- Copy Pasting Handlers ---------------------
-
-const handleCopy = () => {
-  const copiedItems: DrawableItem[] = [];
-  selectedNotes.forEach(id => {
-    if (items[id]) {
-      copiedItems.push({ ...items[id] });
-    }
-  });
-  setClipboard(copiedItems);
-};
-
-const handlePaste = () => {
-  if (clipboard.length === 0) return;
-  const newItems = { ...items };
-  const newSelectedIds = new Set<string>();
-
-  clipboard.forEach(item => {
-    const newId = Date.now().toString() + Math.random().toString(36).substring(2);
-    const newItem = { ...item, id: newId, x: item.x + 10, y: item.y + 10 };
-
-    newItems[newId] = newItem;
-    newSelectedIds.add(newId);
-
-    if (newItem.type === "text") {
-      const itemRef = dbRef(db, `lessonNotes/${newId}`);
-      set(itemRef, {
-        id: newItem.id,
-        type: newItem.type,
-        content: newItem.text,
-        x: newItem.x,
-        y: newItem.y,
-        fontSize: newItem.fontSize,
-        fontFamily: newItem.fontFamily,
-        color: newItem.color,
-        isBold: newItem.isBold,
-        isUnderline: newItem.isUnderline,
-        isCrossedOut: newItem.isCrossedOut,
-        layerId: newItem.layerId,
-        layerName: newItem.layerName,
-      }).catch(error => console.error("Error saving duplicated text item:", error));
-    } else if (newItem.type === "image") {
-      const itemRef = dbRef(db, `lessonImages/${newId}`);
-      set(itemRef, {
-        id: newItem.id,
-        type: newItem.type,
-        imageUrl: newItem.imageUrl,
-        x: newItem.x,
-        y: newItem.y,
-        width: newItem.width,
-        height: newItem.height,
-        layerId: newItem.layerId,
-        layerName: newItem.layerName,
-      }).catch(error => console.error("Error saving duplicated image item:", error));
-    } else if (newItem.type === "arrow") {
-      const itemRef = dbRef(db, `lessonArrows/${newId}`);
-      set(itemRef, {
-        id: newItem.id,
-        type: newItem.type,
-        startX: newItem.startX,
-        startY: newItem.startY,
-        endX: newItem.endX,
-        endY: newItem.endY,
-        color: newItem.color,
-        lineWidth: newItem.lineWidth,
-        layerId: newItem.layerId,
-        layerName: newItem.layerName,
-      }).catch(error => console.error("Error saving duplicated arrow item:", error));
-    }
-  });
-  setItems(newItems);
-  setSelectedNotes(newSelectedIds);
-};
-
-useEffect(() => {
-  const handleCopyPaste = (e: KeyboardEvent) => {
-    if (e.ctrlKey && e.key.toLowerCase() === "c") {
-      e.preventDefault();
-      handleCopy();
-    }
-    if (e.ctrlKey && e.key.toLowerCase() === "v") {
-      e.preventDefault();
-      handlePaste();
-    }
+  const handleCopy = () => {
+    const copiedItems: DrawableItem[] = [];
+    selectedNotes.forEach(id => {
+      if (items[id]) {
+        copiedItems.push({ ...items[id] });
+      }
+    });
+    setClipboard(copiedItems);
   };
-  window.addEventListener("keydown", handleCopyPaste);
-  return () => window.removeEventListener("keydown", handleCopyPaste);
-}, [items, selectedNotes, clipboard]);
+
+  const handlePaste = () => {
+    if (clipboard.length === 0) return;
+    const newItems = { ...items };
+    const newSelectedIds = new Set<string>();
+
+    clipboard.forEach(item => {
+      const newId = Date.now().toString() + Math.random().toString(36).substring(2);
+      const newItem = { ...item, id: newId, x: item.x + 10, y: item.y + 10 };
+
+      newItems[newId] = newItem;
+      newSelectedIds.add(newId);
+
+      if (newItem.type === "text") {
+        const itemRef = dbRef(db, `lessonNotes/${newId}`);
+        set(itemRef, {
+          id: newItem.id,
+          type: newItem.type,
+          content: newItem.text,
+          x: newItem.x,
+          y: newItem.y,
+          fontSize: newItem.fontSize,
+          fontFamily: newItem.fontFamily,
+          color: newItem.color,
+          isBold: newItem.isBold,
+          isUnderline: newItem.isUnderline,
+          isCrossedOut: newItem.isCrossedOut,
+          layerId: newItem.layerId,
+          layerName: newItem.layerName,
+          angle: newItem.angle,
+        }).catch(error => console.error("Error saving duplicated text item:", error));
+      } else if (newItem.type === "image") {
+        const itemRef = dbRef(db, `lessonImages/${newId}`);
+        set(itemRef, {
+          id: newItem.id,
+          type: newItem.type,
+          imageUrl: newItem.imageUrl,
+          x: newItem.x,
+          y: newItem.y,
+          width: newItem.width,
+          height: newItem.height,
+          layerId: newItem.layerId,
+          layerName: newItem.layerName,
+          angle: newItem.angle,
+        }).catch(error => console.error("Error saving duplicated image item:", error));
+      } else if (newItem.type === "arrow") {
+        const itemRef = dbRef(db, `lessonArrows/${newId}`);
+        set(itemRef, {
+          id: newItem.id,
+          type: newItem.type,
+          startX: newItem.startX,
+          startY: newItem.startY,
+          endX: newItem.endX,
+          endY: newItem.endY,
+          color: newItem.color,
+          lineWidth: newItem.lineWidth,
+          layerId: newItem.layerId,
+          layerName: newItem.layerName,
+        }).catch(error => console.error("Error saving duplicated arrow item:", error));
+      }
+    });
+    setItems(newItems);
+    setSelectedNotes(newSelectedIds);
+  };
+
+  useEffect(() => {
+    const handleCopyPaste = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        handleCopy();
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        handlePaste();
+      }
+    };
+    window.addEventListener("keydown", handleCopyPaste);
+    return () => window.removeEventListener("keydown", handleCopyPaste);
+  }, [items, selectedNotes, clipboard]);
 
   // --------------------- Keybinds Menu Handlers ---------------------
   useEffect(() => {
