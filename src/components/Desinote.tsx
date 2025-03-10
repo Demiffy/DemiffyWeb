@@ -1,6 +1,20 @@
-import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getDatabase, ref as dbRef, set, onValue, push, off, remove } from "firebase/database";
+import {
+  getDatabase,
+  ref as dbRef,
+  set,
+  onValue,
+  push,
+  off,
+  remove,
+} from "firebase/database";
 import {
   FiMove,
   FiCheckSquare,
@@ -22,12 +36,18 @@ import {
   FiSettings,
   FiHelpCircle,
   FiDownload,
-  FiX
+  FiX,
+  FiArrowRight,
 } from "react-icons/fi";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { restrictToParentElement } from '@dnd-kit/modifiers';
+import { restrictToParentElement } from "@dnd-kit/modifiers";
 
 // --------------------- Firebase Initialization ---------------------
 const firebaseConfig = {
@@ -74,7 +94,17 @@ export interface ImageItem extends BaseItem {
   height: number;
 }
 
-type DrawableItem = TextItem | ImageItem;
+export interface ArrowItem extends BaseItem {
+  type: "arrow";
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  color: string;
+  lineWidth: number;
+}
+
+type DrawableItem = TextItem | ImageItem | ArrowItem;
 
 interface Layer {
   id: string;
@@ -106,7 +136,9 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
   onSelect,
   flashLocked,
 }) => {
-  const { listeners, setNodeRef, transform, transition } = useSortable({ id: layer.id });
+  const { listeners, setNodeRef, transform, transition } = useSortable({
+    id: layer.id,
+  });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -181,10 +213,17 @@ const SortableLayerItem: React.FC<LayerItemProps> = ({
 };
 
 // --------------------- Main Component ---------------------
+const ARROW_DRAG_THRESHOLD = 5;
+const CLICK_THRESHOLD = 5;
+
+type DraggingArrowHandle =
+  | { id: string; handle: "start"; offsetX: number; offsetY: number }
+  | { id: string; handle: "end"; offsetX: number; offsetY: number };
+
 const Desinote: React.FC = () => {
-  // Refs and States
+  // Refs
+  const arrowStartRef = useRef<{ x: number; y: number } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [canvasBgColor, setCanvasBgColor] = useState("#121212");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRefs = useRef<{ [id: string]: HTMLInputElement | null }>({});
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -192,6 +231,7 @@ const Desinote: React.FC = () => {
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef<boolean>(false);
 
+  const [canvasBgColor, setCanvasBgColor] = useState("#121212");
   const [items, setItems] = useState<{ [id: string]: DrawableItem }>({});
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [inputWidths, setInputWidths] = useState<{ [id: string]: number }>({});
@@ -214,7 +254,7 @@ const Desinote: React.FC = () => {
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const dragStartWorldRef = useRef<{ x: number; y: number } | null>(null);
-  const [initialPositions, setInitialPositions] = useState<{ [id: string]: { x: number; y: number } }>({});
+  const [initialPositions, setInitialPositions] = useState<{ [id: string]: { x: number; y: number; startX?: number; startY?: number; endX?: number; endY?: number } }>({});
   const [resizingImage, setResizingImage] = useState<{
     id: string;
     startX: number;
@@ -238,7 +278,8 @@ const Desinote: React.FC = () => {
     underline: false,
     crossedOut: false,
   });
-  const [currentTool, setCurrentTool] = useState<"pan" | "select" | "text" | "image">("pan");
+
+  const [currentTool, setCurrentTool] = useState<"pan" | "select" | "text" | "image" | "arrow">("pan");
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
 
@@ -249,11 +290,10 @@ const Desinote: React.FC = () => {
   const [flashLockedLayers, setFlashLockedLayers] = useState<{ [layerId: string]: boolean }>({});
   const [flashPanelToggle, setFlashPanelToggle] = useState(false);
 
-  const [savedStates, setSavedStates] = useState<
-    { id: string; fileName: string; timestamp: number; data: any }[]
-  >([]);
+  const [savedStates, setSavedStates] = useState<{ id: string; fileName: string; timestamp: number; data: any }[]>([]);
 
-  const CLICK_THRESHOLD = 5;
+  const [arrowDrawing, setArrowDrawing] = useState<ArrowItem | null>(null);
+  const [draggingArrowHandle, setDraggingArrowHandle] = useState<DraggingArrowHandle | null>(null);
 
   const isItemVisible = (item: DrawableItem) => {
     const layer = layers.find((l) => l.id === item.layerId);
@@ -271,6 +311,75 @@ const Desinote: React.FC = () => {
     },
     [scale, viewportOffset]
   );
+
+  const distanceToLine = (px: number, py: number, x1: number, y1: number, x2: number, y2: number): number => {
+    const A = px - x1;
+    const B = py - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    const param = lenSq !== 0 ? dot / lenSq : -1;
+    let xx, yy;
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    } else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+    return Math.hypot(px - xx, py - yy);
+  };
+
+  const checkHover = (worldX: number, worldY: number) => {
+    let hovering = false;
+    for (const item of Object.values(items)) {
+      if (item.type === "text") {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
+          const textWidth = ctx.measureText(item.text).width;
+          if (
+            worldX >= item.x &&
+            worldX <= item.x + textWidth &&
+            worldY >= item.y &&
+            worldY <= item.y + item.fontSize
+          ) {
+            hovering = true;
+            break;
+          }
+        }
+      } else if (item.type === "image") {
+        if (
+          worldX >= item.x &&
+          worldX <= item.x + item.width &&
+          worldY >= item.y &&
+          worldY <= item.y + item.height
+        ) {
+          hovering = true;
+          break;
+        }
+      } else if (item.type === "arrow") {
+        const dist = distanceToLine(
+          worldX,
+          worldY,
+          item.startX,
+          item.startY,
+          item.endX,
+          item.endY
+        );
+        if (dist < 5) {
+          hovering = true;
+          break;
+        }
+      }
+    }
+    setIsHoveringItem(hovering);
+  };
 
   const drawGrid = (ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
     ctx.strokeStyle = "#333";
@@ -362,7 +471,10 @@ const Desinote: React.FC = () => {
       img.onerror = () => console.error(`Failed to load image at URL: ${item.imageUrl}`);
     }
     if (selected) {
-      const baseLineWidth = 2, baseDashLength = 6, basePadding = 4, baseHandleSize = 14;
+      const baseLineWidth = 2,
+        baseDashLength = 6,
+        basePadding = 4,
+        baseHandleSize = 14;
       const adjustedLineWidth = baseLineWidth / scale;
       const adjustedDash = [baseDashLength / scale];
       const adjustedPadding = basePadding / scale;
@@ -382,7 +494,65 @@ const Desinote: React.FC = () => {
     }
   };
 
-  // --------------------- Alignment Guides ---------------------
+  const drawArrow = (ctx: CanvasRenderingContext2D, item: ArrowItem, selected: boolean) => {
+    const startX = item.startX - viewportOffset.x;
+    const startY = item.startY - viewportOffset.y;
+    const endX = item.endX - viewportOffset.x;
+    const endY = item.endY - viewportOffset.y;
+    ctx.strokeStyle = item.color;
+    ctx.lineWidth = item.lineWidth / scale;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+
+    const headLength = 10 / scale;
+    const angle = Math.atan2(endY - startY, endX - startX);
+    ctx.beginPath();
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(
+      endX - headLength * Math.cos(angle - Math.PI / 6),
+      endY - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(
+      endX - headLength * Math.cos(angle + Math.PI / 6),
+      endY - headLength * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.lineTo(endX, endY);
+    ctx.fillStyle = item.color;
+    ctx.fill();
+
+    if (selected) {
+      const padding = 4 / scale;
+      ctx.strokeStyle = "rgba(0, 123, 255, 0.8)";
+      ctx.lineWidth = 1 / scale;
+      ctx.setLineDash([6 / scale]);
+      const minX = Math.min(startX, endX) - padding;
+      const minY = Math.min(startY, endY) - padding;
+      const maxX = Math.max(startX, endX) + padding;
+      const maxY = Math.max(startY, endY) + padding;
+      ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+      ctx.setLineDash([]);
+    }
+
+    if (item.isEditing) {
+      const handleRadius = 10 / scale;
+      ctx.save();
+      ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = "rgba(0, 123, 255, 0.9)";
+      ctx.beginPath();
+      ctx.arc(startX, startY, handleRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(endX, endY, handleRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 2 / scale;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
 
   const drawAlignmentGuides = (ctx: CanvasRenderingContext2D) => {
     const threshold = 5;
@@ -391,8 +561,7 @@ const Desinote: React.FC = () => {
 
     Object.values(items).forEach(selectedItem => {
       if (!selectedNotes.has(selectedItem.id)) return;
-
-      let selLeft, selTop, selRight, selBottom, selCenterX, selCenterY;
+      let selLeft = 0, selTop = 0, selRight = 0, selBottom = 0, selCenterX = 0, selCenterY = 0;
       if (selectedItem.type === "text") {
         ctx.font = `${selectedItem.isBold ? "bold " : ""}${selectedItem.fontSize}px ${selectedItem.fontFamily}`;
         const textWidth = ctx.measureText(selectedItem.text).width;
@@ -400,11 +569,16 @@ const Desinote: React.FC = () => {
         selTop = selectedItem.y;
         selRight = selectedItem.x + textWidth;
         selBottom = selectedItem.y + selectedItem.fontSize;
-      } else {
+      } else if (selectedItem.type === "image") {
         selLeft = selectedItem.x;
         selTop = selectedItem.y;
         selRight = selectedItem.x + selectedItem.width;
         selBottom = selectedItem.y + selectedItem.height;
+      } else if (selectedItem.type === "arrow") {
+        selLeft = selectedItem.startX;
+        selTop = selectedItem.startY;
+        selRight = selectedItem.endX;
+        selBottom = selectedItem.endY;
       }
       selCenterX = selectedItem.x + (selRight - selectedItem.x) / 2;
       selCenterY = selectedItem.y + (selBottom - selectedItem.y) / 2;
@@ -422,7 +596,7 @@ const Desinote: React.FC = () => {
         const candidateLayer = layers.find(l => l.id === candidate.layerId);
         if (candidateLayer && !candidateLayer.visible) return;
 
-        let candLeft, candTop, candRight, candBottom, candCenterX, candCenterY;
+        let candLeft = 0, candTop = 0, candRight = 0, candBottom = 0, candCenterX = 0, candCenterY = 0;
         if (candidate.type === "text") {
           ctx.font = `${candidate.isBold ? "bold " : ""}${candidate.fontSize}px ${candidate.fontFamily}`;
           const textWidth = ctx.measureText(candidate.text).width;
@@ -430,11 +604,16 @@ const Desinote: React.FC = () => {
           candTop = candidate.y;
           candRight = candidate.x + textWidth;
           candBottom = candidate.y + candidate.fontSize;
-        } else {
+        } else if (candidate.type === "image") {
           candLeft = candidate.x;
           candTop = candidate.y;
           candRight = candidate.x + candidate.width;
           candBottom = candidate.y + candidate.height;
+        } else if (candidate.type === "arrow") {
+          candLeft = candidate.startX;
+          candTop = candidate.startY;
+          candRight = candidate.endX;
+          candBottom = candidate.endY;
         }
         candCenterX = candidate.x + (candRight - candidate.x) / 2;
         candCenterY = candidate.y + (candBottom - candidate.y) / 2;
@@ -498,7 +677,7 @@ const Desinote: React.FC = () => {
         { x: posX + textWidth, y: posY + note.fontSize },
         { x: posX + textWidth / 2, y: posY + note.fontSize / 2 },
       ];
-    } else {
+    } else if (note.type === "image") {
       return [
         { x: posX, y: posY },
         { x: posX + note.width, y: posY },
@@ -506,7 +685,14 @@ const Desinote: React.FC = () => {
         { x: posX + note.width, y: posY + note.height },
         { x: posX + note.width / 2, y: posY + note.height / 2 },
       ];
+    } else if (note.type === "arrow") {
+      return [
+        { x: note.startX, y: note.startY },
+        { x: note.endX, y: note.endY },
+        { x: (note.startX + note.endX) / 2, y: (note.startY + note.endY) / 2 },
+      ];
     }
+    return [];
   };
 
   // --------------------- Canvas Drawing ---------------------
@@ -528,21 +714,22 @@ const Desinote: React.FC = () => {
     const sortedLayers = layers.filter(l => l.visible).sort((a, b) => b.order - a.order);
     sortedLayers.forEach(layer => {
       const layerItems = itemsToDraw.filter(item => item.layerId === layer.id);
-      if (layer.id === activeLayerId) {
-        const images = layerItems.filter(item => item.type === "image") as ImageItem[];
-        const texts = layerItems.filter(item => item.type === "text") as TextItem[];
-        images.forEach(item => drawImageItem(ctx, item, selectedNotes.has(item.id)));
-        texts.forEach(item => drawText(ctx, item, selectedNotes.has(item.id)));
-      } else {
-        const images = layerItems.filter(item => item.type === "image") as ImageItem[];
-        const texts = layerItems.filter(item => item.type === "text") as TextItem[];
-        images.forEach(item => drawImageItem(ctx, item, selectedNotes.has(item.id)));
-        texts.forEach(item => drawText(ctx, item, selectedNotes.has(item.id)));
-      }
+      layerItems.forEach(item => {
+        const selected = selectedNotes.has(item.id);
+        if (item.type === "image") {
+          drawImageItem(ctx, item, selected);
+        } else if (item.type === "text") {
+          drawText(ctx, item, selected);
+        } else if (item.type === "arrow") {
+          drawArrow(ctx, item, selected);
+        }
+      });
     });
+
+    if (arrowDrawing) drawArrow(ctx, arrowDrawing, false);
+
     ctx.restore();
 
-    // If dragging and Shift is held, draw alignment guides.
     if (dragStart && isShiftPressed) {
       const ctxGuides = canvas.getContext("2d");
       if (ctxGuides) {
@@ -553,16 +740,11 @@ const Desinote: React.FC = () => {
       }
     }
 
-    // Draw selection rectangle if selecting and dragged
-    if (isSelecting && selectionStart && selectionEnd && hasDraggedRef.current) {
+    if (isSelecting && selectionStart && selectionEnd) {
       const ctxSel = canvas.getContext("2d");
       if (ctxSel) {
         ctxSel.save();
         ctxSel.scale(scale, scale);
-        ctxSel.strokeStyle = "rgba(0, 123, 255, 0.5)";
-        ctxSel.lineWidth = 1;
-        ctxSel.setLineDash([6]);
-        ctxSel.fillStyle = "rgba(0, 123, 255, 0.2)";
         const x1 = selectionStart.x - viewportOffset.x;
         const y1 = selectionStart.y - viewportOffset.y;
         const x2 = selectionEnd.x - viewportOffset.x;
@@ -571,6 +753,10 @@ const Desinote: React.FC = () => {
         const rectY = Math.min(y1, y2);
         const rectWidth = Math.abs(x2 - x1);
         const rectHeight = Math.abs(y2 - y1);
+        ctxSel.fillStyle = "rgba(0, 123, 255, 0.2)";
+        ctxSel.strokeStyle = "rgba(0, 123, 255, 0.8)";
+        ctxSel.lineWidth = 2;
+        ctxSel.setLineDash([4, 2]);
         ctxSel.beginPath();
         ctxSel.rect(rectX, rectY, rectWidth, rectHeight);
         ctxSel.fill();
@@ -590,9 +776,9 @@ const Desinote: React.FC = () => {
     selectionEnd,
     selectedNotes,
     layers,
-    activeLayerId,
     dragStart,
-    isShiftPressed
+    isShiftPressed,
+    arrowDrawing,
   ]);
 
   useEffect(() => {
@@ -625,7 +811,7 @@ const Desinote: React.FC = () => {
       const { clientX, clientY } = event;
       const worldX = (clientX - rect.left) / scale + viewportOffset.x;
       const worldY = (clientY - rect.top) / scale + viewportOffset.y;
-      setScale((prev) => {
+      setScale(prev => {
         let newScale = event.deltaY < 0 ? prev + zoomFactor : prev - zoomFactor;
         newScale = Math.min(Math.max(newScale, 0.5), 3);
         setViewportOffset({
@@ -658,6 +844,31 @@ const Desinote: React.FC = () => {
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
         setIsShiftPressed(true);
       }
+      if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+        return;
+      }
+      switch (e.code) {
+        case "Digit1":
+          setCurrentTool("pan");
+          break;
+        case "Digit2":
+          setCurrentTool("select");
+          break;
+        case "Digit3":
+          setCurrentTool("text");
+          break;
+        case "Digit4":
+          setCurrentTool("image");
+          break;
+        case "Digit5":
+          setCurrentTool("arrow");
+          break;
+        case "Digit6":
+          setGridEnabled(prev => !prev);
+          break;
+        default:
+          break;
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") {
@@ -681,14 +892,15 @@ const Desinote: React.FC = () => {
   // --------------------- Arrow Key Nudging ---------------------
   useEffect(() => {
     const handleArrowKey = (e: KeyboardEvent) => {
-      if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return;
+      if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement)
+        return;
       if (selectedNotes.size > 0) {
         let deltaX = 0, deltaY = 0;
         if (e.key === "ArrowUp") deltaY = -1;
         if (e.key === "ArrowDown") deltaY = 1;
         if (e.key === "ArrowLeft") deltaX = -1;
         if (e.key === "ArrowRight") deltaX = 1;
-        if (deltaX !== 0 || deltaY !== 0) {
+        if (deltaX || deltaY) {
           e.preventDefault();
           setItems(prev => {
             const updated = { ...prev };
@@ -708,38 +920,87 @@ const Desinote: React.FC = () => {
     return () => window.removeEventListener("keydown", handleArrowKey);
   }, [selectedNotes, layers, items]);
 
+  // --------------------- Arrow Handle Editing ---------------------
   useEffect(() => {
-    const handleToolShortcut = (e: KeyboardEvent) => {
-      if (
-        document.activeElement instanceof HTMLInputElement ||
-        document.activeElement instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
-      switch (e.code) {
-        case "Digit1":
-          setCurrentTool("pan");
-          break;
-        case "Digit2":
-          setCurrentTool("select");
-          break;
-        case "Digit3":
-          setCurrentTool("text");
-          break;
-        case "Digit4":
-          setCurrentTool("image");
-          break;
-        case "Digit5":
-          setGridEnabled((prev) => !prev);
-          break;
-        default:
-          break;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handleArrowHandleMouseDown = (e: MouseEvent) => {
+      if (currentTool !== "select") return;
+      const pos = getWorldCoordinates(e, canvas);
+      Object.values(items).forEach(item => {
+        if (item.type === "arrow" && item.isEditing) {
+          const dist = (ax: number, ay: number, bx: number, by: number) =>
+            Math.hypot(ax - bx, ay - by);
+          const threshold = 10 / scale;
+          if (dist(pos.x, pos.y, item.startX, item.startY) < threshold) {
+            setDraggingArrowHandle({
+              id: item.id,
+              handle: "start",
+              offsetX: pos.x - item.startX,
+              offsetY: pos.y - item.startY,
+            });
+            e.preventDefault();
+          } else if (dist(pos.x, pos.y, item.endX, item.endY) < threshold) {
+            setDraggingArrowHandle({
+              id: item.id,
+              handle: "end",
+              offsetX: pos.x - item.endX,
+              offsetY: pos.y - item.endY,
+            });
+            e.preventDefault();
+          }
+        }
+      });
+    };
+    canvas.addEventListener("mousedown", handleArrowHandleMouseDown);
+    return () => canvas.removeEventListener("mousedown", handleArrowHandleMouseDown);
+  }, [currentTool, items, scale, getWorldCoordinates]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handleMouseMoveForArrowHandle = (e: MouseEvent) => {
+      if (draggingArrowHandle) {
+        const pos = getWorldCoordinates(e, canvas);
+        setItems(prev => {
+          const updated = { ...prev };
+          const arrow = updated[draggingArrowHandle.id];
+          if (arrow && arrow.type === "arrow") {
+            if (draggingArrowHandle.handle === "start") {
+              updated[draggingArrowHandle.id] = {
+                ...arrow,
+                startX: pos.x - draggingArrowHandle.offsetX,
+                startY: pos.y - draggingArrowHandle.offsetY,
+              };
+            } else {
+              updated[draggingArrowHandle.id] = {
+                ...arrow,
+                endX: pos.x - draggingArrowHandle.offsetX,
+                endY: pos.y - draggingArrowHandle.offsetY,
+              };
+            }
+          }
+          return updated;
+        });
       }
     };
+    window.addEventListener("mousemove", handleMouseMoveForArrowHandle);
+    return () => window.removeEventListener("mousemove", handleMouseMoveForArrowHandle);
+  }, [draggingArrowHandle, getWorldCoordinates]);
 
-    window.addEventListener("keydown", handleToolShortcut);
-    return () => window.removeEventListener("keydown", handleToolShortcut);
-  }, []);
+  useEffect(() => {
+    const handleMouseUpForArrowHandle = () => {
+      if (draggingArrowHandle) {
+        const arrow = items[draggingArrowHandle.id];
+        if (arrow && arrow.type === "arrow") {
+          saveLessonItem(arrow);
+        }
+        setDraggingArrowHandle(null);
+      }
+    };
+    window.addEventListener("mouseup", handleMouseUpForArrowHandle);
+    return () => window.removeEventListener("mouseup", handleMouseUpForArrowHandle);
+  }, [draggingArrowHandle, items]);
 
   // --------------------- Firebase Loading ---------------------
   const loadLessonNotes = () => {
@@ -751,7 +1012,7 @@ const Desinote: React.FC = () => {
         if (data) {
           const validated: { [id: string]: DrawableItem } = {};
           const newWidths: { [id: string]: number } = {};
-          Object.keys(data).forEach((id) => {
+          Object.keys(data).forEach(id => {
             const note = data[id];
             validated[id] = {
               id: note.id || id,
@@ -775,15 +1036,15 @@ const Desinote: React.FC = () => {
             if (ctx) {
               ctx.font = `${validated[id].fontSize}px ${validated[id].fontFamily}`;
               const tw = ctx.measureText(note.content || "").width;
-              newWidths[id] = note.content ? (tw + 2) : 1;
+              newWidths[id] = note.content ? tw + 2 : 1;
             }
           });
-          setItems((prev) => ({ ...prev, ...validated }));
-          setInputWidths((prev) => ({ ...prev, ...newWidths }));
+          setItems(prev => ({ ...prev, ...validated }));
+          setInputWidths(prev => ({ ...prev, ...newWidths }));
         } else {
-          setItems((prev) => {
+          setItems(prev => {
             const updated = { ...prev };
-            Object.keys(updated).forEach((id) => {
+            Object.keys(updated).forEach(id => {
               if (updated[id].type === "text") delete updated[id];
             });
             return updated;
@@ -791,7 +1052,7 @@ const Desinote: React.FC = () => {
         }
         setIsLoading(false);
       },
-      (error) => {
+      error => {
         console.error("Error loading lesson notes:", error);
         setIsLoading(false);
       }
@@ -803,11 +1064,11 @@ const Desinote: React.FC = () => {
     const imagesRef = dbRef(db, "lessonImages");
     const listener = onValue(
       imagesRef,
-      (snapshot) => {
+      snapshot => {
         const data = snapshot.val();
         if (data) {
           const validated: { [id: string]: DrawableItem } = {};
-          Object.keys(data).forEach((id) => {
+          Object.keys(data).forEach(id => {
             const image = data[id];
             validated[id] = {
               id: image.id || id,
@@ -833,11 +1094,11 @@ const Desinote: React.FC = () => {
               img.onerror = () => console.error(`Failed to load image at URL: ${image.imageUrl}`);
             }
           });
-          setItems((prev) => ({ ...prev, ...validated }));
+          setItems(prev => ({ ...prev, ...validated }));
         } else {
-          setItems((prev) => {
+          setItems(prev => {
             const updated = { ...prev };
-            Object.keys(updated).forEach((id) => {
+            Object.keys(updated).forEach(id => {
               if (updated[id].type === "image") delete updated[id];
             });
             return updated;
@@ -845,7 +1106,7 @@ const Desinote: React.FC = () => {
         }
         setIsLoading(false);
       },
-      (error) => {
+      error => {
         console.error("Error loading lesson images:", error);
         setIsLoading(false);
       }
@@ -853,14 +1114,59 @@ const Desinote: React.FC = () => {
     return () => off(imagesRef, "value", listener);
   };
 
+  const loadLessonArrows = () => {
+    const arrowsRef = dbRef(db, "lessonArrows");
+    const listener = onValue(
+      arrowsRef,
+      snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          const validated: { [id: string]: DrawableItem } = {};
+          Object.keys(data).forEach(id => {
+            const arrow = data[id];
+            validated[id] = {
+              id: arrow.id || id,
+              type: "arrow",
+              layerId: arrow.layerId || activeLayerId,
+              layerName: arrow.layerName || layers[0]?.name || "Default",
+              x: typeof arrow.startX === "number" ? arrow.startX : 100,
+              y: typeof arrow.startY === "number" ? arrow.startY : 100,
+              startX: typeof arrow.startX === "number" ? arrow.startX : 100,
+              startY: typeof arrow.startY === "number" ? arrow.startY : 100,
+              endX: typeof arrow.endX === "number" ? arrow.endX : 150,
+              endY: typeof arrow.endY === "number" ? arrow.endY : 150,
+              color: typeof arrow.color === "string" ? arrow.color : "#FFFFFF",
+              lineWidth: typeof arrow.lineWidth === "number" ? arrow.lineWidth : 2,
+              isDragging: false,
+              isEditing: false,
+            };
+          });
+          setItems(prev => ({ ...prev, ...validated }));
+        } else {
+          setItems(prev => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach(id => {
+              if (updated[id].type === "arrow") delete updated[id];
+            });
+            return updated;
+          });
+        }
+      },
+      error => {
+        console.error("Error loading lesson arrows:", error);
+      }
+    );
+    return () => off(arrowsRef, "value", listener);
+  };
+
   const loadLessonLayers = () => {
     const layersRef = dbRef(db, "lessonLayers");
     const listener = onValue(
       layersRef,
-      (snapshot) => {
+      snapshot => {
         const data = snapshot.val();
         if (data) {
-          const loaded: Layer[] = Object.keys(data).map((id) => ({
+          const loaded: Layer[] = Object.keys(data).map(id => ({
             id,
             name: data[id].name,
             locked: !!data[id].locked,
@@ -869,7 +1175,7 @@ const Desinote: React.FC = () => {
           }));
           loaded.sort((a, b) => a.order - b.order);
           setLayers(loaded);
-          if (!loaded.find((l) => l.id === activeLayerId)) {
+          if (!loaded.find(l => l.id === activeLayerId)) {
             setActiveLayerId(loaded[0]?.id || "default");
           }
         } else {
@@ -879,7 +1185,7 @@ const Desinote: React.FC = () => {
           set(dbRef(db, "lessonLayers/default"), defaultLayer);
         }
       },
-      (error) => {
+      error => {
         console.error("Error loading lesson layers:", error);
       }
     );
@@ -889,6 +1195,7 @@ const Desinote: React.FC = () => {
   useEffect(() => {
     loadLessonNotes();
     loadLessonImages();
+    loadLessonArrows();
     loadLessonLayers();
   }, []);
 
@@ -896,13 +1203,13 @@ const Desinote: React.FC = () => {
     const settingsRef = dbRef(db, "lessonSettings");
     const listener = onValue(
       settingsRef,
-      (snapshot) => {
+      snapshot => {
         const data = snapshot.val();
         if (data && data.canvasColor) {
           setCanvasBgColor(data.canvasColor);
         }
       },
-      (error) => {
+      error => {
         console.error("Error loading lesson settings:", error);
       }
     );
@@ -916,7 +1223,7 @@ const Desinote: React.FC = () => {
   const changeCanvasBgColor = (color: string) => {
     setCanvasBgColor(color);
     const settingsRef = dbRef(db, "lessonSettings");
-    set(settingsRef, { canvasColor: color }).catch((error) =>
+    set(settingsRef, { canvasColor: color }).catch(error =>
       console.error("Error saving lesson settings:", error)
     );
   };
@@ -931,9 +1238,7 @@ const Desinote: React.FC = () => {
     const trimmedName = fileName.trim();
     const existingSave = savedStates.find(save => save.fileName.toLowerCase() === trimmedName.toLowerCase());
     if (existingSave) {
-      const confirmOverride = window.confirm(
-        `A saved file named "${trimmedName}" already exists. Do you want to override it?`
-      );
+      const confirmOverride = window.confirm(`A saved file named "${trimmedName}" already exists. Do you want to override it?`);
       if (!confirmOverride) return;
     }
     const stateToSave = {
@@ -948,24 +1253,21 @@ const Desinote: React.FC = () => {
     if (existingSave) {
       set(dbRef(db, `lessonSaves/${existingSave.id}`), stateToSave)
         .then(() => alert("File overridden successfully!"))
-        .catch((error) => console.error("Error saving file state:", error));
+        .catch(error => console.error("Error saving file state:", error));
     } else {
       const newSaveRef = push(savesRef);
       set(newSaveRef, stateToSave)
         .then(() => alert("File saved successfully!"))
-        .catch((error) => console.error("Error saving file state:", error));
+        .catch(error => console.error("Error saving file state:", error));
     }
   };
 
   useEffect(() => {
     const savesRef = dbRef(db, "lessonSaves");
-    const listener = onValue(savesRef, (snapshot) => {
+    const listener = onValue(savesRef, snapshot => {
       const data = snapshot.val();
       if (data) {
-        const savesArray = Object.keys(data).map((id) => ({
-          id,
-          ...data[id],
-        }));
+        const savesArray = Object.keys(data).map(id => ({ id, ...data[id] }));
         setSavedStates(savesArray);
       } else {
         setSavedStates([]);
@@ -984,7 +1286,7 @@ const Desinote: React.FC = () => {
         setRenamingSaveId(null);
         setRenamingName("");
       })
-      .catch((error) => {
+      .catch(error => {
         console.error("Error renaming saved lesson:", error);
       });
   };
@@ -1003,38 +1305,77 @@ const Desinote: React.FC = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const { x, y } = getWorldCoordinates(event, canvas);
+    if (currentTool === "pan" || isSpacePressed) {
+      setIsPanning(true);
+      setPanStart({ x: event.clientX, y: event.clientY });
+      return;
+    }
+
+    if (currentTool === "arrow") {
+      arrowStartRef.current = { x, y };
+      return;
+    }
+
     if (currentTool === "select") {
       const baseHandleSize = 14;
-      const adjustedHandleSize = baseHandleSize / scale;
-      for (const id of selectedNotes) {
-        const item = items[id];
-        if (item && item.type === "image") {
-          const layer = layers.find(l => l.id === item.layerId);
-          if (layer && !layer.visible) continue;
+      const scaledHandleSize = baseHandleSize / scale;
+      let foundResizeHandle = false;
+      let clickedResizeItemId: string | null = null;
+      for (const item of Object.values(items)) {
+        if (item.type === "image") {
+          const handleX = item.x + item.width - scaledHandleSize;
+          const handleY = item.y + item.height - scaledHandleSize;
           if (
-            x >= item.x + item.width - adjustedHandleSize &&
-            x <= item.x + item.width &&
-            y >= item.y + item.height - adjustedHandleSize &&
-            y <= item.y + item.height
+            x >= handleX &&
+            x <= handleX + scaledHandleSize &&
+            y >= handleY &&
+            y <= handleY + scaledHandleSize
           ) {
-            setResizingImage({
+            foundResizeHandle = true;
+            clickedResizeItemId = item.id;
+            break;
+          }
+        }
+      }
+      if (foundResizeHandle && clickedResizeItemId) {
+        setResizingImage({
+          id: clickedResizeItemId,
+          startX: event.clientX,
+          startY: event.clientY,
+          initialWidth: (items[clickedResizeItemId] as ImageItem).width,
+          initialHeight: (items[clickedResizeItemId] as ImageItem).height,
+        });
+        return;
+      }
+    }
+
+    if (currentTool === "select") {
+      const pos = getWorldCoordinates(event, canvas);
+      for (const item of Object.values(items)) {
+        if (item.type === "arrow" && item.isEditing) {
+          const dist = (ax: number, ay: number, bx: number, by: number) =>
+            Math.hypot(ax - bx, ay - by);
+          const threshold = 10 / scale;
+          if (dist(pos.x, pos.y, item.startX, item.startY) < threshold) {
+            setDraggingArrowHandle({
               id: item.id,
-              startX: event.clientX,
-              startY: event.clientY,
-              initialWidth: item.width,
-              initialHeight: item.height,
+              handle: "start",
+              offsetX: pos.x - item.startX,
+              offsetY: pos.y - item.startY,
+            });
+            return;
+          }
+          if (dist(pos.x, pos.y, item.endX, item.endY) < threshold) {
+            setDraggingArrowHandle({
+              id: item.id,
+              handle: "end",
+              offsetX: pos.x - item.endX,
+              offsetY: pos.y - item.endY,
             });
             return;
           }
         }
       }
-    }
-    mouseDownPosRef.current = { x: event.clientX, y: event.clientY };
-    hasDraggedRef.current = false;
-    if (currentTool === "pan" || isSpacePressed) {
-      setIsPanning(true);
-      setPanStart({ x: event.clientX, y: event.clientY });
-      return;
     }
     if (currentTool === "select") {
       const visibleItems = Object.values(items).filter(isItemVisible);
@@ -1052,7 +1393,7 @@ const Desinote: React.FC = () => {
         .reverse();
       let clickedOnItem = false;
       let clickedItemId: string | null = null;
-      let clickedItemType: "text" | "image" | null = null;
+      let clickedItemType: "text" | "image" | "arrow" | null = null;
       const checkImagePromises: Promise<void>[] = [];
       for (let i = 0; i < orderedItems.length; i++) {
         const item = orderedItems[i];
@@ -1109,16 +1450,44 @@ const Desinote: React.FC = () => {
             img.src = item.imageUrl;
             checkImagePromises.push(promise);
           }
+        } else if (item.type === "arrow") {
+          const threshold = 5;
+          const distToLine = (
+            x0: number,
+            y0: number,
+            x1: number,
+            y1: number,
+            x2: number,
+            y2: number
+          ) => {
+            const A = x0 - x1;
+            const B = y0 - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = lenSq !== 0 ? dot / lenSq : -1;
+            let xx = param < 0 ? x1 : param > 1 ? x2 : x1 + param * C;
+            let yy = param < 0 ? y1 : param > 1 ? y2 : y1 + param * D;
+            return Math.hypot(x0 - xx, y0 - yy);
+          };
+          const d = distToLine(x, y, item.startX, item.startY, item.endX, item.endY);
+          if (d < threshold) {
+            clickedOnItem = true;
+            clickedItemId = item.id;
+            clickedItemType = "arrow";
+            break;
+          }
         }
       }
       Promise.all(checkImagePromises).then(() => {
         if (clickedOnItem && clickedItemId) {
           const item = items[clickedItemId];
-          const layer = layers.find((l) => l.id === item.layerId);
+          const layer = layers.find(l => l.id === item.layerId);
           if (layer && layer.locked) {
-            setFlashLockedLayers((prev) => ({ ...prev, [layer.id]: true }));
+            setFlashLockedLayers(prev => ({ ...prev, [layer.id]: true }));
             setTimeout(() => {
-              setFlashLockedLayers((prev) => ({ ...prev, [layer.id]: false }));
+              setFlashLockedLayers(prev => ({ ...prev, [layer.id]: false }));
             }, 3000);
             if (isPanelCollapsed) {
               setFlashPanelToggle(true);
@@ -1129,22 +1498,48 @@ const Desinote: React.FC = () => {
           if (selectedNotes.has(clickedItemId)) {
             setDragStart({ x: event.clientX, y: event.clientY });
             dragStartWorldRef.current = getWorldCoordinates(event, canvas);
-            const initPos: { [id: string]: { x: number; y: number } } = {};
-            selectedNotes.forEach((id) => {
+            const initPos: { [id: string]: any } = {};
+            selectedNotes.forEach(id => {
               const it = items[id];
-              if (it) initPos[id] = { x: it.x, y: it.y };
+              if (it) {
+                if (it.type === "arrow") {
+                  initPos[id] = {
+                    x: it.x,
+                    y: it.y,
+                    startX: (it as ArrowItem).startX,
+                    startY: (it as ArrowItem).startY,
+                    endX: (it as ArrowItem).endX,
+                    endY: (it as ArrowItem).endY,
+                  };
+                } else {
+                  initPos[id] = { x: it.x, y: it.y };
+                }
+              }
             });
             setInitialPositions(initPos);
           } else {
             setSelectedNotes(new Set([clickedItemId]));
             setDragStart({ x: event.clientX, y: event.clientY });
             dragStartWorldRef.current = getWorldCoordinates(event, canvas);
-            setInitialPositions({
-              [clickedItemId]: { x: items[clickedItemId].x, y: items[clickedItemId].y },
-            });
+            if (item.type === "arrow") {
+              setInitialPositions({
+                [clickedItemId]: {
+                  x: item.x,
+                  y: item.y,
+                  startX: (item as ArrowItem).startX,
+                  startY: (item as ArrowItem).startY,
+                  endX: (item as ArrowItem).endX,
+                  endY: (item as ArrowItem).endY,
+                },
+              });
+            } else {
+              setInitialPositions({
+                [clickedItemId]: { x: item.x, y: item.y },
+              });
+            }
             setShowProperties(clickedItemType === "text");
             if (clickedItemType === "text") {
-              const textItem = items[clickedItemId] as TextItem;
+              const textItem = item as TextItem;
               setPropertyValues({
                 fontSize: textItem.fontSize,
                 fontFamily: textItem.fontFamily,
@@ -1156,6 +1551,15 @@ const Desinote: React.FC = () => {
             }
           }
         } else {
+          setItems(prev => {
+            const updated = { ...prev };
+            Object.values(updated).forEach(it => {
+              if (it.type === "arrow" && it.isEditing) {
+                updated[it.id] = { ...it, isEditing: false };
+              }
+            });
+            return updated;
+          });
           setIsSelecting(true);
           setSelectionStart({ x, y });
           setSelectionEnd({ x, y });
@@ -1167,6 +1571,42 @@ const Desinote: React.FC = () => {
   };
 
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const currentPoint = getWorldCoordinates(event, canvas);
+    checkHover(currentPoint.x, currentPoint.y);
+
+    if (currentTool === "arrow") {
+      if (!arrowStartRef.current) return;
+      const dx = currentPoint.x - arrowStartRef.current.x;
+      const dy = currentPoint.y - arrowStartRef.current.y;
+      if (Math.hypot(dx, dy) > ARROW_DRAG_THRESHOLD) {
+        if (!arrowDrawing) {
+          setArrowDrawing({
+            id: "temp-arrow-" + Date.now(),
+            type: "arrow",
+            layerId: activeLayerId,
+            layerName: layers.find(l => l.id === activeLayerId)?.name || "Default",
+            x: arrowStartRef.current.x,
+            y: arrowStartRef.current.y,
+            startX: arrowStartRef.current.x,
+            startY: arrowStartRef.current.y,
+            endX: currentPoint.x,
+            endY: currentPoint.y,
+            color: "#FFFFFF",
+            lineWidth: 2,
+            isDragging: false,
+            isEditing: false,
+          });
+        } else {
+          setArrowDrawing(prev =>
+            prev ? { ...prev, endX: currentPoint.x, endY: currentPoint.y } : null
+          );
+        }
+      }
+      return;
+    }
+
     if (resizingImage) {
       const deltaX = event.clientX - resizingImage.startX;
       const deltaY = event.clientY - resizingImage.startY;
@@ -1174,7 +1614,7 @@ const Desinote: React.FC = () => {
         const newWidth = Math.max(20, resizingImage.initialWidth + deltaX / scale);
         const aspectRatio = resizingImage.initialWidth / resizingImage.initialHeight;
         const newHeight = Math.max(20, newWidth / aspectRatio);
-        setItems((prev) => ({
+        setItems(prev => ({
           ...prev,
           [resizingImage.id]: {
             ...prev[resizingImage.id],
@@ -1183,7 +1623,7 @@ const Desinote: React.FC = () => {
           },
         }));
       } else {
-        setItems((prev) => ({
+        setItems(prev => ({
           ...prev,
           [resizingImage.id]: {
             ...prev[resizingImage.id],
@@ -1194,20 +1634,20 @@ const Desinote: React.FC = () => {
       }
       return;
     }
+
     if (isPanning) {
       const deltaX = event.clientX - panStart.x;
       const deltaY = event.clientY - panStart.y;
       setPanStart({ x: event.clientX, y: event.clientY });
-      setViewportOffset((prev) => ({
+      setViewportOffset(prev => ({
         x: prev.x - deltaX / scale,
         y: prev.y - deltaY / scale,
       }));
       return;
     }
+
     if (isSelecting) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const { x, y } = getWorldCoordinates(event, canvas);
+      const { x, y } = currentPoint;
       setSelectionEnd({ x, y });
       if (mouseDownPosRef.current) {
         const dx = event.clientX - mouseDownPosRef.current.x;
@@ -1219,15 +1659,14 @@ const Desinote: React.FC = () => {
       }
       return;
     }
+
     if (dragStart && dragStartWorldRef.current) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const currentWorld = getWorldCoordinates(event, canvas);
+      const currentWorld = currentPoint;
       const deltaWorldX = currentWorld.x - dragStartWorldRef.current.x;
       const deltaWorldY = currentWorld.y - dragStartWorldRef.current.y;
 
       const updated: { [id: string]: DrawableItem } = { ...items };
-      selectedNotes.forEach((id) => {
+      selectedNotes.forEach(id => {
         const it = updated[id];
         const layer = layers.find(l => l.id === it.layerId);
         if (layer && layer.locked) return;
@@ -1238,22 +1677,13 @@ const Desinote: React.FC = () => {
 
           if (isShiftPressed) {
             const threshold = 5;
-            const maxSnapDistance = 100;
-            const selectedPoints = getItemPoints(it, newX, newY);
-            const selCenter = selectedPoints[selectedPoints.length - 1];
             let snapOffsetX = 0, snapOffsetY = 0;
             let foundSnapX = false, foundSnapY = false;
-            Object.values(items).forEach(candidate => {
-              if (selectedNotes.has(candidate.id)) return;
-              const candidatePoints = getItemPoints(candidate, candidate.x, candidate.y);
-              const candCenter = candidatePoints[candidatePoints.length - 1];
-              if (
-                Math.abs(selCenter.x - candCenter.x) > maxSnapDistance ||
-                Math.abs(selCenter.y - candCenter.y) > maxSnapDistance
-              ) {
-                return;
-              }
-              selectedPoints.forEach(selPoint => {
+            const selectedPoints = getItemPoints(it, newX, newY);
+            selectedPoints.forEach(selPoint => {
+              Object.values(items).forEach(candidate => {
+                if (selectedNotes.has(candidate.id)) return;
+                const candidatePoints = getItemPoints(candidate, candidate.x, candidate.y);
                 candidatePoints.forEach(candPoint => {
                   const diffX = candPoint.x - selPoint.x;
                   const diffY = candPoint.y - selPoint.y;
@@ -1272,61 +1702,67 @@ const Desinote: React.FC = () => {
             newY += snapOffsetY;
           }
 
-          updated[id] = {
-            ...it,
-            x: gridEnabled ? Math.round(newX / gridSize) * gridSize : newX,
-            y: gridEnabled ? Math.round(newY / gridSize) * gridSize : newY,
-          };
+          if (it.type === "arrow") {
+            const arrowInit = init as { startX: number; startY: number; endX: number; endY: number };
+            updated[id] = {
+              ...(it as ArrowItem),
+              x: gridEnabled ? Math.round(newX / gridSize) * gridSize : newX,
+              y: gridEnabled ? Math.round(newY / gridSize) * gridSize : newY,
+              startX: gridEnabled
+                ? Math.round((arrowInit.startX + deltaWorldX) / gridSize) * gridSize
+                : arrowInit.startX + deltaWorldX,
+              startY: gridEnabled
+                ? Math.round((arrowInit.startY + deltaWorldY) / gridSize) * gridSize
+                : arrowInit.startY + deltaWorldY,
+              endX: gridEnabled
+                ? Math.round((arrowInit.endX + deltaWorldX) / gridSize) * gridSize
+                : arrowInit.endX + deltaWorldX,
+              endY: gridEnabled
+                ? Math.round((arrowInit.endY + deltaWorldY) / gridSize) * gridSize
+                : arrowInit.endY + deltaWorldY,
+            };
+          } else {
+            updated[id] = {
+              ...it,
+              x: gridEnabled ? Math.round(newX / gridSize) * gridSize : newX,
+              y: gridEnabled ? Math.round(newY / gridSize) * gridSize : newY,
+            };
+          }
         }
       });
       setItems(updated);
       return;
     }
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const { x, y } = getWorldCoordinates(event, canvas);
-    let hovering = false;
-    const hoverPromises: Promise<void>[] = [];
-    for (const it of Object.values(items)) {
-      if (!isItemVisible(it)) continue;
-      if (it.type === "text") {
-        const ctx = canvas.getContext("2d");
-        if (!ctx) continue;
-        ctx.font = `${it.fontSize}px ${it.fontFamily}`;
-        const tw = ctx.measureText(it.text).width;
-        if (x >= it.x && x <= it.x + tw && y >= it.y && y <= it.y + it.fontSize) {
-          hovering = true;
-          break;
-        }
-      } else if (it.type === "image") {
-        const cached = imageCacheRef.current.get(it.imageUrl);
-        if (cached && cached.complete) {
-          if (x >= it.x && x <= it.x + it.width && y >= it.y && y <= it.y + it.height) {
-            hovering = true;
-            break;
-          }
-        } else {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          const promise = new Promise<void>((resolve) => {
-            img.onload = () => {
-              imageCacheRef.current.set(it.imageUrl, img);
-              if (x >= it.x && x <= it.x + img.width && y >= it.y && y <= it.y + img.height) {
-                hovering = true;
-              }
-              resolve();
-            };
-            img.onerror = () => resolve();
-          });
-          img.src = it.imageUrl;
-          hoverPromises.push(promise);
-        }
-      }
-    }
-    Promise.all(hoverPromises).then(() => setIsHoveringItem(hovering));
   };
 
   const handleMouseUp = useCallback(() => {
+    if (currentTool === "arrow") {
+      if (arrowDrawing) {
+        const arrowsRef = dbRef(db, "lessonArrows");
+        const newArrowRef = push(arrowsRef);
+        const newId = newArrowRef.key;
+        if (newId) {
+          const finalizedArrow: ArrowItem = { ...arrowDrawing, id: newId };
+          set(newArrowRef, {
+            id: finalizedArrow.id,
+            type: finalizedArrow.type,
+            startX: finalizedArrow.startX,
+            startY: finalizedArrow.startY,
+            endX: finalizedArrow.endX,
+            endY: finalizedArrow.endY,
+            color: finalizedArrow.color,
+            lineWidth: finalizedArrow.lineWidth,
+            layerId: finalizedArrow.layerId,
+            layerName: finalizedArrow.layerName,
+          }).catch(error => console.error("Error saving arrow:", error));
+          setItems(prev => ({ ...prev, [newId]: finalizedArrow }));
+        }
+      }
+      setArrowDrawing(null);
+      arrowStartRef.current = null;
+      return;
+    }
+
     if (resizingImage) {
       const it = items[resizingImage.id];
       if (it) saveLessonItem(it);
@@ -1338,7 +1774,7 @@ const Desinote: React.FC = () => {
       return;
     }
     if (dragStart) {
-      selectedNotes.forEach((id) => {
+      selectedNotes.forEach(id => {
         const it = items[id];
         if (it) {
           if (newItemIdsRef.current.has(id)) {
@@ -1376,10 +1812,17 @@ const Desinote: React.FC = () => {
           } else if (it.type === "image") {
             if (intersect(it.x, it.y, it.x + it.width, it.y + it.height))
               newSelected.add(it.id);
+          } else if (it.type === "arrow") {
+            const minX = Math.min(it.startX, it.endX);
+            const minY = Math.min(it.startY, it.endY);
+            const maxX = Math.max(it.startX, it.endX);
+            const maxY = Math.max(it.startY, it.endY);
+            if (intersect(minX, minY, maxX, maxY))
+              newSelected.add(it.id);
           }
         }
         setSelectedNotes(newSelected);
-        const hasText = Array.from(newSelected).some((id) => items[id].type === "text");
+        const hasText = Array.from(newSelected).some(id => items[id].type === "text");
         setShowProperties(hasText);
         if (newSelected.size === 1) {
           const [singleId] = Array.from(newSelected);
@@ -1411,7 +1854,7 @@ const Desinote: React.FC = () => {
       hasDraggedRef.current = false;
       mouseDownPosRef.current = null;
     }
-  }, [isPanning, dragStart, selectedNotes, items, isSelecting, selectionStart, selectionEnd, resizingImage, layers]);
+  }, [isPanning, dragStart, selectedNotes, items, isSelecting, selectionStart, selectionEnd, resizingImage, layers, arrowDrawing, currentTool]);
 
   useEffect(() => {
     const globalMouseUp = () => handleMouseUp();
@@ -1425,11 +1868,12 @@ const Desinote: React.FC = () => {
     if (!canvas) return;
     const { x, y } = getWorldCoordinates(event, canvas);
     let dblClickedId: string | null = null;
-    let dblClickedType: "text" | "image" | null = null;
+    let dblClickedType: "text" | "image" | "arrow" | null = null;
     const itemsArray = Object.values(items);
     const ordered = [
-      ...itemsArray.filter((it) => it.type === "text"),
-      ...itemsArray.filter((it) => it.type === "image"),
+      ...itemsArray.filter(it => it.type === "text"),
+      ...itemsArray.filter(it => it.type === "image"),
+      ...itemsArray.filter(it => it.type === "arrow")
     ];
     for (let i = ordered.length - 1; i >= 0; i--) {
       const it = ordered[i];
@@ -1439,12 +1883,7 @@ const Desinote: React.FC = () => {
         if (!ctx) continue;
         ctx.font = `${it.fontSize}px ${it.fontFamily}`;
         const tw = ctx.measureText(it.text).width;
-        if (
-          x >= it.x - 7 &&
-          x <= it.x + tw + 7 &&
-          y >= it.y - 7 &&
-          y <= it.y + it.fontSize + 7
-        ) {
+        if (x >= it.x - 7 && x <= it.x + tw + 7 && y >= it.y - 7 && y <= it.y + it.fontSize + 7) {
           dblClickedId = it.id;
           dblClickedType = "text";
           break;
@@ -1452,12 +1891,7 @@ const Desinote: React.FC = () => {
       } else if (it.type === "image") {
         const cached = imageCacheRef.current.get(it.imageUrl);
         if (cached && cached.complete) {
-          if (
-            x >= it.x &&
-            x <= it.x + it.width &&
-            y >= it.y &&
-            y <= it.y + it.height
-          ) {
+          if (x >= it.x && x <= it.x + it.width && y >= it.y && y <= it.y + it.height) {
             dblClickedId = it.id;
             dblClickedType = "image";
             break;
@@ -1469,13 +1903,30 @@ const Desinote: React.FC = () => {
           };
           img.src = it.imageUrl;
         }
+      } else if (it.type === "arrow") {
+        const threshold = 5;
+        const distToLine = (x0: number, y0: number, x1: number, y1: number, x2: number, y2: number) => {
+          const A = x0 - x1, B = y0 - y1, C = x2 - x1, D = y2 - y1;
+          const dot = A * C + B * D;
+          const lenSq = C * C + D * D;
+          let param = lenSq !== 0 ? dot / lenSq : -1;
+          let xx = param < 0 ? x1 : param > 1 ? x2 : x1 + param * C;
+          let yy = param < 0 ? y1 : param > 1 ? y2 : y1 + param * D;
+          return Math.hypot(x0 - xx, y0 - yy);
+        };
+        const d = distToLine(x, y, it.startX, it.startY, it.endX, it.endY);
+        if (d < threshold) {
+          dblClickedId = it.id;
+          dblClickedType = "arrow";
+          break;
+        }
       }
     }
     if (dblClickedId && dblClickedType) {
       if (dblClickedType === "text") {
-        setItems((prev) => ({
+        setItems(prev => ({
           ...prev,
-          [dblClickedId!]: { ...prev[dblClickedId!], isEditing: true },
+          [dblClickedId]: { ...prev[dblClickedId], isEditing: true },
         }));
         setSelectedNoteId(dblClickedId);
       } else if (dblClickedType === "image") {
@@ -1497,7 +1948,7 @@ const Desinote: React.FC = () => {
             layerName: updated.layerName,
           })
             .then(() => {
-              setItems((prev) => ({ ...prev, [dblClickedId!]: updated }));
+              setItems(prev => ({ ...prev, [dblClickedId]: updated }));
               const img = new Image();
               img.crossOrigin = "anonymous";
               img.src = updated.imageUrl;
@@ -1508,10 +1959,15 @@ const Desinote: React.FC = () => {
               img.onerror = () =>
                 console.error(`Failed to load image at URL: ${updated.imageUrl}`);
             })
-            .catch((error) => console.error("Error updating image URL:", error));
+            .catch(error => console.error("Error updating image URL:", error));
         } else if (newUrl) {
           alert("Please enter a valid image or GIF URL.");
         }
+      } else if (dblClickedType === "arrow") {
+        setItems(prev => ({
+          ...prev,
+          [dblClickedId]: { ...prev[dblClickedId], isEditing: true },
+        }));
       }
     } else {
       if (currentTool === "text") addTextNoteAtPosition(x, y);
@@ -1522,11 +1978,17 @@ const Desinote: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const globalMouseUp = () => handleMouseUp();
+    window.addEventListener("mouseup", globalMouseUp);
+    return () => window.removeEventListener("mouseup", globalMouseUp);
+  }, [handleMouseUp]);
+
   // --------------------- Text Editing Handlers ---------------------
   const handleInputChange = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
     const caret = e.target.selectionStart;
-    setItems((prev) => ({ ...prev, [id]: { ...prev[id], text } }));
+    setItems(prev => ({ ...prev, [id]: { ...prev[id], text } }));
     setTimeout(() => {
       const input = inputRefs.current[id];
       if (input && caret !== null) input.setSelectionRange(caret, caret);
@@ -1538,51 +2000,48 @@ const Desinote: React.FC = () => {
       if (it && it.type === "text") {
         ctx.font = `${it.isBold ? "bold " : ""}${it.fontSize}px ${it.fontFamily}`;
         const tw = ctx.measureText(text).width;
-        setInputWidths((prev) => ({ ...prev, [id]: text ? (tw + 2) : 1 }));
+        setInputWidths(prev => ({ ...prev, [id]: text ? (tw + 2) : 1 }));
       }
     }
   };
 
   const handleInputBlur = (id: string) => {
-    setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
+    setItems(prev => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
     const it = items[id];
     if (it && it.type === "text") {
       if (it.text) saveLessonItem(it);
       else deleteLessonItem(id);
     }
-    setShowProperties(Array.from(selectedNotes).some((id) => items[id].type === "text"));
+    setShowProperties(Array.from(selectedNotes).some(id => items[id].type === "text"));
   };
 
   const handleKeyDownInput = (id: string, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === "Escape") {
-      setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
+      setItems(prev => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
       const it = items[id];
       if (it && it.type === "text") {
         if (it.text) saveLessonItem(it);
         else deleteLessonItem(id);
       }
-      setShowProperties(Array.from(selectedNotes).some((id) => items[id].type === "text"));
+      setShowProperties(Array.from(selectedNotes).some(id => items[id].type === "text"));
     }
   };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      Object.keys(inputRefs.current).forEach((id) => {
-        if (
-          inputRefs.current[id] &&
-          !inputRefs.current[id]?.contains(e.target as Node)
-        ) {
-          setItems((prev) => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
+      Object.keys(inputRefs.current).forEach(id => {
+        if (inputRefs.current[id] && !inputRefs.current[id]?.contains(e.target as Node)) {
+          setItems(prev => ({ ...prev, [id]: { ...prev[id], isEditing: false } }));
           const it = items[id];
           if (it && it.type === "text") {
             if (it.text) saveLessonItem(it);
             else deleteLessonItem(id);
           }
-          setShowProperties(Array.from(selectedNotes).some((id) => items[id].type === "text"));
+          setShowProperties(Array.from(selectedNotes).some(id => items[id].type === "text"));
         }
       });
     };
-    if (Object.values(items).some((it) => it.isEditing)) {
+    if (Object.values(items).some(it => it.isEditing)) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -1654,7 +2113,7 @@ const Desinote: React.FC = () => {
         isCrossedOut: it.isCrossedOut,
         layerId: it.layerId,
         layerName: it.layerName,
-      }).catch((error) => console.error("Error saving lesson item:", error));
+      }).catch(error => console.error("Error saving lesson item:", error));
     } else if (it.type === "image") {
       const itemRef = dbRef(db, `lessonImages/${it.id}`);
       set(itemRef, {
@@ -1667,16 +2126,33 @@ const Desinote: React.FC = () => {
         height: it.height,
         layerId: it.layerId,
         layerName: it.layerName,
-      }).catch((error) => console.error("Error saving lesson image:", error));
+      }).catch(error => console.error("Error saving lesson image:", error));
+    } else if (it.type === "arrow") {
+      const itemRef = dbRef(db, `lessonArrows/${it.id}`);
+      set(itemRef, {
+        id: it.id,
+        type: it.type,
+        startX: it.startX,
+        startY: it.startY,
+        endX: it.endX,
+        endY: it.endY,
+        color: it.color,
+        lineWidth: it.lineWidth,
+        layerId: it.layerId,
+        layerName: it.layerName,
+      }).catch(error => console.error("Error saving lesson arrow:", error));
     }
   };
 
   const deleteLessonItem = (id: string) => {
     const it = items[id];
     if (!it) return;
-    const refPath = it.type === "text" ? `lessonNotes/${id}` : `lessonImages/${id}`;
-    remove(dbRef(db, refPath)).catch((error) => console.error(`Error deleting item ${id}:`, error));
-    setItems((prev) => {
+    let refPath = "";
+    if (it.type === "text") refPath = `lessonNotes/${id}`;
+    else if (it.type === "image") refPath = `lessonImages/${id}`;
+    else if (it.type === "arrow") refPath = `lessonArrows/${id}`;
+    remove(dbRef(db, refPath)).catch(error => console.error(`Error deleting item ${id}:`, error));
+    setItems(prev => {
       const updated = { ...prev };
       delete updated[id];
       return updated;
@@ -1698,7 +2174,7 @@ const Desinote: React.FC = () => {
   useEffect(() => {
     const handleDeleteKey = (e: KeyboardEvent) => {
       if (e.key === "Delete" && selectedNotes.size > 0) {
-        selectedNotes.forEach((id) => deleteLessonItem(id));
+        selectedNotes.forEach(id => deleteLessonItem(id));
         setSelectedNotes(new Set());
         setSelectedNoteId(null);
         setShowProperties(false);
@@ -1724,9 +2200,9 @@ const Desinote: React.FC = () => {
   }, [selectedNoteId, items]);
 
   const handlePropertyChange = (property: keyof typeof propertyValues, value: any) => {
-    setPropertyValues((prev) => ({ ...prev, [property]: value }));
+    setPropertyValues(prev => ({ ...prev, [property]: value }));
     const updatedItems = { ...items };
-    selectedNotes.forEach((id) => {
+    selectedNotes.forEach(id => {
       const it = updatedItems[id];
       if (it && it.type === "text") {
         updatedItems[id] =
@@ -1783,7 +2259,7 @@ const Desinote: React.FC = () => {
         layerName: newNote.layerName,
       })
         .then(() => {
-          setItems((prev) => ({ ...prev, [newId]: newNote }));
+          setItems(prev => ({ ...prev, [newId]: newNote }));
           setSelectedNoteId(newId);
           setSelectedNotes(new Set([newId]));
           setDragStart(null);
@@ -1799,7 +2275,7 @@ const Desinote: React.FC = () => {
           });
           setTimeout(() => newItemIdsRef.current.delete(newId), 0);
         })
-        .catch((error) => {
+        .catch(error => {
           console.error("Error adding new lesson note:", error);
           newItemIdsRef.current.delete(newId);
         });
@@ -1856,11 +2332,11 @@ const Desinote: React.FC = () => {
           layerName: newImage.layerName,
         })
           .then(() => {
-            setItems((prev) => ({ ...prev, [newId]: newImage }));
+            setItems(prev => ({ ...prev, [newId]: newImage }));
             setSelectedNotes(new Set([newId]));
             setShowProperties(false);
           })
-          .catch((error) => console.error("Error adding new image:", error));
+          .catch(error => console.error("Error adding new image:", error));
       };
       img.onerror = () =>
         alert("Failed to load image. Please check the URL and try again.");
@@ -1869,23 +2345,21 @@ const Desinote: React.FC = () => {
 
   // --------------------- Layer Management Functions ---------------------
   const updateLayerInFirebase = (layer: Layer) => {
-    set(dbRef(db, `lessonLayers/${layer.id}`), layer).catch((error) =>
+    set(dbRef(db, `lessonLayers/${layer.id}`), layer).catch(error =>
       console.error("Error updating layer:", error)
     );
   };
 
   const handleLayerRename = (layerId: string, newName: string) => {
-    setLayers((prev) =>
-      prev.map((layer) =>
-        layer.id === layerId ? { ...layer, name: newName } : layer
-      )
+    setLayers(prev =>
+      prev.map(layer => layer.id === layerId ? { ...layer, name: newName } : layer)
     );
-    const updated = layers.find((l) => l.id === layerId);
+    const updated = layers.find(l => l.id === layerId);
     if (updated) {
       updateLayerInFirebase({ ...updated, name: newName });
     }
     const updatedItems = { ...items };
-    Object.keys(updatedItems).forEach((id) => {
+    Object.keys(updatedItems).forEach(id => {
       if (updatedItems[id].layerId === layerId) {
         updatedItems[id] = { ...updatedItems[id], layerName: newName };
         saveLessonItem(updatedItems[id]);
@@ -1895,24 +2369,20 @@ const Desinote: React.FC = () => {
   };
 
   const handleLayerToggleLock = (layerId: string) => {
-    setLayers((prev) =>
-      prev.map((layer) =>
-        layer.id === layerId ? { ...layer, locked: !layer.locked } : layer
-      )
+    setLayers(prev =>
+      prev.map(layer => layer.id === layerId ? { ...layer, locked: !layer.locked } : layer)
     );
-    const updated = layers.find((l) => l.id === layerId);
+    const updated = layers.find(l => l.id === layerId);
     if (updated) {
       updateLayerInFirebase({ ...updated, locked: !updated.locked });
     }
   };
 
   const handleLayerToggleVisibility = (layerId: string) => {
-    setLayers((prev) =>
-      prev.map((layer) =>
-        layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
-      )
+    setLayers(prev =>
+      prev.map(layer => layer.id === layerId ? { ...layer, visible: !layer.visible } : layer)
     );
-    const updated = layers.find((l) => l.id === layerId);
+    const updated = layers.find(l => l.id === layerId);
     if (updated) {
       updateLayerInFirebase({ ...updated, visible: !updated.visible });
     }
@@ -1921,14 +2391,14 @@ const Desinote: React.FC = () => {
   const handleLayerDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (active.id !== over?.id) {
-      const oldIndex = layers.findIndex((l) => l.id === active.id);
-      const newIndex = layers.findIndex((l) => l.id === over?.id);
+      const oldIndex = layers.findIndex(l => l.id === active.id);
+      const newIndex = layers.findIndex(l => l.id === over?.id);
       const newLayers = arrayMove(layers, oldIndex, newIndex).map((layer, idx) => ({
         ...layer,
         order: idx,
       }));
       setLayers(newLayers);
-      newLayers.forEach((layer) => updateLayerInFirebase(layer));
+      newLayers.forEach(layer => updateLayerInFirebase(layer));
     }
   };
 
@@ -1952,7 +2422,7 @@ const Desinote: React.FC = () => {
         .then(() => {
           setActiveLayerId(newId);
         })
-        .catch((error) => console.error("Error adding new layer:", error));
+        .catch(error => console.error("Error adding new layer:", error));
     }
   };
 
@@ -1961,15 +2431,15 @@ const Desinote: React.FC = () => {
       alert("Default layer cannot be deleted.");
       return;
     }
-    remove(dbRef(db, `lessonLayers/${layerId}`)).catch((error) =>
+    remove(dbRef(db, `lessonLayers/${layerId}`)).catch(error =>
       console.error("Error deleting layer:", error)
     );
-    setLayers((prev) => prev.filter((layer) => layer.id !== layerId));
+    setLayers(prev => prev.filter(layer => layer.id !== layerId));
     const updatedItems = { ...items };
-    Object.keys(updatedItems).forEach((id) => {
+    Object.keys(updatedItems).forEach(id => {
       if (updatedItems[id].layerId === layerId) {
-        const refPath = updatedItems[id].type === "text" ? `lessonNotes/${id}` : `lessonImages/${id}`;
-        remove(dbRef(db, refPath)).catch((error) =>
+        const refPath = updatedItems[id].type === "text" ? `lessonNotes/${id}` : updatedItems[id].type === "image" ? `lessonImages/${id}` : `lessonArrows/${id}`;
+        remove(dbRef(db, refPath)).catch(error =>
           console.error(`Error deleting item ${id} on layer ${layerId}:`, error)
         );
         delete updatedItems[id];
@@ -1983,7 +2453,7 @@ const Desinote: React.FC = () => {
 
   // --------------------- Menu & Panel Handlers ---------------------
   const [showMenu, setShowMenu] = useState(false);
-  const toggleMenu = () => setShowMenu((prev) => !prev);
+  const toggleMenu = () => setShowMenu(prev => !prev);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -2005,13 +2475,10 @@ const Desinote: React.FC = () => {
   // --------------------- Save/Load Lesson State ---------------------
   const loadSavedStates = () => {
     const savesRef = dbRef(db, "lessonSaves");
-    const listener = onValue(savesRef, (snapshot) => {
+    const listener = onValue(savesRef, snapshot => {
       const data = snapshot.val();
       if (data) {
-        const savesArray = Object.keys(data).map((id) => ({
-          id,
-          ...data[id],
-        }));
+        const savesArray = Object.keys(data).map(id => ({ id, ...data[id] }));
         setSavedStates(savesArray);
       } else {
         setSavedStates([]);
@@ -2025,14 +2492,11 @@ const Desinote: React.FC = () => {
   }, []);
 
   const loadLessonState = (saveData: any) => {
-    if (
-      window.confirm(
-        `Load file "${saveData.fileName}"? This will overwrite your current work.`
-      )
-    ) {
+    if (window.confirm(`Load file "${saveData.fileName}"? This will overwrite your current work.`)) {
       const loadedItems = saveData.items || {};
       const loadedTextItems: { [id: string]: any } = {};
       const loadedImageItems: { [id: string]: any } = {};
+      const loadedArrowItems: { [id: string]: any } = {};
       Object.values(loadedItems).forEach((item: any) => {
         if (item.type === "text") {
           loadedTextItems[item.id] = {
@@ -2052,10 +2516,13 @@ const Desinote: React.FC = () => {
           };
         } else if (item.type === "image") {
           loadedImageItems[item.id] = item;
+        } else if (item.type === "arrow") {
+          loadedArrowItems[item.id] = item;
         }
       });
       set(dbRef(db, "lessonNotes"), loadedTextItems);
       set(dbRef(db, "lessonImages"), loadedImageItems);
+      set(dbRef(db, "lessonArrows"), loadedArrowItems);
 
       const loadedLayersArray = saveData.layers || [];
       const loadedLayersObj: { [id: string]: any } = {};
@@ -2076,19 +2543,22 @@ const Desinote: React.FC = () => {
     if (window.confirm("Delete this saved file?")) {
       remove(dbRef(db, `lessonSaves/${id}`))
         .then(() => {
-          setSavedStates((prev) => prev.filter((save) => save.id !== id));
+          setSavedStates(prev => prev.filter(save => save.id !== id));
         })
-        .catch((error) => console.error("Error deleting saved file:", error));
+        .catch(error => console.error("Error deleting saved file:", error));
     }
   };
 
   const clearCanvas = () => {
     if (window.confirm("Clear canvas? This will permanently remove all items.")) {
-      set(dbRef(db, "lessonNotes"), null).catch((error) =>
+      set(dbRef(db, "lessonNotes"), null).catch(error =>
         console.error("Error clearing lesson notes:", error)
       );
-      set(dbRef(db, "lessonImages"), null).catch((error) =>
+      set(dbRef(db, "lessonImages"), null).catch(error =>
         console.error("Error clearing lesson images:", error)
+      );
+      set(dbRef(db, "lessonArrows"), null).catch(error =>
+        console.error("Error clearing lesson arrows:", error)
       );
       setItems({});
     }
@@ -2194,21 +2664,18 @@ const Desinote: React.FC = () => {
               <p className="text-slate-400 text-lg">No saved files.</p>
             ) : (
               <ul className="max-h-96 overflow-y-auto mb-4 space-y-2">
-                {savedStates.map((save) => {
+                {savedStates.map(save => {
                   const fileSize = (new Blob([JSON.stringify(save)]).size / 1024).toFixed(2);
                   return (
-                    <li
-                      key={save.id}
-                      className="flex items-center justify-between p-4 bg-tertiary-color rounded"
-                    >
+                    <li key={save.id} className="flex items-center justify-between p-4 bg-tertiary-color rounded">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
                         {renamingSaveId === save.id ? (
                           <input
                             type="text"
                             value={renamingName}
-                            onChange={(e) => setRenamingName(e.target.value)}
+                            onChange={e => setRenamingName(e.target.value)}
                             onBlur={() => handleSaveRename(save.id)}
-                            onKeyDown={(e) => {
+                            onKeyDown={e => {
                               if (e.key === "Enter") {
                                 handleSaveRename(save.id);
                               }
@@ -2289,8 +2756,8 @@ const Desinote: React.FC = () => {
               onDragEnd={handleLayerDragEnd}
               modifiers={[restrictToParentElement]}
             >
-              <SortableContext items={layers.map((l) => l.id)} strategy={verticalListSortingStrategy}>
-                {layers.map((layer) => (
+              <SortableContext items={layers.map(l => l.id)} strategy={verticalListSortingStrategy}>
+                {layers.map(layer => (
                   <SortableLayerItem
                     key={layer.id}
                     layer={layer}
@@ -2356,20 +2823,26 @@ const Desinote: React.FC = () => {
           <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">4</span>
         </button>
         <button
-          onClick={() => setGridEnabled((prev) => !prev)}
+          onClick={() => setCurrentTool("arrow")}
+          className={`relative p-2 rounded ${currentTool === "arrow" ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
+          title="Draw Arrow"
+        >
+          <FiArrowRight size={24} color="#FFFFFF" />
+          <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">5</span>
+        </button>
+        <button
+          onClick={() => setGridEnabled(prev => !prev)}
           className={`relative p-2 rounded ${gridEnabled ? "bg-blue-600" : "bg-gray-600 hover:bg-gray-500"}`}
           title="Grid Lock"
         >
           {gridEnabled ? <FiGrid size={24} color="#FFFFFF" /> : <FiSquare size={24} color="#FFFFFF" />}
-          <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">5</span>
+          <span className="absolute -bottom-1 left-0 text-[0.65rem] text-white">6</span>
         </button>
       </div>
 
       {selectedNotes.size > 0 && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-20 bg-opacity-75 backdrop-filter backdrop-blur-lg p-2 rounded shadow-lg">
-          <span className="text-sm text-white">
-            {selectedNotes.size} item(s) selected
-          </span>
+          <span className="text-sm text-white">{selectedNotes.size} item(s) selected</span>
         </div>
       )}
 
@@ -2383,9 +2856,7 @@ const Desinote: React.FC = () => {
               min="16"
               max="72"
               value={propertyValues.fontSize}
-              onChange={(e) =>
-                handlePropertyChange("fontSize", parseInt(e.target.value) || 16)
-              }
+              onChange={(e) => handlePropertyChange("fontSize", parseInt(e.target.value) || 16)}
               className="w-16 p-1 rounded text-white font-bold"
             />
           </label>
@@ -2457,6 +2928,8 @@ const Desinote: React.FC = () => {
                 : isSelecting && hasDraggedRef.current
                 ? "crosshair"
                 : "default"
+              : currentTool === "arrow"
+              ? "crosshair"
               : "default",
         }}
         onMouseDown={handleMouseDown}
@@ -2465,17 +2938,17 @@ const Desinote: React.FC = () => {
       />
 
       {Object.values(items).map(
-        (it) =>
+        it =>
           it.type === "text" &&
           it.isEditing && (
             <input
               key={it.id}
-              ref={(el) => (inputRefs.current[it.id] = el)}
+              ref={el => (inputRefs.current[it.id] = el)}
               type="text"
               value={it.text}
-              onChange={(e) => handleInputChange(it.id, e)}
+              onChange={e => handleInputChange(it.id, e)}
               onBlur={() => handleInputBlur(it.id)}
-              onKeyDown={(e) => handleKeyDownInput(it.id, e)}
+              onKeyDown={e => handleKeyDownInput(it.id, e)}
               className="absolute bg-transparent border-b border-white z-10"
               style={{
                 top: inputPositions[it.id]?.top || 0,
@@ -2491,7 +2964,7 @@ const Desinote: React.FC = () => {
                 outline: "none",
                 border: "none",
                 caretColor: it.color,
-                width: `${(inputWidths[it.id] || 10)}px`,
+                width: `${inputWidths[it.id] || 10}px`,
               }}
             />
           )
