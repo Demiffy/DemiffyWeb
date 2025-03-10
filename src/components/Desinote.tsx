@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getDatabase, ref as dbRef, set, onValue, push, off, remove } from "firebase/database";
 import {
@@ -299,24 +299,32 @@ const Desinote: React.FC = () => {
     ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
     ctx.fillStyle = item.color;
     ctx.textBaseline = "top";
-    ctx.fillText(item.text, x, y);
+
+    if (!item.isEditing) {
+      ctx.fillText(item.text, x, y);
+      const textWidth = ctx.measureText(item.text).width;
+      if (item.isUnderline) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + item.fontSize);
+        ctx.lineTo(x + textWidth, y + item.fontSize);
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 2 / scale;
+        ctx.stroke();
+      }
+      if (item.isCrossedOut) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + item.fontSize / 2);
+        ctx.lineTo(x + textWidth, y + item.fontSize / 2);
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 1 / scale;
+        ctx.stroke();
+      }
+    } else {
+      ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
+    }
+
     const textWidth = ctx.measureText(item.text).width;
-    if (item.isUnderline) {
-      ctx.beginPath();
-      ctx.moveTo(x, y + item.fontSize);
-      ctx.lineTo(x + textWidth, y + item.fontSize);
-      ctx.strokeStyle = item.color;
-      ctx.lineWidth = 2 / scale;
-      ctx.stroke();
-    }
-    if (item.isCrossedOut) {
-      ctx.beginPath();
-      ctx.moveTo(x, y + item.fontSize / 2);
-      ctx.lineTo(x + textWidth, y + item.fontSize / 2);
-      ctx.strokeStyle = item.color;
-      ctx.lineWidth = 1 / scale;
-      ctx.stroke();
-    }
+
     if (selected) {
       const baseLineWidth = 2,
         baseDashLength = 6,
@@ -1582,39 +1590,46 @@ const Desinote: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [items, selectedNotes]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!selectedNoteId) return;
+    const item = items[selectedNoteId];
+    if (!item || item.type !== "text" || !canvasRef.current || !containerRef.current) return;
     const newPos: { [id: string]: { top: number; left: number } } = {};
     const newWidths: { [id: string]: number } = {};
 
     const fontAdjustments: Record<string, number> = {
-      "Verdana": -2,
+      Verdana: -3,
       "Courier New": 2,
-      "Arial": -1,
+      Arial: 0,
     };
-    // TODO: scaling adjusments
-    Object.values(items).forEach((it) => {
-      if (it.type === "text" && it.isEditing && canvasRef.current && containerRef.current) {
-        const fontAdjustment = fontAdjustments[it.fontFamily] || 0;
 
-        newPos[it.id] = {
-          top: (it.y - viewportOffset.y) * scale - 2.7 * scale + 1 + fontAdjustment,
-          left: (it.x - viewportOffset.x) * scale,
-        };
+    const baseAdjustment = fontAdjustments[item.fontFamily] || 0;
+    let effectiveAdjustment = baseAdjustment;
+    if (item.fontFamily === "Courier New") {
+      effectiveAdjustment = baseAdjustment * (scale - 1) * 0.3;
+    } else if (item.fontFamily === "Verdana") {
+      effectiveAdjustment = scale < 1 
+        ? baseAdjustment - (scale - 1) * 3 
+        : baseAdjustment + 0.8;
+    }
 
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.font = `${it.isBold ? "bold " : ""}${it.fontSize}px ${it.fontFamily}`;
-          const tw = ctx.measureText(it.text).width;
-          const extraPadding = 2;
-          newWidths[it.id] = it.text ? tw + extraPadding : 1;
-        }
-      }
-    });
+    newPos[item.id] = {
+      top: (item.y - viewportOffset.y) * scale - 2.7 * scale + 1 + effectiveAdjustment,
+      left: (item.x - viewportOffset.x) * scale,
+    };
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.font = `${item.isBold ? "bold " : ""}${item.fontSize}px ${item.fontFamily}`;
+      const tw = ctx.measureText(item.text).width;
+      const extraPadding = 2;
+      newWidths[item.id] = item.text ? tw + extraPadding : 1;
+    }
 
     setInputPositions(newPos);
     setInputWidths(newWidths);
-  }, [items, scale, viewportOffset]);
+  }, [selectedNoteId, items, scale, viewportOffset]);
 
   // --------------------- Firebase Operations ---------------------
   const saveLessonItem = (it: DrawableItem) => {
