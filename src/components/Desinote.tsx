@@ -231,6 +231,7 @@ const Desinote: React.FC = () => {
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef<boolean>(false);
 
+  const [clipboard, setClipboard] = useState<DrawableItem[]>([]);
   const [canvasBgColor, setCanvasBgColor] = useState("#121212");
   const [items, setItems] = useState<{ [id: string]: DrawableItem }>({});
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -1519,23 +1520,26 @@ const Desinote: React.FC = () => {
             selectedNotes.forEach(id => {
               const it = items[id];
               if (it) {
-                if (it.type === "arrow") {
-                  initPos[id] = {
-                    x: it.x,
-                    y: it.y,
-                    startX: (it as ArrowItem).startX,
-                    startY: (it as ArrowItem).startY,
-                    endX: (it as ArrowItem).endX,
-                    endY: (it as ArrowItem).endY,
-                  };
-                } else {
-                  initPos[id] = { x: it.x, y: it.y };
-                }
+                initPos[id] =
+                  it.type === "arrow"
+                    ? {
+                        x: it.x,
+                        y: it.y,
+                        startX: (it as ArrowItem).startX,
+                        startY: (it as ArrowItem).startY,
+                        endX: (it as ArrowItem).endX,
+                        endY: (it as ArrowItem).endY,
+                      }
+                    : { x: it.x, y: it.y };
               }
             });
             setInitialPositions(initPos);
           } else {
-            setSelectedNotes(new Set([clickedItemId]));
+            if (event.ctrlKey) {
+              setSelectedNotes(prev => new Set([...prev, clickedItemId!]));
+            } else {
+              setSelectedNotes(new Set([clickedItemId!]));
+            }
             setDragStart({ x: event.clientX, y: event.clientY });
             dragStartWorldRef.current = getWorldCoordinates(event, canvas);
             if (item.type === "arrow") {
@@ -1580,8 +1584,10 @@ const Desinote: React.FC = () => {
           setIsSelecting(true);
           setSelectionStart({ x, y });
           setSelectionEnd({ x, y });
-          setSelectedNotes(new Set());
-          setSelectedNoteId(null);
+          if (!event.ctrlKey) {
+            setSelectedNotes(new Set());
+            setSelectedNoteId(null);
+          }
         }
       });
     }
@@ -2583,6 +2589,120 @@ const Desinote: React.FC = () => {
 
   const [showLoadDialog, setShowLoadDialog] = useState(false);
 
+  // --------------------- Copy Pasting Handlers ---------------------
+
+const handleCopy = () => {
+  const copiedItems: DrawableItem[] = [];
+  selectedNotes.forEach(id => {
+    if (items[id]) {
+      copiedItems.push({ ...items[id] });
+    }
+  });
+  setClipboard(copiedItems);
+};
+
+const handlePaste = () => {
+  if (clipboard.length === 0) return;
+  const newItems = { ...items };
+  const newSelectedIds = new Set<string>();
+
+  clipboard.forEach(item => {
+    const newId = Date.now().toString() + Math.random().toString(36).substring(2);
+    const newItem = { ...item, id: newId, x: item.x + 10, y: item.y + 10 };
+
+    newItems[newId] = newItem;
+    newSelectedIds.add(newId);
+
+    if (newItem.type === "text") {
+      const itemRef = dbRef(db, `lessonNotes/${newId}`);
+      set(itemRef, {
+        id: newItem.id,
+        type: newItem.type,
+        content: newItem.text,
+        x: newItem.x,
+        y: newItem.y,
+        fontSize: newItem.fontSize,
+        fontFamily: newItem.fontFamily,
+        color: newItem.color,
+        isBold: newItem.isBold,
+        isUnderline: newItem.isUnderline,
+        isCrossedOut: newItem.isCrossedOut,
+        layerId: newItem.layerId,
+        layerName: newItem.layerName,
+      }).catch(error => console.error("Error saving duplicated text item:", error));
+    } else if (newItem.type === "image") {
+      const itemRef = dbRef(db, `lessonImages/${newId}`);
+      set(itemRef, {
+        id: newItem.id,
+        type: newItem.type,
+        imageUrl: newItem.imageUrl,
+        x: newItem.x,
+        y: newItem.y,
+        width: newItem.width,
+        height: newItem.height,
+        layerId: newItem.layerId,
+        layerName: newItem.layerName,
+      }).catch(error => console.error("Error saving duplicated image item:", error));
+    } else if (newItem.type === "arrow") {
+      const itemRef = dbRef(db, `lessonArrows/${newId}`);
+      set(itemRef, {
+        id: newItem.id,
+        type: newItem.type,
+        startX: newItem.startX,
+        startY: newItem.startY,
+        endX: newItem.endX,
+        endY: newItem.endY,
+        color: newItem.color,
+        lineWidth: newItem.lineWidth,
+        layerId: newItem.layerId,
+        layerName: newItem.layerName,
+      }).catch(error => console.error("Error saving duplicated arrow item:", error));
+    }
+  });
+  setItems(newItems);
+  setSelectedNotes(newSelectedIds);
+};
+
+useEffect(() => {
+  const handleCopyPaste = (e: KeyboardEvent) => {
+    if (e.ctrlKey && e.key.toLowerCase() === "c") {
+      e.preventDefault();
+      handleCopy();
+    }
+    if (e.ctrlKey && e.key.toLowerCase() === "v") {
+      e.preventDefault();
+      handlePaste();
+    }
+  };
+  window.addEventListener("keydown", handleCopyPaste);
+  return () => window.removeEventListener("keydown", handleCopyPaste);
+}, [items, selectedNotes, clipboard]);
+
+  // --------------------- Keybinds Menu Handlers ---------------------
+  useEffect(() => {
+    const handleShortcutKey = (e: KeyboardEvent) => {
+      if (e.key === "F1") {
+        e.preventDefault();
+        saveLessonState();
+      } else if (e.key === "F2") {
+        e.preventDefault();
+        setShowLoadDialog(true);
+      } else if (e.key === "F3") {
+        e.preventDefault();
+        clearCanvas();
+      } else if (e.key === "F4") {
+        e.preventDefault();
+        console.log("Settings shortcut triggered");
+      } else if (e.key === "F5") {
+        e.preventDefault();
+        console.log("Help shortcut triggered");
+      }
+    };
+
+    window.addEventListener("keydown", handleShortcutKey);
+    return () => window.removeEventListener("keydown", handleShortcutKey);
+  }, [saveLessonState, setShowLoadDialog, clearCanvas]);
+
   // --------------------- Render ---------------------
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
@@ -2604,29 +2724,39 @@ const Desinote: React.FC = () => {
                 onClick={saveLessonState}
                 className="w-full flex items-center px-4 py-1 mb-1 hover:bg-slate-700 rounded"
               >
-                <FiSave className="mr-2" /> <span className="text-sm">Save</span>
+                <FiSave className="mr-2" />
+                <span className="text-sm">Save</span>
+                <span className="ml-auto text-xs text-slate-400">F1</span>
               </button>
               <button
                 onClick={() => setShowLoadDialog(true)}
                 className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded"
               >
-                <FiDownload className="mr-2" /> <span className="text-sm">Load</span>
+                <FiDownload className="mr-2" />
+                <span className="text-sm">Load</span>
+                <span className="ml-auto text-xs text-slate-400">F2</span>
               </button>
               <button
                 onClick={clearCanvas}
                 className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded"
               >
-                <FiTrash2 className="mr-2" /> <span className="text-sm">Clear Canvas</span>
+                <FiTrash2 className="mr-2" />
+                <span className="text-sm">Clear</span>
+                <span className="ml-auto text-xs text-slate-400">F3</span>
               </button>
             </div>
             {/* Options Category */}
             <div className="mb-2">
               <h4 className="text-xs text-slate-300 font-semibold mb-1">Options</h4>
               <button className="w-full flex items-center px-4 py-1 mb-1 hover:bg-slate-700 rounded">
-                <FiSettings className="mr-2" /> <span className="text-sm">Settings</span>
+                <FiSettings className="mr-2" />
+                <span className="text-sm">Settings</span>
+                <span className="ml-auto text-xs text-slate-400">F4</span>
               </button>
               <button className="w-full flex items-center px-4 py-1 hover:bg-slate-700 rounded">
-                <FiHelpCircle className="mr-2" /> <span className="text-sm">Help</span>
+                <FiHelpCircle className="mr-2" />
+                <span className="text-sm">Help</span>
+                <span className="ml-auto text-xs text-slate-400">F5</span>
               </button>
             </div>
             {/* Canvas Background Category */}
