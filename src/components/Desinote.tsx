@@ -526,6 +526,16 @@ const Desinote: React.FC = () => {
       ctx.strokeStyle = "rgba(255,255,255,0.8)";
       ctx.lineWidth = adjustedLineWidth;
       ctx.stroke();
+
+      const resizeHandleHalfSize = 8 / scale;
+      const resizeHandleX = item.width / 2 - 2 * resizeHandleHalfSize;
+      const resizeHandleY = item.height / 2 - 2 * resizeHandleHalfSize;
+      const handleFullSize = 2 * resizeHandleHalfSize;
+      ctx.fillStyle = "rgba(0, 123, 255, 0.9)";
+      ctx.fillRect(resizeHandleX, resizeHandleY, handleFullSize, handleFullSize);
+      ctx.strokeStyle = "rgba(255,255,255,0.8)";
+      ctx.lineWidth = adjustedLineWidth;
+      ctx.strokeRect(resizeHandleX, resizeHandleY, handleFullSize, handleFullSize);
     }
     ctx.restore();
   };
@@ -1480,6 +1490,27 @@ const Desinote: React.FC = () => {
       let clickedItemId: string | null = null;
       let clickedItemType: "text" | "image" | "arrow" | null = null;
       const checkImagePromises: Promise<void>[] = [];
+      const handleSize = 20 / scale;
+      for (const item of Object.values(items)) {
+        if (item.type === "image" && selectedNotes.has(item.id)) {
+          if (
+            item.angle === 0 &&
+            x >= item.x + item.width - handleSize &&
+            x <= item.x + item.width &&
+            y >= item.y + item.height - handleSize &&
+            y <= item.y + item.height
+          ) {
+            setResizingImage({
+              id: item.id,
+              startX: event.clientX,
+              startY: event.clientY,
+              initialWidth: item.width,
+              initialHeight: item.height,
+            });
+            return;
+          }
+        }
+      }
       for (let i = 0; i < orderedItems.length; i++) {
         const item = orderedItems[i];
         if (item.type === "text") {
