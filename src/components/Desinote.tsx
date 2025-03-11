@@ -2322,16 +2322,18 @@ const Desinote: React.FC = () => {
       alert("Please enter a valid image or GIF URL.");
       return;
     }
+    const proxiedUrl = `https://demiffy.com/api/proxy?url=${encodeURIComponent(imageUrl)}`;
     const imagesRef = dbRef(db, "lessonImages");
     const newImageRef = push(imagesRef);
     const newId = newImageRef.key;
     if (newId) {
       const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
       const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
-      const activeLayer = layers.find(l => l.id === activeLayerId) || { id: "default", name: "Default", locked: false, order: 0, visible: true };
+      const activeLayer =
+        layers.find(l => l.id === activeLayerId) || { id: "default", name: "Default", locked: false, order: 0, visible: true };
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.src = imageUrl;
+      img.src = proxiedUrl;
       img.onload = () => {
         let { naturalWidth: width, naturalHeight: height } = img;
         const maxWidth = 300;
@@ -2347,7 +2349,7 @@ const Desinote: React.FC = () => {
           layerName: activeLayer.name,
           x: defaultX,
           y: defaultY,
-          imageUrl,
+          imageUrl: proxiedUrl,
           isDragging: false,
           isEditing: false,
           width,
