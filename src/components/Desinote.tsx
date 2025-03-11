@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { initializeApp, getApps, getApp } from "firebase/app";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   getDatabase,
   ref as dbRef,
@@ -232,6 +233,8 @@ const Desinote: React.FC = () => {
   const newItemIdsRef = useRef<Set<string>>(new Set());
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef<boolean>(false);
+  const storage = getStorage(app);
+  const isValidImageUrl = (url: string) => /\.(jpeg|jpg|gif|png)$/.test(url);
 
   const [clipboard, setClipboard] = useState<DrawableItem[]>([]);
   const [canvasBgColor, setCanvasBgColor] = useState("#121212");
@@ -250,7 +253,8 @@ const Desinote: React.FC = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isHoveringItem, setIsHoveringItem] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isNotesLoading, setIsNotesLoading] = useState(true);
+  const [isImagesLoading, setIsImagesLoading] = useState(true);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
@@ -527,7 +531,7 @@ const Desinote: React.FC = () => {
   };
 
   const drawArrow = (ctx: CanvasRenderingContext2D, item: ArrowItem, selected: boolean) => {
-    const startX = item.startX - viewportOffset.x;
+    const startX = item.startX - viewportOffset.x; 
     const startY = item.startY - viewportOffset.y;
     const endX = item.endX - viewportOffset.x;
     const endY = item.endY - viewportOffset.y;
@@ -1178,11 +1182,11 @@ const Desinote: React.FC = () => {
             return updated;
           });
         }
-        setIsLoading(false);
+        setIsNotesLoading(false);
       },
       error => {
         console.error("Error loading lesson notes:", error);
-        setIsLoading(false);
+        setIsNotesLoading(false);
       }
     );
     return () => off(notesRef, "value", listener);
@@ -1196,8 +1200,11 @@ const Desinote: React.FC = () => {
         const data = snapshot.val();
         if (data) {
           const validated: { [id: string]: DrawableItem } = {};
+          const loadPromises: Promise<void>[] = [];
           Object.keys(data).forEach(id => {
             const image = data[id];
+            const imageUrl =
+              typeof image.imageUrl === "string" ? image.imageUrl : "";
             validated[id] = {
               id: image.id || id,
               type: "image",
@@ -1205,25 +1212,35 @@ const Desinote: React.FC = () => {
               layerName: image.layerName || layers[0]?.name || "Default",
               x: typeof image.x === "number" ? image.x : 100,
               y: typeof image.y === "number" ? image.y : 100,
-              imageUrl: typeof image.imageUrl === "string" ? image.imageUrl : "",
+              imageUrl,
               isDragging: false,
               isEditing: false,
               width: typeof image.width === "number" ? image.width : 100,
               height: typeof image.height === "number" ? image.height : 100,
               angle: typeof image.angle === "number" ? image.angle : 0,
             };
-            if (image.imageUrl && !imageCacheRef.current.get(image.imageUrl)) {
-              const img = new Image();
-              img.crossOrigin = "anonymous";
-              img.src = image.imageUrl;
-              img.onload = () => {
-                imageCacheRef.current.set(image.imageUrl, img);
-                drawCanvas();
-              };
-              img.onerror = () => console.error(`Failed to load image at URL: ${image.imageUrl}`);
+            if (imageUrl && !imageCacheRef.current.get(imageUrl)) {
+              const promise = new Promise<void>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = imageUrl;
+                img.onload = () => {
+                  imageCacheRef.current.set(imageUrl, img);
+                  drawCanvas();
+                  resolve();
+                };
+                img.onerror = () => {
+                  console.error(`Failed to load image at URL: ${imageUrl}`);
+                  resolve();
+                };
+              });
+              loadPromises.push(promise);
             }
           });
           setItems(prev => ({ ...prev, ...validated }));
+          Promise.all(loadPromises).then(() => {
+            setIsImagesLoading(false);
+          });
         } else {
           setItems(prev => {
             const updated = { ...prev };
@@ -1232,12 +1249,12 @@ const Desinote: React.FC = () => {
             });
             return updated;
           });
+          setIsImagesLoading(false);
         }
-        setIsLoading(false);
       },
       error => {
         console.error("Error loading lesson images:", error);
-        setIsLoading(false);
+        setIsImagesLoading(false);
       }
     );
     return () => off(imagesRef, "value", listener);
@@ -2315,26 +2332,46 @@ const Desinote: React.FC = () => {
     }
   };
 
-  const isValidImageUrl = (url: string) => /\.(jpeg|jpg|gif|png)$/.test(url);
-
-  const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
-    if (!isValidImageUrl(imageUrl)) {
-      alert("Please enter a valid image or GIF URL.");
-      return;
+const handleImageCORSFallback = async (imageUrl: string): Promise<string | null> => {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
     }
+    const blob = await response.blob();
+
+    const fileRef = storageRef(storage, `images/${Date.now()}-${Math.random().toString(36).substring(2)}`);
+    await uploadBytes(fileRef, blob);
+    const downloadUrl = await getDownloadURL(fileRef);
+    return downloadUrl;
+  } catch (error) {
+    console.error("Error fetching/uploading image:", error);
+    return null;
+  }
+};
+
+const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
+  if (!isValidImageUrl(imageUrl)) {
+    alert("Please enter a valid image or GIF URL.");
+    return;
+  }
+  const imagesRef = dbRef(db, "lessonImages");
+  const newImageRef = push(imagesRef);
+  const newId = newImageRef.key;
+  if (newId) {
+    const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
+    const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
+    const activeLayer =
+      layers.find(l => l.id === activeLayerId) ||
+      { id: "default", name: "Default", locked: false, order: 0, visible: true };
+
     const proxiedUrl = `https://demiffy.com/api/proxy?url=${encodeURIComponent(imageUrl)}`;
-    const imagesRef = dbRef(db, "lessonImages");
-    const newImageRef = push(imagesRef);
-    const newId = newImageRef.key;
-    if (newId) {
-      const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
-      const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
-      const activeLayer =
-        layers.find(l => l.id === activeLayerId) || { id: "default", name: "Default", locked: false, order: 0, visible: true };
+
+    const tryLoadImage = (urlToTry: string, triedProxy: boolean = false) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.src = proxiedUrl;
-      img.onload = () => {
+      img.src = urlToTry;
+      img.onload = async () => {
         let { naturalWidth: width, naturalHeight: height } = img;
         const maxWidth = 300;
         if (width > maxWidth) {
@@ -2342,6 +2379,10 @@ const Desinote: React.FC = () => {
           width = maxWidth;
           height = height * factor;
         }
+        const finalUrl = urlToTry.startsWith("https://demiffy.com/api/proxy")
+          ? urlToTry
+          : imageUrl;
+
         const newImage: ImageItem = {
           id: newId,
           type: "image",
@@ -2349,7 +2390,7 @@ const Desinote: React.FC = () => {
           layerName: activeLayer.name,
           x: defaultX,
           y: defaultY,
-          imageUrl: proxiedUrl,
+          imageUrl: finalUrl,
           isDragging: false,
           isEditing: false,
           width,
@@ -2375,10 +2416,27 @@ const Desinote: React.FC = () => {
           })
           .catch(error => console.error("Error adding new image:", error));
       };
-      img.onerror = () =>
-        alert("Failed to load image. Please check the URL and try again.");
+      img.onerror = async () => {
+        if (!triedProxy) {
+          tryLoadImage(proxiedUrl, true);
+        } else {
+          const storageUrl = await handleImageCORSFallback(imageUrl);
+          if (storageUrl) {
+            tryLoadImage(storageUrl, true);
+          } else {
+            alert("Failed to load image. Please check the URL and try again.");
+          }
+        }
+      };
+    };
+
+    if (imageUrl.startsWith("https://demiffy.com/api/proxy")) {
+      tryLoadImage(imageUrl, true);
+    } else {
+      tryLoadImage(imageUrl);
     }
-  };
+  }
+};
 
   // --------------------- Layer Management Functions ---------------------
   const updateLayerInFirebase = (layer: Layer) => {
@@ -3170,7 +3228,7 @@ const Desinote: React.FC = () => {
           )
       )}
 
-      {isLoading && (
+        {(isNotesLoading || isImagesLoading) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-30">
           <div className="flex flex-col items-center">
             <svg
