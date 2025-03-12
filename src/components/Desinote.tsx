@@ -5,8 +5,11 @@ import React, {
   useLayoutEffect,
   useCallback,
 } from "react";
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  initializeApp,
+  getApps,
+  getApp
+} from "firebase/app";
 import {
   getDatabase,
   ref as dbRef,
@@ -17,6 +20,12 @@ import {
   remove,
 } from "firebase/database";
 import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
+import {
   FiMove,
   FiCheckSquare,
   FiType,
@@ -26,19 +35,21 @@ import {
   FiLock,
   FiUnlock,
   FiEdit2,
-  FiEye,
-  FiEyeOff,
-  FiPlus,
+  FiSave,
+  FiDownload,
   FiTrash2,
   FiChevronLeft,
   FiChevronRight,
+  FiPlus,
   FiAlignJustify,
-  FiSave,
-  FiSettings,
   FiHelpCircle,
-  FiDownload,
   FiX,
   FiArrowRight,
+  FiEyeOff,
+  FiSettings,
+  FiEye,
+  FiChevronDown,
+  FiChevronUp
 } from "react-icons/fi";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import {
@@ -65,10 +76,12 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const db = getDatabase(app);
+const storage = getStorage(app);
 
 // --------------------- Type Definitions ---------------------
 interface BaseItem {
   id: string;
+  type: string;
   layerId: string;
   layerName: string;
   x: number;
@@ -115,6 +128,17 @@ interface Layer {
   locked: boolean;
   order: number;
   visible: boolean;
+}
+
+interface SavedState {
+  id: string;
+  fileName: string;
+  category: string;
+  timestamp: number;
+  items: { [id: string]: DrawableItem };
+  layers: Layer[];
+  canvasBgColor: string;
+  gridEnabled: boolean;
 }
 
 // --------------------- Sortable Layer Item Component ---------------------
@@ -233,7 +257,7 @@ const Desinote: React.FC = () => {
   const newItemIdsRef = useRef<Set<string>>(new Set());
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef<boolean>(false);
-  const storage = getStorage(app);
+
   const isValidImageUrl = (url: string) => /\.(jpeg|jpg|gif|png)$/.test(url);
 
   const [clipboard, setClipboard] = useState<DrawableItem[]>([]);
@@ -297,7 +321,8 @@ const Desinote: React.FC = () => {
   const [flashLockedLayers, setFlashLockedLayers] = useState<{ [layerId: string]: boolean }>({});
   const [flashPanelToggle, setFlashPanelToggle] = useState(false);
 
-  const [savedStates, setSavedStates] = useState<{ id: string; fileName: string; timestamp: number; data: any }[]>([]);
+  const [savedStates, setSavedStates] = useState<SavedState[]>([]);
+  const [foldedCategories, setFoldedCategories] = useState<{ [cat: string]: boolean }>({});
 
   const [arrowDrawing, setArrowDrawing] = useState<ArrowItem | null>(null);
   const [draggingArrowHandle, setDraggingArrowHandle] = useState<DraggingArrowHandle | null>(null);
@@ -541,7 +566,7 @@ const Desinote: React.FC = () => {
   };
 
   const drawArrow = (ctx: CanvasRenderingContext2D, item: ArrowItem, selected: boolean) => {
-    const startX = item.startX - viewportOffset.x; 
+    const startX = item.startX - viewportOffset.x;
     const startY = item.startY - viewportOffset.y;
     const endX = item.endX - viewportOffset.x;
     const endY = item.endY - viewportOffset.y;
@@ -991,6 +1016,7 @@ const Desinote: React.FC = () => {
               offsetY: pos.y - item.startY,
             });
             e.preventDefault();
+            e.stopPropagation(); // Prevents entire arrow drag
           } else if (dist(pos.x, pos.y, item.endX, item.endY) < threshold) {
             setDraggingArrowHandle({
               id: item.id,
@@ -999,6 +1025,7 @@ const Desinote: React.FC = () => {
               offsetY: pos.y - item.endY,
             });
             e.preventDefault();
+            e.stopPropagation(); // Prevents entire arrow drag
           }
         }
       });
@@ -1006,6 +1033,7 @@ const Desinote: React.FC = () => {
     canvas.addEventListener("mousedown", handleArrowHandleMouseDown);
     return () => canvas.removeEventListener("mousedown", handleArrowHandleMouseDown);
   }, [currentTool, items, scale, getWorldCoordinates]);
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1389,16 +1417,19 @@ const Desinote: React.FC = () => {
   const [renamingName, setRenamingName] = useState("");
 
   const saveLessonState = () => {
-    const fileName = prompt("Enter a name to save your file (existing file with same name will be overridden):");
+    const fileName = prompt("Enter a name to save your file (existing file with same name in the same folder will be overridden):");
     if (!fileName?.trim()) return;
     const trimmedName = fileName.trim();
-    const existingSave = savedStates.find(save => save.fileName.toLowerCase() === trimmedName.toLowerCase());
+    const folder = prompt("Enter folder/category for this save (leave blank for 'unspecified'):");
+    const category = folder?.trim() || "unspecified";
+    const existingSave = savedStates.find(save => save.fileName.toLowerCase() === trimmedName.toLowerCase() && save.category === category);
     if (existingSave) {
-      const confirmOverride = window.confirm(`A saved file named "${trimmedName}" already exists. Do you want to override it?`);
+      const confirmOverride = window.confirm(`A saved file named "${trimmedName}" in folder "${category}" already exists. Do you want to override it?`);
       if (!confirmOverride) return;
     }
     const stateToSave = {
       fileName: trimmedName,
+      category,
       timestamp: Date.now(),
       items,
       layers,
@@ -2363,111 +2394,111 @@ const Desinote: React.FC = () => {
     }
   };
 
-const handleImageCORSFallback = async (imageUrl: string): Promise<string | null> => {
-  try {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
+  const handleImageCORSFallback = async (imageUrl: string): Promise<string | null> => {
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      const blob = await response.blob();
+
+      const fileRef = storageRef(storage, `images/${Date.now()}-${Math.random().toString(36).substring(2)}`);
+      await uploadBytes(fileRef, blob);
+      const downloadUrl = await getDownloadURL(fileRef);
+      return downloadUrl;
+    } catch (error) {
+      console.error("Error fetching/uploading image:", error);
+      return null;
     }
-    const blob = await response.blob();
+  };
 
-    const fileRef = storageRef(storage, `images/${Date.now()}-${Math.random().toString(36).substring(2)}`);
-    await uploadBytes(fileRef, blob);
-    const downloadUrl = await getDownloadURL(fileRef);
-    return downloadUrl;
-  } catch (error) {
-    console.error("Error fetching/uploading image:", error);
-    return null;
-  }
-};
+  const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
+    if (!isValidImageUrl(imageUrl)) {
+      alert("Please enter a valid image or GIF URL.");
+      return;
+    }
+    const imagesRef = dbRef(db, "lessonImages");
+    const newImageRef = push(imagesRef);
+    const newId = newImageRef.key;
+    if (newId) {
+      const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
+      const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
+      const activeLayer =
+        layers.find(l => l.id === activeLayerId) ||
+        { id: "default", name: "Default", locked: false, order: 0, visible: true };
 
-const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
-  if (!isValidImageUrl(imageUrl)) {
-    alert("Please enter a valid image or GIF URL.");
-    return;
-  }
-  const imagesRef = dbRef(db, "lessonImages");
-  const newImageRef = push(imagesRef);
-  const newId = newImageRef.key;
-  if (newId) {
-    const defaultX = gridEnabled ? Math.round(x / gridSize) * gridSize : x;
-    const defaultY = gridEnabled ? Math.round(y / gridSize) * gridSize : y;
-    const activeLayer =
-      layers.find(l => l.id === activeLayerId) ||
-      { id: "default", name: "Default", locked: false, order: 0, visible: true };
+      const proxiedUrl = `https://demiffy.com/api/proxy?url=${encodeURIComponent(imageUrl)}`;
 
-    const proxiedUrl = `https://demiffy.com/api/proxy?url=${encodeURIComponent(imageUrl)}`;
-
-    const tryLoadImage = (urlToTry: string, triedProxy: boolean = false) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = urlToTry;
-      img.onload = async () => {
-        let { naturalWidth: width, naturalHeight: height } = img;
-        const maxWidth = 300;
-        if (width > maxWidth) {
-          const factor = maxWidth / width;
-          width = maxWidth;
-          height = height * factor;
-        }
-        const finalUrl = urlToTry.startsWith("https://demiffy.com/api/proxy")
-          ? urlToTry
-          : imageUrl;
-
-        const newImage: ImageItem = {
-          id: newId,
-          type: "image",
-          layerId: activeLayer.id,
-          layerName: activeLayer.name,
-          x: defaultX,
-          y: defaultY,
-          imageUrl: finalUrl,
-          isDragging: false,
-          isEditing: false,
-          width,
-          height,
-          angle: 0,
-        };
-        set(newImageRef, {
-          id: newImage.id,
-          type: newImage.type,
-          imageUrl: newImage.imageUrl,
-          x: newImage.x,
-          y: newImage.y,
-          width: newImage.width,
-          height: newImage.height,
-          layerId: newImage.layerId,
-          layerName: newImage.layerName,
-          angle: newImage.angle,
-        })
-          .then(() => {
-            setItems(prev => ({ ...prev, [newId]: newImage }));
-            setSelectedNotes(new Set([newId]));
-            setShowProperties(false);
-          })
-          .catch(error => console.error("Error adding new image:", error));
-      };
-      img.onerror = async () => {
-        if (!triedProxy) {
-          tryLoadImage(proxiedUrl, true);
-        } else {
-          const storageUrl = await handleImageCORSFallback(imageUrl);
-          if (storageUrl) {
-            tryLoadImage(storageUrl, true);
-          } else {
-            alert("Failed to load image. Please check the URL and try again.");
+      const tryLoadImage = (urlToTry: string, triedProxy: boolean = false) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = urlToTry;
+        img.onload = async () => {
+          let { naturalWidth: width, naturalHeight: height } = img;
+          const maxWidth = 300;
+          if (width > maxWidth) {
+            const factor = maxWidth / width;
+            width = maxWidth;
+            height = height * factor;
           }
-        }
-      };
-    };
+          const finalUrl = urlToTry.startsWith("https://demiffy.com/api/proxy")
+            ? urlToTry
+            : imageUrl;
 
-    if (imageUrl.startsWith("https://demiffy.com/api/proxy")) {
-      tryLoadImage(imageUrl, true);
-    } else {
-      tryLoadImage(imageUrl);
+          const newImage: ImageItem = {
+            id: newId,
+            type: "image",
+            layerId: activeLayer.id,
+            layerName: activeLayer.name,
+            x: defaultX,
+            y: defaultY,
+            imageUrl: finalUrl,
+            isDragging: false,
+            isEditing: false,
+            width,
+            height,
+            angle: 0,
+          };
+          set(newImageRef, {
+            id: newImage.id,
+            type: newImage.type,
+            imageUrl: newImage.imageUrl,
+            x: newImage.x,
+            y: newImage.y,
+            width: newImage.width,
+            height: newImage.height,
+            layerId: newImage.layerId,
+            layerName: newImage.layerName,
+            angle: newImage.angle,
+          })
+            .then(() => {
+              setItems(prev => ({ ...prev, [newId]: newImage }));
+              setSelectedNotes(new Set([newId]));
+              setShowProperties(false);
+            })
+            .catch(error => console.error("Error adding new image:", error));
+        };
+        img.onerror = async () => {
+          if (!triedProxy) {
+            tryLoadImage(proxiedUrl, true);
+          } else {
+            const storageUrl = await handleImageCORSFallback(imageUrl);
+            if (storageUrl) {
+              tryLoadImage(storageUrl, true);
+            } else {
+              alert("Failed to load image. Please check the URL and try again.");
+            }
+          }
+        };
+      };
+
+      if (imageUrl.startsWith("https://demiffy.com/api/proxy")) {
+        tryLoadImage(imageUrl, true);
+      } else {
+        tryLoadImage(imageUrl);
+      }
     }
-  }
-};
+  };
 
   // --------------------- Layer Management Functions ---------------------
   const updateLayerInFirebase = (layer: Layer) => {
@@ -2618,7 +2649,7 @@ const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
   }, []);
 
   const loadLessonState = (saveData: any) => {
-    if (window.confirm(`Load file "${saveData.fileName}"? This will overwrite your current work.`)) {
+    if (window.confirm(`Load file "${saveData.fileName}" from folder "${saveData.category}"? This will overwrite your current work.`)) {
       const loadedItems = saveData.items || {};
       const loadedTextItems: { [id: string]: any } = {};
       const loadedImageItems: { [id: string]: any } = {};
@@ -2812,6 +2843,14 @@ const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
   }, [saveLessonState, setShowLoadDialog, clearCanvas]);
 
   // --------------------- Render ---------------------
+  const groupedSaves = savedStates.reduce((acc: { [cat: string]: SavedState[] }, save) => {
+    if (!acc[save.category]) {
+      acc[save.category] = [];
+    }
+    acc[save.category].push(save);
+    return acc;
+  }, {});
+
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden">
       {/* Menu Button */}
@@ -2902,10 +2941,10 @@ const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
         )}
       </div>
 
-      {/* Load Dialog Modal */}
+      {/* Load Dialog Modal - Grouped by Category */}
       {showLoadDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-primary-color rounded-lg shadow-lg p-6 w-3/4 max-w-4xl">
+          <div className="bg-primary-color rounded-lg shadow-lg p-6 w-3/4 max-w-4xl overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-white text-2xl font-semibold">Load File</h3>
               <button
@@ -2918,76 +2957,101 @@ const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
             {savedStates.length === 0 ? (
               <p className="text-slate-400 text-lg">No saved files.</p>
             ) : (
-              <ul className="max-h-96 overflow-y-auto mb-4 space-y-2">
-                {savedStates.map(save => {
-                  const fileSize = (new Blob([JSON.stringify(save)]).size / 1024).toFixed(2);
-                  return (
-                    <li key={save.id} className="flex items-center justify-between p-4 bg-tertiary-color rounded">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-                        {renamingSaveId === save.id ? (
-                          <input
-                            type="text"
-                            value={renamingName}
-                            onChange={e => setRenamingName(e.target.value)}
-                            onBlur={() => handleSaveRename(save.id)}
-                            onKeyDown={e => {
-                              if (e.key === "Enter") {
-                                handleSaveRename(save.id);
-                              }
-                            }}
-                            className="text-slate-200 text-lg font-medium bg-transparent border-b border-slate-400"
-                            style={{
-                              width: `${Math.min(measureStringWidth(renamingName || "New File", 18, "Arial") + 16, 250)}px`,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                            autoFocus
-                          />
-                        ) : (
-                          <span
-                            onDoubleClick={() => {
-                              setRenamingSaveId(save.id);
-                              setRenamingName(save.fileName);
-                            }}
-                            className="text-slate-200 text-lg font-medium cursor-pointer"
-                            style={{
-                              maxWidth: "250px",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {save.fileName}
-                          </span>
-                        )}
-                        <span className="text-sm text-slate-400">
-                          {new Date(save.timestamp).toLocaleString()}
-                        </span>
-                        <span className="text-sm text-slate-400">Size: {fileSize} KB</span>
-                      </div>
-                      <div className="flex space-x-4">
-                        <button
-                          onClick={() => loadLessonState(save)}
-                          className="flex items-center space-x-1 text-green-400 hover:text-green-600 text-lg"
-                          title="Load"
-                        >
-                          <FiDownload size={20} />
-                          <span>Load</span>
-                        </button>
-                        <button
-                          onClick={() => deleteSavedState(save.id)}
-                          className="flex items-center space-x-1 text-red-400 hover:text-red-600 text-lg"
-                          title="Delete"
-                        >
-                          <FiTrash2 size={20} />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              Object.keys(groupedSaves).map(category => {
+                const isFolded = foldedCategories[category] ?? true;
+                return (
+                  <div key={category} className="mb-6">
+                    <div className="flex items-center mb-2">
+                      <h4 className="text-lg text-slate-200 font-bold mr-2">
+                        {category.toUpperCase()}
+                      </h4>
+                      <button
+                        onClick={() =>
+                          setFoldedCategories(prev => ({
+                            ...prev,
+                            [category]: !isFolded,
+                          }))
+                        }
+                        className="text-white"
+                      >
+                        {isFolded ? <FiChevronDown size={20} /> : <FiChevronUp size={20} />}
+                      </button>
+                    </div>
+                    {!isFolded && (
+                      <ul className="space-y-2">
+                        {groupedSaves[category].map(save => {
+                          const fileSize = (new Blob([JSON.stringify(save)]).size / 1024).toFixed(2);
+                          return (
+                            <li key={save.id} className="flex items-center justify-between p-4 bg-tertiary-color rounded">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                                {renamingSaveId === save.id ? (
+                                  <input
+                                    type="text"
+                                    value={renamingName}
+                                    onChange={e => setRenamingName(e.target.value)}
+                                    onBlur={() => handleSaveRename(save.id)}
+                                    onKeyDown={e => {
+                                      if (e.key === "Enter") {
+                                        handleSaveRename(save.id);
+                                      }
+                                    }}
+                                    className="text-slate-200 text-lg font-medium bg-transparent border-b border-slate-400"
+                                    style={{
+                                      width: `${Math.min(measureStringWidth(renamingName || "New File", 18, "Arial") + 16, 250)}px`,
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span
+                                    onDoubleClick={() => {
+                                      setRenamingSaveId(save.id);
+                                      setRenamingName(save.fileName);
+                                    }}
+                                    className="text-slate-200 text-lg font-medium cursor-pointer"
+                                    style={{
+                                      maxWidth: "250px",
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                  >
+                                    {save.fileName}
+                                  </span>
+                                )}
+                                <span className="text-sm text-slate-400">
+                                  {new Date(save.timestamp).toLocaleString()}
+                                </span>
+                                <span className="text-sm text-slate-400">Size: {fileSize} KB</span>
+                              </div>
+                              <div className="flex space-x-4">
+                                <button
+                                  onClick={() => loadLessonState(save)}
+                                  className="flex items-center space-x-1 text-green-400 hover:text-green-600 text-lg"
+                                  title="Load"
+                                >
+                                  <FiDownload size={20} />
+                                  <span>Load</span>
+                                </button>
+                                <button
+                                  onClick={() => deleteSavedState(save.id)}
+                                  className="flex items-center space-x-1 text-red-400 hover:text-red-600 text-lg"
+                                  title="Delete"
+                                >
+                                  <FiTrash2 size={20} />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -3259,7 +3323,7 @@ const addImageAtPosition = (x: number, y: number, imageUrl: string) => {
           )
       )}
 
-        {(isNotesLoading || isImagesLoading) && (
+      {(isNotesLoading || isImagesLoading) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-30">
           <div className="flex flex-col items-center">
             <svg
