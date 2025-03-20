@@ -22,6 +22,7 @@ import CanvasAsync from './components/ui/CanvasASynC';
 import DCars from './components/DCars';
 import ImageEditor from './components/ImageEditor';
 import RemoteControl from './components/RemoteControl';
+import Kyberna from './components/kyberna';
 import Ctest1 from './components/ctest1';
 import NotFound from '../NotFound';
 import './App.css';
@@ -54,6 +55,7 @@ const AnimatedRoutes = () => {
           <Route path="/canvas2" element={<CanvasAsync />} />
           <Route path="/dcars" element={<DCars />} />
           <Route path="/remotepc" element={<RemoteControl />} />
+          <Route path="/kyberna" element={<Kyberna />} />
           <Route path="/404" element={<NotFound />} />
 
           <Route path="*" element={<NotFound />} />
