@@ -130,6 +130,15 @@ const Kyberna: React.FC = () => {
     return grouped;
   };
 
+  const getEventBgColor = (status: string | undefined) => {
+    if (!status) return "bg-blue-500";
+    const statusLower = status.toLowerCase();
+    if (statusLower === "changed") return "bg-yellow-500";
+    if (statusLower === "added") return "bg-red-500";
+    if (statusLower === "canceled") return "bg-gray-500";
+    return "bg-blue-500";
+  };
+
   const renderLoading = () => (
     <div className="flex justify-center items-center my-4">
       <div className="w-12 h-12 border-4 border-blue-900 border-t-transparent rounded-full animate-spin"></div>
@@ -148,12 +157,21 @@ const Kyberna: React.FC = () => {
                 {day}
               </h3>
               {events.map((event, idx) => (
-                <div key={idx} className="border border-gray-700 p-2 mb-3 rounded hover:bg-gray-700">
+                <div
+                  key={idx}
+                  className={`border border-gray-700 p-2 mb-3 rounded hover:bg-gray-700 ${getEventBgColor(event.Status)}`}
+                >
                   <p className="font-semibold">{event.Subject}</p>
                   <p className="text-sm">{event.Time}</p>
-                  <p className="text-xs text-gray-400">{event.Room} {event.Teacher && `- ${event.Teacher}`}</p>
-                  {event.Group && <p className="text-xs text-gray-500">Group: {event.Group}</p>}
-                  {event.Status && <p className="text-xs text-red-400">Status: {event.Status}</p>}
+                  <p className="text-xs text-gray-400">
+                    {event.Room} {event.Teacher && `- ${event.Teacher}`}
+                  </p>
+                  {event.Group && (
+                    <p className="text-xs text-gray-500">Group: {event.Group}</p>
+                  )}
+                  {event.Status && (
+                    <p className="text-xs text-white">Status: {event.Status}</p>
+                  )}
                 </div>
               ))}
             </div>
@@ -202,7 +220,9 @@ const Kyberna: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-blue-500 text-center">Kyberna Timetable [PROTOTYPE]</h1>
+        <h1 className="text-4xl font-bold mb-8 text-blue-500 text-center">
+          Kyberna Timetable [PROTOTYPE]
+        </h1>
 
         {!token ? (
           <div className="bg-gray-900 p-6 rounded mb-8 shadow-lg">
