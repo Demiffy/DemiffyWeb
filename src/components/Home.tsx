@@ -9,12 +9,10 @@ import NoteBoard from './ui/homepage/NoteBoard';
 import Footer from './ui/Footer';
 import Maintenance from './ui/homepage/Maintenance';
 
-const isMaintenance =
-  typeof process !== 'undefined' &&
-  process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true';
+const MAINTENANCE_MODE = true;
 
 const Home = () => {
-  if (isMaintenance) {
+  if (MAINTENANCE_MODE) {
     return <Maintenance />;
   }
 
@@ -38,8 +36,8 @@ const Home = () => {
         'This project focuses on redesigning the UI/UX of KybernaIS to improve its usability and performance. The new design brings a fresh, modern interface with intuitive navigation for users in the educational sector. The UI/UX redesign is not publicly available; it is purely a prototype.',
       additionalImages: [
         { src: '/ksb1.png', title: 'Clear Design' },
-        { src: '/ksb2.png', title: 'Selection of Themes' },
-        { src: '/ksb3.png', title: 'More Modern Styles' },
+        { src: '/ksb2.png', title: 'Theme Selection' },
+        { src: '/ksb3.png', title: 'Modern Styles' },
         { src: '/ksb4.png', title: 'Built-in Grade Predictor' },
         { src: '/sbislogin.png', title: 'UI-UX Redesign – Login' },
         { src: '/sbisdashboard.png', title: 'UI-UX Redesign – Dashboard' },
@@ -47,7 +45,7 @@ const Home = () => {
       ],
       buttons: [
         {
-          label: 'View on Chrome Extension Store',
+          label: 'View on Chrome Store',
           onClick: () =>
             window.open(
               'https://chromewebstore.google.com/detail/kybernais-made-better/plehhebncnogcplmmgnliaipgbmoohdf',
@@ -72,13 +70,13 @@ const Home = () => {
         'A collaborative pixel-art canvas where users can chat, create, and edit their pixel-art creations in real time.',
       image: '/AsyncPlaceHeader.png',
       details:
-        "ASynCPlace is a web-based platform designed for real-time collaborative pixel-art creation, powered by Firebase's robust database and React. Users can interact on a shared canvas to place, edit, and remove pixels, with support for precise tools like brushes and an eraser. The platform includes a rich color palette and adjustable brush sizes, allowing for intricate and detailed artwork. Additionally, users can upload and integrate images as blueprints, enabling complex designs to come to life. The app features a live-chat system for real-time communication and a gamified experience with unlockable achievements to encourage engagement. Designed with accessibility and scalability in mind, ASynCPlace also tracks user activity and supports custom usernames. Whether you're an artist or a casual creator, ASynCPlace fosters a collaborative environment for creativity and community.",
+        "ASynCPlace is a web-based platform designed for real-time collaborative pixel-art creation, powered by Firebase and React. Users share a canvas to place, edit, and remove pixels with tools such as brushes and an eraser. A rich palette, adjustable brush sizes, image blueprints, live chat, and unlockable achievements foster creativity and community.",
       additionalImages: [
         { src: '/AsyncPlace.png', title: 'Sign-In Screen' },
         { src: '/AsyncPlaceMain.png', title: 'Canvas Interface' },
-        { src: '/AsyncPlaceSidebar.png', title: 'Sidebar Interface' },
-        { src: '/AsyncPlaceLookup.png', title: 'Lookup Interface' },
-        { src: '/AsyncPlaceAchievement.png', title: 'Achievements Interface' },
+        { src: '/AsyncPlaceSidebar.png', title: 'Sidebar' },
+        { src: '/AsyncPlaceLookup.png', title: 'Lookup' },
+        { src: '/AsyncPlaceAchievement.png', title: 'Achievements' },
       ],
       buttons: [
         { label: 'Website', onClick: () => window.open('https://demiffy.com/ASynC', '_blank') },
@@ -92,10 +90,11 @@ const Home = () => {
     },
     {
       title: 'WarThunder Analyzer',
-      description: 'A real-time in-game event analyzer for War Thunder with a dynamic web-based dashboard.',
+      description:
+        'A real-time in-game event analyzer for War Thunder with a dynamic web dashboard.',
       image: '/wta-main.png',
       details:
-        'WarThunderAnalyzer is a Python-based tool that utilizes OCR to analyze in-game events, track session statistics, and provide real-time updates via a web interface. It tracks hits, crits, kills, and other key metrics, allowing players to monitor their performance effectively. The tool is designed for educational and analytical purposes and is not affiliated with or endorsed by War Thunder.',
+        'WarThunderAnalyzer is a Python tool that uses OCR to analyze in-game events, track session statistics, and provide real-time updates via a web interface. It is for educational purposes and is not affiliated with or endorsed by War Thunder.',
       additionalImages: [
         { src: '/wta-1.png', title: 'Real-Time Dashboard' },
         { src: '/wta-2.png', title: 'In-Game Detection' },
@@ -117,19 +116,19 @@ const Home = () => {
     {
       title: 'Horizon Control – WIP',
       description:
-        'A strategic airport-management game where players oversee flight operations, reroute planes, and handle airport capacity to maintain passenger satisfaction.',
+        'A strategic airport-management game where players oversee flight operations, reroute planes, and balance airport capacity.',
       image: '/phcmain.png',
       details:
-        'In Horizon Control, players manage airports by directing flights, rerouting aircraft during disruptions, and keeping airports from becoming overcrowded. With a focus on balancing passenger happiness and smooth operations, the game challenges players to respond to events and emergencies while ensuring timely departures.',
+        'In Horizon Control, players manage airports by directing flights, responding to disruptions, and keeping congestion low. Balancing passenger satisfaction and operational efficiency is key.',
       additionalImages: [
-        { src: 'ph2.png', title: 'Main-Menu Panel' },
-        { src: 'projecthorizon.png', title: 'Europe-Map Level' },
-        { src: 'placeholder.png', title: 'Event-Management Interface' },
-        { src: 'placeholder.png', title: 'Passenger-Satisfaction Dashboard' },
-        { src: 'placeholder.png', title: 'Emergency-Response Panel' },
-        { src: 'placeholder.png', title: 'Flight-Schedule Overview' },
-        { src: 'placeholder.png', title: 'Airport-Expansion Options' },
-        { src: 'placeholder.png', title: 'Staff-Management Interface' },
+        { src: 'ph2.png', title: 'Main Menu' },
+        { src: 'projecthorizon.png', title: 'Europe Map' },
+        { src: 'placeholder.png', title: 'Event Management' },
+        { src: 'placeholder.png', title: 'Passenger Dashboard' },
+        { src: 'placeholder.png', title: 'Emergency Panel' },
+        { src: 'placeholder.png', title: 'Schedule Overview' },
+        { src: 'placeholder.png', title: 'Expansion Options' },
+        { src: 'placeholder.png', title: 'Staff Management' },
       ],
       buttons: [
         {
@@ -144,10 +143,9 @@ const Home = () => {
     },
     {
       title: 'RMC – Remote Mouse Control PC',
-      description: 'A remote-mouse-control application that allows users to control their PC from a mobile device.',
+      description: 'Control your PC’s mouse remotely from a mobile device.',
       image: '/rmc1.png',
-      details:
-        'RMC is a remote-mouse-control application that enables users to control their PC from a mobile device.',
+      details: 'RMC lets you control your PC’s mouse from your phone.',
       additionalImages: [{ src: 'rmc1.png', title: 'Console Debug' }],
       buttons: [],
       technologies: [
@@ -162,28 +160,29 @@ const Home = () => {
     {
       date: '2027',
       title: 'Start at Brno UNOB',
-      description: 'Beginning studies at the University of Defence with a focus on aviation and military technology.',
+      description:
+        'Began studies at the University of Defence, focusing on aviation and military technology.',
       image: '/UNOBLogo.png',
     },
     {
       date: 'Present',
       title: 'Studying IT – Programming',
       description:
-        'Currently honing my programming skills with a focus on software development, algorithms, and IT systems.',
+        'Currently honing programming skills with a focus on software development, algorithms, and IT systems.',
       image: '/Code.png',
     },
     {
       date: '2023',
       title: 'Started High School',
       description:
-        'Started high school with a specialization in information technology, laying the foundation for my journey into the world of programming and software development.',
+        'Entered high school with an IT specialization, laying the foundation for a programming career.',
       image: '/KybLogo.png',
     },
     {
       date: '2022',
       title: 'Finished Middle School',
       description:
-        'Completed middle school, where my interest in computers and technology began to take shape, inspiring my future career path.',
+        'Completed middle school, where an interest in technology began to take shape.',
       image: '/MHLogo.png',
     },
   ];
@@ -194,18 +193,24 @@ const Home = () => {
         <title>Home – Demiffy</title>
         <meta
           name="description"
-          content="This is Demiffy's home page, showcasing skills and projects in IT."
+          content="Demiffy's home page, showcasing skills and projects in IT."
         />
-        <meta name="keywords" content="Demiffy, IT, aviation, jet pilot, projects, programming, portfolio" />
+        <meta
+          name="keywords"
+          content="Demiffy, IT, aviation, projects, programming, portfolio"
+        />
         <link rel="canonical" href="https://demiffy.com" />
-        {/* Open Graph / Discord tags */}
+
+        {/* Open Graph / Discord */}
         <meta property="og:title" content="Demiffy!" />
         <meta property="og:description" content="What a dumbass who coded this" />
         <meta property="og:url" content="https://demiffy.com" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://demiffy.com/plane.png" />
       </Helmet>
+
       <MainIntro />
+
       <section id="skills" className="py-20">
         <h2 className="mb-8 text-3xl font-bold text-center select-none text-accent-color">
           Skills Overview
@@ -214,6 +219,7 @@ const Home = () => {
         <div className="h-8" />
         <SkillsOverview skills={skills} />
       </section>
+
       <section id="projects" className="py-20">
         <Projects projects={projects} />
       </section>
@@ -225,9 +231,11 @@ const Home = () => {
       >
         <MilestoneTimeline milestones={milestones} />
       </section>
+
       <section id="contact" className="py-20 bg-secondary-color">
         <NoteBoard />
       </section>
+
       <Footer />
     </div>
   );
