@@ -2,8 +2,10 @@ import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import Navbar from './components/ui/Navbar';
-import Home from './components/Home';
-import NotFound from '../NotFound';
+import Home from './components/pages/Home';
+import NotFound from './components/pages/NotFound';
+import KSBCTOS from './components/pages/KSBC/KSBC-TOS';
+import KSBCPP from './components/pages/KSBC/KSBC-Privacypolicy';
 import './App.css';
 
 const AnimatedRoutes = () => {
@@ -14,8 +16,8 @@ const AnimatedRoutes = () => {
       <CSSTransition key={location.key} classNames="fade" timeout={300}>
         <Routes location={location}>
           <Route path="/" element={<Home />} />
-          <Route path="/404" element={<NotFound />} />
-
+          <Route path="/privacy-policy" element={<KSBCPP />} />
+          <Route path="/terms-of-service" element={<KSBCTOS />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </CSSTransition>
@@ -28,15 +30,8 @@ export default function App() {
     <HelmetProvider>
       <Router>
         <Helmet>
-          <meta itemProp="name" content="Demiffy!" />
-          <meta itemProp="description" content="What a dumbass, who coded this?" />
-          <meta name="description" content="What a dumbass, who coded this?" />
-          <meta itemProp="image" content="http://example.com/default.png" />
-          <meta property="og:title" content="Demiffy!" />
-          <meta property="og:description" content="What a dumbass, who coded this?" />
-          <meta property="og:url" content="https://demiffy.com" />
-          <meta property="og:type" content="website" />
-          <meta property="og:image" content="https://demiffy.com/plane.png" />
+          <title>Demiffy!</title>
+          <meta name="description" content="Demiffy homepage." />
         </Helmet>
         <Navbar />
         <AnimatedRoutes />

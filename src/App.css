@@ -1,21 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-html {
-  overflow-y: scroll;
-}
-
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  background-color: #141312;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+#root {
   min-height: 100vh;
+  background-color: #141414;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  color: #ffff;
 }

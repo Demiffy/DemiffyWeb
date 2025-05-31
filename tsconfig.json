@@ -3,28 +3,5 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
-  ],
-  "compilerOptions": {
-    "module": "ESNext",
-    "target": "ES2020",
-    "moduleResolution": "Node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "allowSyntheticDefaultImports": true,
-    "noEmit": false,
-    "outDir": "./dist",
-    "rootDir": ".",
-    "isolatedModules": true
-  },
-  "include": [
-    "src/**/*.ts",
-    "api/**/*.mts",
-    "api/**/*.ts"
-, "dts_files/vite-env.d.ts", "dts_files/sudoku.d.ts", "dts_files/gifjs-optimized.d.ts"  ],
-  "exclude": [
-    "node_modules",
-    "dist"
   ]
 }
