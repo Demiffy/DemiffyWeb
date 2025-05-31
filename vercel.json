@@ -1,14 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/user-active",
-      "destination": "http://109.80.40.13:7000/user-active"
-    },
-    {
-      "source": "/getgrades/(.*)",
-      "destination": "https://109.80.40.13:443/getgrades"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
