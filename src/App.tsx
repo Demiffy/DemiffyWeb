@@ -34,7 +34,9 @@ export default function App() {
           <meta name="description" content="Demiffy homepage." />
         </Helmet>
         <Navbar />
-        <AnimatedRoutes />
+        <div className="pt-16 min-h-screen">
+          <AnimatedRoutes />
+        </div>
       </Router>
     </HelmetProvider>
   );
