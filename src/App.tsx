@@ -34,7 +34,7 @@ export default function App() {
           <meta name="description" content="Demiffy homepage." />
         </Helmet>
         <Navbar />
-        <div className="pt-16 min-h-screen">
+        <div className="pt-16 min-h-[calc(100vh-4rem)] flex flex-col">
           <AnimatedRoutes />
         </div>
       </Router>

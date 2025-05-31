@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #141312;
+  --color-secondary: #0D0C0B;
+  --color-tertiary: #030303FF;
+}
+
 #root {
   min-height: 100vh;
-  background-color: #141414;
+  background-color: #141312;
   font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
   color: #ffff;
 }
