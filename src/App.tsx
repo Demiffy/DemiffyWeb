@@ -1,7 +1,9 @@
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import ScrollToTop from './components/ScrollToTop';
 import Navbar from './components/ui/Navbar';
+import Footer from './components/ui/Footer';
 import Home from './components/pages/Home';
 import NotFound from './components/pages/NotFound';
 import KSBCTOS from './components/pages/KSBC/KSBC-TOS';
@@ -29,6 +31,7 @@ export default function App() {
   return (
     <HelmetProvider>
       <Router>
+        <ScrollToTop />
         <Helmet>
           <title>Demiffy!</title>
           <meta name="description" content="Demiffy homepage." />
@@ -36,6 +39,7 @@ export default function App() {
         <Navbar />
         <div className="pt-16 min-h-[calc(100vh-4rem)] flex flex-col">
           <AnimatedRoutes />
+          <Footer />
         </div>
       </Router>
     </HelmetProvider>

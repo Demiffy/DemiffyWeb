@@ -12,3 +12,50 @@
   font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
   color: #ffff;
 }
+
+.fade-enter {
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+  z-index: 0;
+}
+.fade-enter-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 300ms cubic-bezier(.4,0,.2,1), transform 300ms cubic-bezier(.4,0,.2,1);
+}
+.fade-exit {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.fade-exit-active {
+  opacity: 0;
+  transform: translateY(-16px) scale(0.98);
+  transition: opacity 300ms cubic-bezier(.4,0,.2,1), transform 300ms cubic-bezier(.4,0,.2,1);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  background: var(--color-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 9999px;
+  border: 2px solid var(--color-primary);
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #34343c;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-primary);
+}
+
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #262626 var(--color-primary);
+}
