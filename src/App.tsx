@@ -8,7 +8,7 @@ import Home from './components/pages/Home';
 import NotFound from './components/pages/NotFound';
 import KSBCTOS from './components/pages/KSBC/KSBC-TOS';
 import KSBCPP from './components/pages/KSBC/KSBC-Privacypolicy';
-import Grid from './components/pages/grid';
+import Grid from './components/pages/Grid';
 import './App.css';
 
 const AnimatedRoutes = () => {
