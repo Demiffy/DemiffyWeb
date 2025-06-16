@@ -8,6 +8,7 @@ import Home from './components/pages/Home';
 import NotFound from './components/pages/NotFound';
 import KSBCTOS from './components/pages/KSBC/KSBC-TOS';
 import KSBCPP from './components/pages/KSBC/KSBC-Privacypolicy';
+import Grid from './components/pages/grid';
 import './App.css';
 
 const AnimatedRoutes = () => {
@@ -20,6 +21,7 @@ const AnimatedRoutes = () => {
           <Route path="/" element={<Home />} />
           <Route path="/privacy-policy" element={<KSBCPP />} />
           <Route path="/terms-of-service" element={<KSBCTOS />} />
+          <Route path="/grid" element={<Grid />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </CSSTransition>
