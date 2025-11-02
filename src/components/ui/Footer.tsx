@@ -7,19 +7,45 @@ const Footer = () => {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="w-full bg-secondary py-4">
-      <div className="max-w-6xl mx-auto flex flex-col items-center">
-        <div className="flex flex-row justify-between items-center w-full px-2 text-sm text-gray-300 mb-3">
-          <Link to="/privacy-policy" className="hover:underline">Privacy Policy</Link>
-          <div className="flex gap-4">
-            <a href="https://github.com/Demiffy" className="p-2 rounded-full hover:bg-white/10 transition text-gray-300" aria-label="Twitter">
-              <Github size={18} />
+    <footer className="w-full border-t border-white/10 bg-secondary/80 backdrop-blur-md">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10">
+        <div
+          className="absolute inset-x-12 -top-0.5 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+          aria-hidden="true"
+        />
+
+        <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 text-center md:text-left">
+            <span className="text-xs font-semibold uppercase tracking-[0.4em] text-accent/80">
+              Demiffy
+            </span>
+            <p className="text-sm text-gray-300 md:text-base">
+              Bla bla something something for now
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center gap-6 md:justify-end">
+            <Link to="/privacy-policy" className="text-sm text-gray-300 transition hover:text-accent">
+              Privacy Policy
+            </Link>
+            <Link to="/terms-of-service" className="text-sm text-gray-300 transition hover:text-accent">
+              Terms of Service
+            </Link>
+            <a
+              href="https://github.com/Demiffy"
+              className="group inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-gray-200 shadow-lg transition hover:border-accent hover:text-accent"
+              aria-label="Demi on GitHub"
+            >
+              <Github className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
             </a>
           </div>
-          <Link to="/terms-of-service" className="hover:underline">Terms of Service</Link>
         </div>
-        <div className="text-xs text-gray-400 text-center mt-2 mb-2 w-full">
-          © {year} Demiffy.com. All rights reserved.
+
+        <div className="flex flex-col items-center gap-2 border-t border-white/10 pt-6 text-center text-xs text-gray-400 md:flex-row md:justify-between md:text-left">
+          <p>Copyright {year} Demiffy.com. All rights reserved.</p>
+          <p className="text-[11px] text-gray-500">
+            This is stupid
+          </p>
         </div>
       </div>
     </footer>
