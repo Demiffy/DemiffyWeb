@@ -37,17 +37,17 @@ const galleries = [
 
 const Home = () => (
   <main className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center gap-16 px-4 py-16 min-h-screen">
-    <motion.section
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="relative flex w-full flex-col items-center gap-6 text-center"
-    >
+    <section className="relative flex w-full flex-col items-center gap-6 text-center">
       <div
         className="absolute -inset-10 rounded-[3rem] bg-gradient-to-br from-accent/30 via-transparent to-indigo-500/30 blur-3xl opacity-70"
         aria-hidden="true"
       />
-      <div className="relative flex flex-col items-center gap-6 rounded-3xl bg-white/5 p-10 shadow-2xl backdrop-blur-md ring-1 ring-white/10 sm:flex-row sm:items-center sm:gap-10 sm:text-left">
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative flex flex-col items-center gap-6 rounded-3xl bg-white/5 p-10 shadow-2xl backdrop-blur-md ring-1 ring-white/10 sm:flex-row sm:items-center sm:gap-10 sm:text-left"
+      >
         <div className="relative shrink-0">
           <div className="absolute inset-0 rounded-full bg-accent/40 blur-xl opacity-70" aria-hidden="true" />
           <img
@@ -66,8 +66,8 @@ const Home = () => (
             Studying software development and training to slowly become a commercial pilot - WEBSITE IS STILL VERY MUCH A WIP
           </p>
         </div>
-      </div>
-    </motion.section>
+      </motion.div>
+    </section>
 
     <motion.section
       initial={{ opacity: 0, y: 12 }}
