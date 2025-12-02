@@ -61,7 +61,7 @@ function drawRadar(ctx: CanvasRenderingContext2D, w: number, h: number, sweepX: 
   ctx.lineWidth = 1;
   for (let i = 0; i < majorX - 1; i++) {
     for (let m = 1; m < minorPerMajor; m++) {
-      let x = i * cellW + (m * cellW) / minorPerMajor;
+      const x = i * cellW + (m * cellW) / minorPerMajor;
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, h);
@@ -70,7 +70,7 @@ function drawRadar(ctx: CanvasRenderingContext2D, w: number, h: number, sweepX: 
   }
   for (let i = 0; i < majorY - 1; i++) {
     for (let m = 1; m < minorPerMajor; m++) {
-      let y = i * cellH + (m * cellH) / minorPerMajor;
+      const y = i * cellH + (m * cellH) / minorPerMajor;
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
@@ -155,20 +155,19 @@ function drawLabels(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.fillStyle = GRID_COLOR;
   ctx.shadowColor = GRID_COLOR;
   ctx.shadowBlur = 10;
-  ctx.fillText("60°×10°", w / 2 - cellW * 0.7, h * 0.06);
+  ctx.fillText("60deg/-10deg", w / 2 - cellW * 0.7, h * 0.06);
   ctx.fillText("SRC PD", w / 2 + cellW * 1.2, h * 0.06);
   ctx.textAlign = "right";
   ctx.fillText("37 km", w - 22, h * 0.095);
   ctx.textAlign = "left";
-  ctx.fillText("120°", 16, cellH * 0.85);
-  ctx.fillText("60°", 16, h / 4 + cellH * 0.08);
-  ctx.fillText("-60°", 28, (3 * h) / 4 + cellH * 0.05);
+  ctx.fillText("120deg", 16, cellH * 0.85);
+  ctx.fillText("60deg", 16, h / 4 + cellH * 0.08);
+  ctx.fillText("-60deg", 28, (3 * h) / 4 + cellH * 0.05);
   ctx.textAlign = "right";
-  ctx.fillText("60°", w - 15, cellH * 0.85);
+  ctx.fillText("60deg", w - 15, cellH * 0.85);
   ctx.fillText("0 km", w - 22, h - 22);
   ctx.restore();
 }
-
 export default function Grid() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -232,3 +231,4 @@ export default function Grid() {
     </div>
   );
 }
+

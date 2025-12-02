@@ -2,8 +2,8 @@ import { Link, NavLink } from "react-router-dom";
 
 const navItems = [
   { label: "Home", href: "/" },
-  { label: "Airplanes", href: "/gallery/airplanes" },
-  { label: "Cars", href: "/gallery/cars" },
+  { label: "Airplanes", href: "/spotters-log/airplanes" },
+  { label: "Cars", href: "/spotters-log/cars" },
 ];
 
 const Navbar = () => {

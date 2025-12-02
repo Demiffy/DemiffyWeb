@@ -20,18 +20,18 @@ const projects = [
   },
 ];
 
-const galleries = [
+const logEntries = [
   {
-    title: "Airplane Gallery",
-    description: "Cool airplanes I found throught my experience",
+    title: "Spotter's Log - Gripen C",
+    description: "NATO Days, Ostrava - 09/2024 - still the loudest low pass I've seen.",
     image: "/gripen.webp",
-    href: "/gallery/airplanes",
+    href: "/spotters-log/airplanes",
   },
   {
-    title: "Car Gallery",
-    description: "Cool cars I found throught my experience",
+    title: "Spotter's Log - GR86",
+    description: "Evening cruise through Prague - 06/2024 - perfect exhaust pops along the river.",
     image: "/GR86.png",
-    href: "/gallery/cars",
+    href: "/spotters-log/cars",
   },
 ];
 
@@ -110,38 +110,38 @@ const Home = () => (
     >
       <div className="flex flex-col items-center gap-2 text-center">
         <span className="text-xs font-semibold uppercase tracking-[0.35em] text-accent/70">
-          Galleries
+          Spotter's Log
         </span>
-        <h2 className="text-2xl font-semibold text-white sm:text-3xl">Peek inside</h2>
+        <h2 className="text-2xl font-semibold text-white sm:text-3xl">Latest sightings</h2>
         <p className="max-w-xl text-sm text-gray-400 sm:text-base">
-          A quick glance at the hangar and the garage
+          Field notes from the hangar and the garage - click through for the full story.
         </p>
       </div>
       <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
-        {galleries.map((gallery, index) => (
+        {logEntries.map((entry, index) => (
           <motion.div
-            key={gallery.title}
+            key={entry.title}
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 + index * 0.08 }}
           >
             <Link
-              to={gallery.href}
+              to={entry.href}
               className="group relative block h-[22rem] overflow-hidden rounded-3xl shadow-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-accent/70 sm:h-[26rem]"
-              aria-label={gallery.title}
+              aria-label={entry.title}
             >
               <img
-                src={gallery.image}
-                alt={gallery.title}
+                src={entry.image}
+                alt={entry.title}
                 className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/20 transition duration-500 group-hover:from-black/60 group-hover:via-black/25 group-hover:to-black/10" />
               <div className="relative z-10 flex h-full flex-col justify-end gap-3 p-8 text-white">
-                <h3 className="text-3xl font-semibold">{gallery.title}</h3>
-                <p className="text-sm text-gray-200 sm:text-base">{gallery.description}</p>
+                <h3 className="text-3xl font-semibold">{entry.title}</h3>
+                <p className="text-sm text-gray-200 sm:text-base">{entry.description}</p>
                 <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-accent sm:text-sm">
-                  Open Gallery
+                  Read Entry
                   <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
                     &rarr;
                   </span>
