@@ -1,6 +1,7 @@
 import { motion, LayoutGroup } from "framer-motion";
 import { Navigation, Plane, Camera, RefreshCcw, Plus, FilterX, Trash2 } from "lucide-react";
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useSpottersLog } from "../../../hooks/useSpottersLog";
 
 const badgeColors = ["from-emerald-400 to-lime-400", "from-sky-400 to-indigo-400", "from-amber-400 to-rose-400"];

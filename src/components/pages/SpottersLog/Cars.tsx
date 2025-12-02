@@ -1,6 +1,7 @@
 import { motion, LayoutGroup } from "framer-motion";
 import { Gauge, MapPin, Sparkles, RefreshCcw, FilterX, ChevronDown } from "lucide-react";
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useSpottersLog } from "../../../hooks/useSpottersLog";
 
 const tagColors = ["from-fuchsia-400 to-pink-400", "from-cyan-400 to-blue-400", "from-amber-400 to-lime-400"];
