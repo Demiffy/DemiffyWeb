@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { SpottersLogCategory, SpottersLogEntry, SpottersLogData } from "../data/spottersLogData";
+import type { SpottersLogCategory, SpottersLogEntry } from "../types/spottersLog";
 
 const API_ENDPOINTS: Record<SpottersLogCategory, string> = {
   airplanes: "https://api.demiffy.com:8543/planesdata",
@@ -26,24 +26,14 @@ export function useSpottersLog(category: SpottersLogCategory): HookState {
       setIsLoading(true);
       setError(null);
 
-      const fetchPayload = async () => {
-        const remoteResp = await fetch(API_ENDPOINTS[category], { cache: "no-store", signal });
-        if (!remoteResp.ok) throw new Error("Remote API request failed");
-        return (await remoteResp.json()) as SpottersLogEntry[];
-      };
-
-      const applyPayload = (payload: SpottersLogEntry[] | SpottersLogData | undefined) => {
-        if (signal?.aborted) return;
-        if (Array.isArray(payload)) {
-          setEntries(payload);
-        } else {
-          const next = payload?.[category];
-          setEntries(Array.isArray(next) ? next : []);
-        }
-      };
-
-      fetchPayload()
-        .then((payload) => applyPayload(payload))
+      fetch(API_ENDPOINTS[category], { cache: "no-store", signal })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Remote API request failed");
+          return (await response.json()) as SpottersLogEntry[];
+        })
+        .then((payload) => {
+          if (!signal?.aborted) setEntries(Array.isArray(payload) ? payload : []);
+        })
         .catch((err: Error) => {
           if (err.name === "AbortError") return;
           setError(err.message);
