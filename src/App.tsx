@@ -11,6 +11,7 @@ import KSBCPP from './components/pages/KSBC/KSBC-Privacypolicy';
 import Grid from './components/pages/Grid';
 import AirplanesLog from './components/pages/SpottersLog/Airplanes';
 import CarsLog from './components/pages/SpottersLog/Cars';
+import MinecraftControl from './components/pages/MinecraftControl';
 import './App.css';
 
 const AnimatedRoutes = () => {
@@ -26,6 +27,7 @@ const AnimatedRoutes = () => {
           <Route path="/grid" element={<Grid />} />
           <Route path="/spotters-log/airplanes" element={<AirplanesLog />} />
           <Route path="/spotters-log/cars" element={<CarsLog />} />
+          <Route path="/mc" element={<MinecraftControl />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </CSSTransition>
