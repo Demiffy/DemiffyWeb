@@ -16,7 +16,7 @@ const sections: Section[] = [
     items: [
       "Username and password (only for login; never stored in plain text)",
       "Session token (generated and encrypted after login)",
-      "Timetable, grades, and absence data from your school’s SIS (temporarily cached, deleted after session expires)",
+      "Timetable, grades, and absence data from your school's SIS (temporarily cached, deleted after session expires)",
       "Basic technical info (IP address, device type) for security and rate-limiting",
     ],
   },

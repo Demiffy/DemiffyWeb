@@ -1,5 +1,5 @@
 import { motion, LayoutGroup } from "framer-motion";
-import { Gauge, MapPin, Sparkles, RefreshCcw, FilterX, ChevronDown } from "lucide-react";
+import { MapPin, Sparkles, RefreshCcw, FilterX, ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useSpottersLog } from "../../../hooks/useSpottersLog";

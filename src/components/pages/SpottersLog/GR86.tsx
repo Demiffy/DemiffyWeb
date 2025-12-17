@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Bookmark, Car, Droplets, ExternalLink, Gauge, Palette, Wrench, Zap } from "lucide-react";
+import { ArrowUpRight, Bookmark, Car, Droplets, ExternalLink, Wrench, Zap } from "lucide-react";
 
 const mods = [
   {
@@ -39,10 +39,10 @@ const galleryItems = [
     desc: "Clean winter look with a ski rack mounted.",
   },
   {
-    title: "TOM’S Exhaust System",
+    title: "TOM'S Exhaust System",
     href: "https://www.86worx.com/tom-s-exhaust-system.html",
     img: "https://www.86worx.com/media/catalog/product/cache/88bd6db9eb4c909e119a1ea69767524a/b/3/b34-053_thumb.jpg",
-    desc: "TOM’S exhaust option for the GR86/BRZ.",
+    desc: "TOM'S exhaust option for the GR86/BRZ.",
   },
 ];
 
@@ -50,14 +50,14 @@ const specs = [
   ["Engine", "FA24 2.387L H4 (NA)"],
   ["Transmission", "6-speed MT (Torsen LSD)"],
   ["Max Output", "173 kW (235 PS) @ 7,000 rpm"],
-  ["Max Torque", "250 Nm (25.5 kgf·m) @ 3,700 rpm"],
+  ["Max Torque", "250 Nm (25.5 kgf-m) @ 3,700 rpm"],
   ["Fuel System", "D-4S (DI + port)"],
   ["Fuel Efficiency (WLTC)", "11.8 km/L (MT)"],
   ["Length / Width / Height", "4,265 / 1,775 / 1,310 mm*"],
   ["Wheelbase", "2,575 mm"],
   ["Track (F/R)", "1,520 / 1,550 mm"],
   ["Ground Clearance", "130 mm"],
-  ["Curb Weight", "≈1,270 kg (MT Premium)"],
+  ["Curb Weight", "~1,270 kg (MT Premium)"],
   ["Seating", "4"],
   ["Suspension", "MacPherson Strut (F) / Double Wishbone (R)"],
   ["Brakes", "Ventilated discs (F/R)"],
@@ -203,7 +203,7 @@ export default function GR86Page() {
                         </div>
                       </div>
                       <p className="text-gray-300 leading-relaxed">
-                        Rear Wing (Spoiler) made by Result Japan for the 2022+ GR86 (ZN8) & BRZ (ZD8). It gives a nice 90’s
+                        Rear Wing (Spoiler) made by Result Japan for the 2022+ GR86 (ZN8) & BRZ (ZD8). It gives a nice 90's
                         Japanese racing look to the back of the car. This product is made of FRP (Black Gel Coat) and is meant
                         to be painted, not installed as-is. The FRP + Carbon Fiber version is FRP sides with a carbon flat section.
                       </p>

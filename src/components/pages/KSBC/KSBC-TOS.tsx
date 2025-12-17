@@ -93,7 +93,7 @@ const KSBCTOS: React.FC = () => (
         transition={{ delay: 0.2, duration: 0.5 }}
         className="text-lg md:text-2xl text-center text-white/85 mb-12 max-w-3xl mx-auto"
       >
-        Welcome to Demiffy.com and the KybernaChecker app. By using this website and mobile application (collectively, the “Service”), you agree to the following terms:
+        Welcome to Demiffy.com and the KybernaChecker app. By using this website and mobile application (collectively, the "Service"), you agree to the following terms:
       </motion.p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-12 gap-y-16">

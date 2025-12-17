@@ -1,5 +1,5 @@
 import { motion, LayoutGroup } from "framer-motion";
-import { Navigation, Plane, Camera, RefreshCcw, FilterX, ChevronDown } from "lucide-react";
+import { Navigation, Camera, RefreshCcw, FilterX, ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useSpottersLog } from "../../../hooks/useSpottersLog";
