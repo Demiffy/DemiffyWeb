@@ -22,16 +22,16 @@ const projects = [
 
 const logEntries = [
   {
-    title: "Spotter's Log - Gripen C",
-    description: "NATO Days, Ostrava - 09/2024 - still the loudest low pass I've seen.",
+    title: "Plane Gallery",
+    description: "WIP",
     image: "/gripen.webp",
-    href: "/spotters-log/airplanes",
+    href: "/gallery/planes",
   },
   {
-    title: "Spotter's Log - GR86",
-    description: "Evening cruise through Prague - 06/2024 - perfect exhaust pops along the river.",
+    title: "Car Gallery",
+    description: "WIP",
     image: "/GR86.png",
-    href: "/spotters-log/cars",
+    href: "/gallery/cars",
   },
 ];
 
@@ -110,11 +110,11 @@ const Home = () => (
     >
       <div className="flex flex-col items-center gap-2 text-center">
         <span className="text-xs font-semibold uppercase tracking-[0.35em] text-accent/70">
-          Spotter's Log
+          Gallery
         </span>
-        <h2 className="text-2xl font-semibold text-white sm:text-3xl">Latest sightings</h2>
+        <h2 className="text-2xl font-semibold text-white sm:text-3xl">WIP - To be done</h2>
         <p className="max-w-xl text-sm text-gray-400 sm:text-base">
-          Field notes from the hangar and the garage - click through for the full story.
+          WIP - To be done
         </p>
       </div>
       <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
@@ -141,7 +141,7 @@ const Home = () => (
                 <h3 className="text-3xl font-semibold">{entry.title}</h3>
                 <p className="text-sm text-gray-200 sm:text-base">{entry.description}</p>
                 <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-accent sm:text-sm">
-                  Read Entry
+                  Open
                   <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
                     &rarr;
                   </span>

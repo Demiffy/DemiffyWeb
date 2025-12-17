@@ -143,15 +143,6 @@ const AirplanesLog = () => {
       <section className="relative flex flex-col items-center justify-center gap-6 px-6 py-20 text-center">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),transparent_60%)]" aria-hidden="true" />
         <div className="relative max-w-4xl space-y-4">
-          <motion.span
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-accent"
-          >
-            <Plane className="h-4 w-4 text-accent" />
-            Spotter's Log
-          </motion.span>
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -166,9 +157,7 @@ const AirplanesLog = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-base text-gray-300 sm:text-lg"
           >
-            Field notes from flight lines, airshows, and random airport fences. Update the log anytime by editing
-            <span className="mx-1 font-mono text-sm text-gray-200">public/data/spotters-log.json</span>
-            and redeploying on Vercel.
+            WIP
           </motion.p>
         </div>
       </section>

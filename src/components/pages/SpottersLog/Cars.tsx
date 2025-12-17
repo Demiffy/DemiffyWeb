@@ -143,15 +143,6 @@ const CarsLog = () => {
       <section className="relative flex flex-col items-center justify-center gap-6 px-6 py-20 text-center">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(236,72,153,0.25),transparent_55%)]" aria-hidden="true" />
         <div className="relative max-w-4xl space-y-4">
-          <motion.span
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-accent"
-          >
-            <Gauge className="h-4 w-4 text-accent" />
-            Spotter's Log
-          </motion.span>
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -166,8 +157,7 @@ const CarsLog = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-base text-gray-300 sm:text-lg"
           >
-            Night drives, garage projects, borrowed keys, and every note from the road. Click through the log to
-            see what the garage has been up to.
+            WIP
           </motion.p>
         </div>
       </section>

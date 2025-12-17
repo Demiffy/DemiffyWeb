@@ -11,6 +11,7 @@ import KSBCPP from './components/pages/KSBC/KSBC-Privacypolicy';
 import Grid from './components/pages/Grid';
 import AirplanesLog from './components/pages/SpottersLog/Airplanes';
 import CarsLog from './components/pages/SpottersLog/Cars';
+import GR86Page from './components/pages/SpottersLog/GR86';
 import MinecraftControl from './components/pages/MinecraftControl';
 import './App.css';
 
@@ -25,8 +26,9 @@ const AnimatedRoutes = () => {
           <Route path="/privacy-policy" element={<KSBCPP />} />
           <Route path="/terms-of-service" element={<KSBCTOS />} />
           <Route path="/grid" element={<Grid />} />
-          <Route path="/spotters-log/airplanes" element={<AirplanesLog />} />
-          <Route path="/spotters-log/cars" element={<CarsLog />} />
+          <Route path="/gallery/planes" element={<AirplanesLog />} />
+          <Route path="/gallery/cars" element={<CarsLog />} />
+          <Route path="/gallery/cars/gr86" element={<GR86Page />} />
           <Route path="/mc" element={<MinecraftControl />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -45,8 +47,10 @@ export default function App() {
           <meta name="description" content="Demiffy homepage." />
         </Helmet>
         <Navbar />
-        <div className="pt-16 min-h-[calc(100vh-4rem)] flex flex-col">
-          <AnimatedRoutes />
+        <div className="pt-16 min-h-screen flex flex-col">
+          <div className="flex-1">
+            <AnimatedRoutes />
+          </div>
           <Footer />
         </div>
       </Router>
